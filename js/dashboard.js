@@ -195,37 +195,37 @@
       }).join('');
 
       return `
-        <article class="glass-card p-5 hover:border-indigo-500/30 transition-all duration-200">
+        <article class="glass-card p-5 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/50 dark:hover:border-indigo-500/30 transition-all duration-200">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2.5">
-              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/25">
                 ${project.code || 'PRJ'}
               </span>
-              <h3 class="text-sm sm:text-base font-bold text-white tracking-tight">${project.name}</h3>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${project.name}</h3>
             </div>
             
-            <div class="flex items-center gap-3 text-xs text-slate-400">
+            <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <span class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Hạn chót: <b class="text-slate-300 font-medium">${deadlineDate}</b>
+                <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Hạn chót: <b class="text-slate-700 dark:text-slate-300 font-semibold">${deadlineDate}</b>
               </span>
             </div>
           </div>
 
-          <p class="text-xs text-slate-400 line-clamp-2 mb-4 leading-relaxed">
+          <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-4 leading-relaxed font-normal">
             ${project.description || 'Không có mô tả chi tiết.'}
           </p>
 
           <!-- Thanh tiến độ & Thông tin số lượng task -->
           <div class="space-y-2">
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 font-medium">
-                Công việc: <span class="text-indigo-400 font-semibold">${projectDoneTasks.length}/${projectTasks.length} Done</span>
+              <span class="text-slate-600 dark:text-slate-400 font-medium">
+                Công việc: <span class="text-indigo-600 dark:text-indigo-400 font-bold">${projectDoneTasks.length}/${projectTasks.length} Done</span>
               </span>
-              <span class="font-bold text-white">${dynamicProgress}%</span>
+              <span class="font-extrabold text-slate-900 dark:text-white">${dynamicProgress}%</span>
             </div>
 
-            <div class="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-white/5">
+            <div class="w-full bg-slate-200 dark:bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-300/50 dark:border-white/5">
               <div 
                 class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2 rounded-full transition-all duration-700" 
                 style="width: ${dynamicProgress}%"
@@ -237,11 +237,11 @@
             </div>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-slate-700/30 flex items-center justify-between">
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700/30 flex items-center justify-between">
             <div class="flex items-center">
               ${memberAvatarsHtml || '<span class="text-xs text-slate-500">Chưa gán thành viên</span>'}
             </div>
-            <a href="projects.html" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
+            <a href="projects.html" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
               Chi tiết dự án &rarr;
             </a>
           </div>
@@ -289,16 +289,16 @@
             ${hours.toFixed(1)} giờ
           </div>
 
-          <!-- Cột biểu đồ CSS Flexbox -->
-          <div class="w-full max-w-[28px] bg-slate-800/60 rounded-t-lg relative flex items-end overflow-hidden" style="height: 100%;">
+          <!-- Cột biểu đồ CSS Flexbox: Background track tinh chỉnh theo Theme -->
+          <div class="w-full max-w-[28px] bg-slate-200/80 dark:bg-slate-800/60 rounded-t-lg relative flex items-end overflow-hidden" style="height: 100%;">
             <div 
-              class="w-full bg-gradient-to-t from-indigo-600 via-violet-500 to-indigo-400 rounded-t-lg transition-all duration-700 group-hover:brightness-125"
+              class="w-full bg-gradient-to-t from-indigo-600 via-violet-500 to-indigo-400 rounded-t-lg transition-all duration-700 group-hover:brightness-110"
               style="height: ${heightPercent}%;"
             ></div>
           </div>
 
           <!-- Nhãn thứ bên dưới cột -->
-          <span class="text-[11px] font-semibold text-slate-400 group-hover:text-indigo-400 mt-2 transition-colors">
+          <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mt-2 transition-colors">
             ${day.label}
           </span>
         </div>
@@ -331,9 +331,9 @@
     if (urgentTasks.length === 0) {
       container.innerHTML = `
         <div class="col-span-full empty-state glass-card p-6">
-          <svg class="empty-state-icon text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <p class="empty-state-title">Tuyệt vời! Không có tác vụ khẩn cấp nào tồn đọng</p>
-          <p class="empty-state-desc">Toàn bộ công việc ưu tiên cao đã được nghiệm thu hoặc giải quyết đúng hạn.</p>
+          <svg class="empty-state-icon text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="empty-state-title text-slate-900 dark:text-white">Tuyệt vời! Không có tác vụ khẩn cấp nào tồn đọng</p>
+          <p class="empty-state-desc text-slate-600 dark:text-slate-400">Toàn bộ công việc ưu tiên cao đã được nghiệm thu hoặc giải quyết đúng hạn.</p>
         </div>
       `;
       return;
@@ -358,7 +358,7 @@
       const badgeLabel = isCritical ? 'Khẩn cấp (Critical)' : 'Ưu tiên cao (High)';
 
       return `
-        <article class="glass-card p-4 hover:border-slate-500/40 transition-all duration-200 flex flex-col justify-between">
+        <article class="glass-card p-4 border border-slate-200/90 dark:border-white/10 hover:border-slate-400/50 dark:hover:border-slate-500/40 transition-all duration-200 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between gap-2 mb-2">
               <span class="badge ${badgeClass}">
@@ -367,35 +367,35 @@
               </span>
               
               ${isOverdue ? `
-                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 px-2 py-0.5 rounded-full">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                   Quá hạn
                 </span>
               ` : `
-                <span class="text-[11px] text-slate-400">
-                  Hạn: <b class="text-slate-300 font-medium">${dueDateFormatted}</b>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                  Hạn: <b class="text-slate-700 dark:text-slate-300 font-semibold">${dueDateFormatted}</b>
                 </span>
               `}
             </div>
 
-            <h3 class="text-sm font-bold text-white mb-1.5 leading-snug">${task.title}</h3>
-            <p class="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 leading-snug">${task.title}</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
               ${task.description || 'Không có mô tả chi tiết.'}
             </p>
           </div>
 
-          <div class="pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
-            <span class="text-slate-400 font-medium truncate max-w-[180px]">
-              Dự án: <span class="text-indigo-400">${project ? project.name : 'Chưa phân loại'}</span>
+          <div class="pt-3 border-t border-slate-200 dark:border-slate-700/30 flex items-center justify-between text-xs">
+            <span class="text-slate-600 dark:text-slate-400 font-medium truncate max-w-[180px]">
+              Dự án: <span class="text-indigo-600 dark:text-indigo-400 font-semibold">${project ? project.name : 'Chưa phân loại'}</span>
             </span>
 
             <div class="flex items-center gap-2">
-              <span class="text-[11px] text-slate-400 hidden sm:inline">${assignee ? assignee.name : 'Chưa gán'}</span>
+              <span class="text-[11px] text-slate-600 dark:text-slate-400 hidden sm:inline font-medium">${assignee ? assignee.name : 'Chưa gán'}</span>
               <img 
                 src="${assignee ? assignee.avatar : 'https://api.dicebear.com/7.x/avataaars/svg?seed=TaskFlow'}" 
                 alt="${assignee ? assignee.name : 'Assignee'}" 
                 title="${assignee ? assignee.name : 'Chưa gán'}"
-                class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 object-cover"
+                class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 object-cover"
               />
             </div>
           </div>

@@ -11,9 +11,8 @@
    1. CSS VARIABLES (DESIGN TOKENS - DARK & LIGHT THEMES)
    ========================================================================== */
 
-:root,
-[data-theme="dark"] {
-  /* Color Palette - Dark Mode (Default) */
+:root {
+  /* Default Theme Tokens: Dark Mode Deep Slate & Electric Neo-Violet */
   --bg-main: #090D16;
   --bg-surface: rgba(15, 23, 42, 0.65);
   --bg-surface-solid: #0F172A;
@@ -92,84 +91,116 @@
   --gantt-today-line: #F43F5E;
 }
 
+/* Explicit Dark Mode */
+html.dark,
+:root.dark,
+[data-theme="dark"] {
+  --bg-main: #090D16;
+  --bg-surface: rgba(15, 23, 42, 0.65);
+  --bg-surface-solid: #0F172A;
+  --bg-surface-hover: rgba(30, 41, 59, 0.75);
+  --bg-elevated: rgba(30, 41, 59, 0.85);
+
+  --border-card: rgba(255, 255, 255, 0.08);
+  --border-card-hover: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: #6366F1;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #0F172A;
+
+  --primary-accent: #6366F1;
+  --primary-accent-hover: #4F46E5;
+  --secondary-accent: #8B5CF6;
+  --secondary-accent-hover: #7C3AED;
+
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+  --scrollbar-track: rgba(15, 23, 42, 0.4);
+}
+
+/* Explicit Light Mode: WCAG AAA High Contrast & Clean Slate */
+html:not(.dark),
+:root:not(.dark),
 [data-theme="light"],
 body.light-theme {
-  /* Color Palette - Light Mode Tokens */
   --bg-main: #F8FAFC;
-  --bg-surface: rgba(255, 255, 255, 0.75);
+  --bg-surface: rgba(255, 255, 255, 0.85);
   --bg-surface-solid: #FFFFFF;
-  --bg-surface-hover: rgba(241, 245, 249, 0.85);
+  --bg-surface-hover: rgba(241, 245, 249, 0.95);
   --bg-elevated: #FFFFFF;
 
   /* Card & Glass Borders */
-  --border-card: rgba(226, 232, 240, 0.8);
+  --border-card: rgba(226, 232, 240, 0.9);
   --border-card-hover: rgba(203, 213, 225, 1);
-  --border-subtle: rgba(226, 232, 240, 0.6);
+  --border-subtle: rgba(226, 232, 240, 0.7);
   --border-focus: #4F46E5;
 
-  /* Typography Colors */
+  /* Typography Colors - High Contrast */
   --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
   --text-inverse: #F8FAFC;
 
   /* Brand & Accent Colors */
   --primary-accent: #4F46E5;
   --primary-accent-hover: #4338CA;
-  --primary-accent-glow: rgba(79, 70, 229, 0.18);
+  --primary-accent-glow: rgba(79, 70, 229, 0.15);
   --secondary-accent: #7C3AED;
   --secondary-accent-hover: #6D28D9;
-  --secondary-accent-glow: rgba(124, 58, 237, 0.15);
+  --secondary-accent-glow: rgba(124, 58, 237, 0.12);
 
   /* Kanban Status Columns & Borders */
   --kanban-todo-bg: rgba(100, 116, 139, 0.08);
-  --kanban-todo-text: #475569;
+  --kanban-todo-text: #334155;
   --kanban-todo-border: rgba(100, 116, 139, 0.25);
-  --kanban-todo-col-border: rgba(203, 213, 225, 0.8);
+  --kanban-todo-col-border: rgba(203, 213, 225, 0.9);
 
   --kanban-doing-bg: rgba(14, 165, 233, 0.08);
-  --kanban-doing-text: #0284C7;
+  --kanban-doing-text: #0369A1;
   --kanban-doing-border: rgba(14, 165, 233, 0.25);
   --kanban-doing-col-border: rgba(14, 165, 233, 0.35);
 
   --kanban-done-bg: rgba(16, 185, 129, 0.08);
-  --kanban-done-text: #059669;
+  --kanban-done-text: #047857;
   --kanban-done-border: rgba(16, 185, 129, 0.25);
   --kanban-done-col-border: rgba(16, 185, 129, 0.35);
 
   /* Priority Tokens */
   --priority-critical-bg: rgba(244, 63, 94, 0.1);
-  --priority-critical-text: #E11D48;
-  --priority-critical-border: rgba(244, 63, 94, 0.25);
+  --priority-critical-text: #BE123C;
+  --priority-critical-border: rgba(244, 63, 94, 0.3);
 
   --priority-high-bg: rgba(245, 158, 11, 0.1);
-  --priority-high-text: #D97706;
-  --priority-high-border: rgba(245, 158, 11, 0.25);
+  --priority-high-text: #B45309;
+  --priority-high-border: rgba(245, 158, 11, 0.3);
 
   --priority-medium-bg: rgba(79, 70, 229, 0.1);
-  --priority-medium-text: #4F46E5;
-  --priority-medium-border: rgba(79, 70, 229, 0.25);
+  --priority-medium-text: #4338CA;
+  --priority-medium-border: rgba(79, 70, 229, 0.3);
 
   --priority-low-bg: rgba(100, 116, 139, 0.1);
-  --priority-low-text: #64748B;
-  --priority-low-border: rgba(100, 116, 139, 0.25);
+  --priority-low-text: #475569;
+  --priority-low-border: rgba(100, 116, 139, 0.3);
 
   /* Glassmorphism Soft Elevations & Shadows */
   --glass-blur: 12px;
-  --shadow-glass: 0 8px 30px 0 rgba(148, 163, 184, 0.18);
-  --shadow-elevation-low: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-elevation-mid: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-elevation-high: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-glass: 0 4px 20px -2px rgba(148, 163, 184, 0.22), 0 2px 6px -1px rgba(148, 163, 184, 0.12);
+  --shadow-elevation-low: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --shadow-elevation-mid: 0 4px 12px -2px rgba(148, 163, 184, 0.25);
+  --shadow-elevation-high: 0 20px 25px -5px rgba(148, 163, 184, 0.25), 0 8px 10px -6px rgba(148, 163, 184, 0.15);
 
   /* Scrollbar Tokens */
-  --scrollbar-thumb: rgba(100, 116, 139, 0.25);
-  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.5);
-  --scrollbar-track: rgba(241, 245, 249, 0.8);
+  --scrollbar-thumb: rgba(100, 116, 139, 0.3);
+  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.6);
+  --scrollbar-track: rgba(241, 245, 249, 0.9);
 
   /* Gantt Grid Tokens */
-  --gantt-header-bg: rgba(248, 250, 252, 0.9);
-  --gantt-grid-line: rgba(226, 232, 240, 0.8);
-  --gantt-weekend-bg: rgba(241, 245, 249, 0.5);
+  --gantt-header-bg: rgba(248, 250, 252, 0.95);
+  --gantt-grid-line: rgba(226, 232, 240, 0.9);
+  --gantt-weekend-bg: rgba(241, 245, 249, 0.6);
   --gantt-today-line: #E11D48;
 }
 
@@ -241,7 +272,8 @@ button,
 /**
  * .glass-card:
  * Thẻ kính nổi dùng cho Task Cards, Dashboard Widgets, KPI Cards.
- * Giữ độ trong suốt tinh tế, không over-blur để tối ưu 60fps render.
+ * Dark mode: bg-slate-900/65 border-white/10 shadow-xl
+ * Light mode: bg-white/85 border-slate-200/90 shadow-sm
  */
 .glass-card {
   background: var(--bg-surface);
@@ -252,7 +284,8 @@ button,
   box-shadow: var(--shadow-glass);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.2s ease;
+              border-color 0.2s ease,
+              background-color 0.2s ease;
   will-change: transform, box-shadow;
 }
 
@@ -261,10 +294,29 @@ button,
   box-shadow: var(--shadow-elevation-mid);
 }
 
+/* Light mode card override for maximum contrast & crispness */
+html:not(.dark) .glass-card,
+[data-theme="light"] .glass-card,
+body.light-theme .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  color: #0F172A;
+}
+
+html.dark .glass-card,
+[data-theme="dark"] .glass-card {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-glass);
+  color: #F8FAFC;
+}
+
 /**
  * .glass-nav:
  * Thanh điều hướng nổi (Floating Header/Sidebar).
- * Giữ vị trí sticky với z-index cao và hiệu ứng đổ bóng mỏng.
+ * Light mode: bg-white/90 border-r border-b border-slate-200 text-slate-800
+ * Dark mode: bg-slate-900/65 border-white/10 text-slate-100
  */
 .glass-nav {
   background: var(--bg-surface);
@@ -275,7 +327,22 @@ button,
   position: sticky;
   top: 0;
   z-index: 40;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html:not(.dark) .glass-nav,
+[data-theme="light"] .glass-nav,
+body.light-theme .glass-nav {
+  background: rgba(255, 255, 255, 0.90);
+  border-color: #E2E8F0;
+  color: #1E293B;
+}
+
+html.dark .glass-nav,
+[data-theme="dark"] .glass-nav {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #F8FAFC;
 }
 
 /**
@@ -917,16 +984,25 @@ button,
 }
 
 /* Light mode orb opacity adjustment */
+html:not(.dark) .ambient-container,
+[data-theme="light"] .ambient-container,
+body.light-theme .ambient-container {
+  opacity: 0.18;
+}
+
+html:not(.dark) .ambient-orb-primary,
 [data-theme="light"] .ambient-orb-primary,
 body.light-theme .ambient-orb-primary {
   background: rgba(99, 102, 241, 0.08);
 }
 
+html:not(.dark) .ambient-orb-secondary,
 [data-theme="light"] .ambient-orb-secondary,
 body.light-theme .ambient-orb-secondary {
   background: rgba(139, 92, 246, 0.06);
 }
 
+html:not(.dark) .ambient-orb-accent,
 [data-theme="light"] .ambient-orb-accent,
 body.light-theme .ambient-orb-accent {
   background: rgba(14, 165, 233, 0.06);
