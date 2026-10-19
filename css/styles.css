@@ -1,0 +1,1018 @@
+/**
+ * ==============================================================================
+ * TASKFLOW ARCHITECTURE DESIGN SYSTEM (styles.css)
+ * Theme: Deep Slate & Electric Neo-Violet (Xu hướng 2026/2027)
+ * Author: Senior UI/UX Designer & CSS Architect
+ * Compliant with: colorweb.md, skill.md, and ai_detected.md
+ * ==============================================================================
+ */
+
+/* ==========================================================================
+   1. CSS VARIABLES (DESIGN TOKENS - DARK & LIGHT THEMES)
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  /* Color Palette - Dark Mode (Default) */
+  --bg-main: #090D16;
+  --bg-surface: rgba(15, 23, 42, 0.65);
+  --bg-surface-solid: #0F172A;
+  --bg-surface-hover: rgba(30, 41, 59, 0.75);
+  --bg-elevated: rgba(30, 41, 59, 0.85);
+
+  /* Card & Glass Borders */
+  --border-card: rgba(255, 255, 255, 0.08);
+  --border-card-hover: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: #6366F1;
+
+  /* Typography Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #0F172A;
+
+  /* Brand & Accent Colors */
+  --primary-accent: #6366F1;
+  --primary-accent-hover: #4F46E5;
+  --primary-accent-glow: rgba(99, 102, 241, 0.25);
+  --secondary-accent: #8B5CF6;
+  --secondary-accent-hover: #7C3AED;
+  --secondary-accent-glow: rgba(139, 92, 246, 0.2);
+
+  /* Kanban Status Columns & Borders */
+  --kanban-todo-bg: rgba(100, 116, 139, 0.1);
+  --kanban-todo-text: #94A3B8;
+  --kanban-todo-border: rgba(100, 116, 139, 0.2);
+  --kanban-todo-col-border: rgba(51, 65, 85, 0.4);
+
+  --kanban-doing-bg: rgba(14, 165, 233, 0.1);
+  --kanban-doing-text: #38BDF8;
+  --kanban-doing-border: rgba(14, 165, 233, 0.2);
+  --kanban-doing-col-border: rgba(14, 165, 233, 0.3);
+
+  --kanban-done-bg: rgba(16, 185, 129, 0.1);
+  --kanban-done-text: #34D399;
+  --kanban-done-border: rgba(16, 185, 129, 0.2);
+  --kanban-done-col-border: rgba(16, 185, 129, 0.3);
+
+  /* Priority Tokens */
+  --priority-critical-bg: rgba(244, 63, 94, 0.15);
+  --priority-critical-text: #FB7185;
+  --priority-critical-border: rgba(244, 63, 94, 0.3);
+
+  --priority-high-bg: rgba(245, 158, 11, 0.15);
+  --priority-high-text: #FBBF24;
+  --priority-high-border: rgba(245, 158, 11, 0.3);
+
+  --priority-medium-bg: rgba(99, 102, 241, 0.15);
+  --priority-medium-text: #818CF8;
+  --priority-medium-border: rgba(99, 102, 241, 0.3);
+
+  --priority-low-bg: rgba(100, 116, 139, 0.15);
+  --priority-low-text: #94A3B8;
+  --priority-low-border: rgba(100, 116, 139, 0.3);
+
+  /* Glassmorphism Soft Elevations & Shadows */
+  --glass-blur: 12px;
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-elevation-low: 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-mid: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-high: 0 20px 35px -10px rgba(0, 0, 0, 0.65), 0 10px 15px -8px rgba(99, 102, 241, 0.2);
+
+  /* Scrollbar Tokens */
+  --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.45);
+  --scrollbar-track: rgba(15, 23, 42, 0.4);
+
+  /* Gantt Grid Tokens */
+  --gantt-header-bg: rgba(15, 23, 42, 0.85);
+  --gantt-grid-line: rgba(255, 255, 255, 0.05);
+  --gantt-weekend-bg: rgba(255, 255, 255, 0.015);
+  --gantt-today-line: #F43F5E;
+}
+
+[data-theme="light"],
+body.light-theme {
+  /* Color Palette - Light Mode Tokens */
+  --bg-main: #F8FAFC;
+  --bg-surface: rgba(255, 255, 255, 0.75);
+  --bg-surface-solid: #FFFFFF;
+  --bg-surface-hover: rgba(241, 245, 249, 0.85);
+  --bg-elevated: #FFFFFF;
+
+  /* Card & Glass Borders */
+  --border-card: rgba(226, 232, 240, 0.8);
+  --border-card-hover: rgba(203, 213, 225, 1);
+  --border-subtle: rgba(226, 232, 240, 0.6);
+  --border-focus: #4F46E5;
+
+  /* Typography Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-inverse: #F8FAFC;
+
+  /* Brand & Accent Colors */
+  --primary-accent: #4F46E5;
+  --primary-accent-hover: #4338CA;
+  --primary-accent-glow: rgba(79, 70, 229, 0.18);
+  --secondary-accent: #7C3AED;
+  --secondary-accent-hover: #6D28D9;
+  --secondary-accent-glow: rgba(124, 58, 237, 0.15);
+
+  /* Kanban Status Columns & Borders */
+  --kanban-todo-bg: rgba(100, 116, 139, 0.08);
+  --kanban-todo-text: #475569;
+  --kanban-todo-border: rgba(100, 116, 139, 0.25);
+  --kanban-todo-col-border: rgba(203, 213, 225, 0.8);
+
+  --kanban-doing-bg: rgba(14, 165, 233, 0.08);
+  --kanban-doing-text: #0284C7;
+  --kanban-doing-border: rgba(14, 165, 233, 0.25);
+  --kanban-doing-col-border: rgba(14, 165, 233, 0.35);
+
+  --kanban-done-bg: rgba(16, 185, 129, 0.08);
+  --kanban-done-text: #059669;
+  --kanban-done-border: rgba(16, 185, 129, 0.25);
+  --kanban-done-col-border: rgba(16, 185, 129, 0.35);
+
+  /* Priority Tokens */
+  --priority-critical-bg: rgba(244, 63, 94, 0.1);
+  --priority-critical-text: #E11D48;
+  --priority-critical-border: rgba(244, 63, 94, 0.25);
+
+  --priority-high-bg: rgba(245, 158, 11, 0.1);
+  --priority-high-text: #D97706;
+  --priority-high-border: rgba(245, 158, 11, 0.25);
+
+  --priority-medium-bg: rgba(79, 70, 229, 0.1);
+  --priority-medium-text: #4F46E5;
+  --priority-medium-border: rgba(79, 70, 229, 0.25);
+
+  --priority-low-bg: rgba(100, 116, 139, 0.1);
+  --priority-low-text: #64748B;
+  --priority-low-border: rgba(100, 116, 139, 0.25);
+
+  /* Glassmorphism Soft Elevations & Shadows */
+  --glass-blur: 12px;
+  --shadow-glass: 0 8px 30px 0 rgba(148, 163, 184, 0.18);
+  --shadow-elevation-low: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-elevation-mid: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-elevation-high: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+
+  /* Scrollbar Tokens */
+  --scrollbar-thumb: rgba(100, 116, 139, 0.25);
+  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.5);
+  --scrollbar-track: rgba(241, 245, 249, 0.8);
+
+  /* Gantt Grid Tokens */
+  --gantt-header-bg: rgba(248, 250, 252, 0.9);
+  --gantt-grid-line: rgba(226, 232, 240, 0.8);
+  --gantt-weekend-bg: rgba(241, 245, 249, 0.5);
+  --gantt-today-line: #E11D48;
+}
+
+/* ==========================================================================
+   2. GLOBAL RESET & BASE STYLES
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Accessible interactive touch targets (Rubric: min 44x44px touch-friendly) */
+button,
+a,
+input,
+select,
+textarea,
+.interactive-target {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+.btn-touch {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Accessibility Focus Ring */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   3. GLASSMORPHISM CORE UTILITY CLASSES
+   ========================================================================== */
+
+/**
+ * .glass-card:
+ * Thẻ kính nổi dùng cho Task Cards, Dashboard Widgets, KPI Cards.
+ * Giữ độ trong suốt tinh tế, không over-blur để tối ưu 60fps render.
+ */
+.glass-card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-card);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-glass);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease;
+  will-change: transform, box-shadow;
+}
+
+.glass-card:hover {
+  border-color: var(--border-card-hover);
+  box-shadow: var(--shadow-elevation-mid);
+}
+
+/**
+ * .glass-nav:
+ * Thanh điều hướng nổi (Floating Header/Sidebar).
+ * Giữ vị trí sticky với z-index cao và hiệu ứng đổ bóng mỏng.
+ */
+.glass-nav {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-card);
+  box-shadow: var(--shadow-elevation-low);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/**
+ * .glass-modal & .glass-modal-backdrop:
+ * Hộp thoại Popup đạt chuẩn WCAG AAA với backdrop làm mờ toàn cảnh.
+ */
+.glass-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(9, 13, 22, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+  opacity: 1;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-modal {
+  background: var(--bg-surface-solid);
+  background-color: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-card);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-elevation-high);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 51;
+  transform-origin: center;
+  animation: modalEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/**
+ * .glass-panel:
+ * Bảng điều khiển phụ, Popover, Dropdown menu.
+ */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-card);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-elevation-mid);
+}
+
+/* ==========================================================================
+   4. CUSTOM SCROLLBAR (SIÊU MỎNG, BO TRÒN THEO CHUẨN DESIGN)
+   ========================================================================== */
+
+/* Webkit-based browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox standard custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Cột Kanban & Bảng Báo Cáo Scrollbar tinh chỉnh */
+.kanban-list::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.custom-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.kanban-list::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+}
+
+.kanban-list::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover,
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ==========================================================================
+   5. KEYFRAME ANIMATIONS & MICRO-INTERACTIONS
+   ========================================================================== */
+
+/**
+ * 1. Spring Drop: Hiệu ứng nảy vật lý tự nhiên khi thả thẻ Kanban vào cột mới.
+ * Sử dụng cubic-bezier dao động nhẹ mô phỏng lò xo (Spring Curve).
+ */
+@keyframes springDrop {
+  0% {
+    transform: scale(1.04) translateY(-6px);
+    box-shadow: var(--shadow-elevation-high);
+  }
+  35% {
+    transform: scale(0.98) translateY(2px);
+  }
+  65% {
+    transform: scale(1.01) translateY(-1px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    box-shadow: var(--shadow-elevation-low);
+  }
+}
+
+.animate-spring-drop {
+  animation: springDrop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, box-shadow;
+}
+
+/**
+ * 2. Pulse Critical: Nhịp đập nhẹ nhàng và tinh tế cho badge mức độ 'Critical'.
+ * Chỉ animate opacity và scale vi mô để không tạo layout thrashing.
+ */
+@keyframes pulseCritical {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 5px rgba(244, 63, 94, 0);
+  }
+}
+
+.animate-pulse-critical,
+.badge-critical.is-pulsing {
+  animation: pulseCritical 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/**
+ * 3. Toast Slide Up: Thông báo trượt mượt mà từ góc dưới màn hình.
+ */
+@keyframes toastSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.92);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastSlideDown {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.92);
+  }
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  min-width: 300px;
+  max-width: 420px;
+  padding: 0.875rem 1.25rem;
+  border-radius: 0.75rem;
+  background: var(--bg-surface-solid);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-elevation-high);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: toastSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-item.is-dismissing {
+  animation: toastSlideDown 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/**
+ * Modal enter animation
+ */
+@keyframes modalEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Drag & Drop Feedback states */
+.task-card.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.97) rotate(-1deg);
+  cursor: grabbing;
+}
+
+.kanban-list.is-drag-over {
+  background: rgba(99, 102, 241, 0.06);
+  border: 2px dashed var(--primary-accent);
+  border-radius: 0.75rem;
+}
+
+/* ==========================================================================
+   6. KANBAN BOARD LAYOUT (CSS GRID RESPONSIVE - 3 CỘT)
+   ========================================================================== */
+
+/**
+ * Kanban Board:
+ * Desktop: Bố cục Grid 3 cột theo Rubric (To-do, In-Progress, Done)
+ * Mobile & Tablet: Tự động chuyển thành snap-scroll ngang mượt mà.
+ */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+  width: 100%;
+}
+
+.kanban-column {
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 12rem);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-elevation-low);
+  transition: border-color 0.2s ease;
+}
+
+/* Column Variants with Specific Borders (colorweb.md Section 2) */
+.kanban-column[data-status="todo"],
+.kanban-column.column-todo {
+  border: 1px solid var(--kanban-todo-col-border);
+}
+
+.kanban-column[data-status="doing"],
+.kanban-column.column-doing {
+  border: 1px solid var(--kanban-doing-col-border);
+}
+
+.kanban-column[data-status="done"],
+.kanban-column.column-done {
+  border: 1px solid var(--kanban-done-col-border);
+}
+
+/* Column Header */
+.kanban-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kanban-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.kanban-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Task List Container */
+.kanban-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  flex: 1 1 auto;
+  min-height: 120px;
+}
+
+/* Task Card inside Column */
+.task-card {
+  position: relative;
+  padding: 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-card);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-elevation-low);
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.18s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevation-mid);
+  border-color: var(--border-card-hover);
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+/* Responsive Kanban: Mobile & Tablet Snap-Scroll (skill.md Section 3) */
+@media (max-width: 1024px) {
+  .kanban-board {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 1rem;
+    gap: 1.25rem;
+    padding-bottom: 1.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-column {
+    flex: 0 0 85vw;
+    max-width: 380px;
+    scroll-snap-align: start;
+    max-height: calc(100vh - 10rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .kanban-column {
+    flex: 0 0 90vw;
+  }
+}
+
+/* ==========================================================================
+   7. GANTT & TIMELINE LAYOUT (CSS GRID)
+   ========================================================================== */
+
+/**
+ * Gantt Timeline:
+ * Bố cục dòng thời gian dự án trực quan trên CSS Grid nhiều cột theo ngày/tuần.
+ */
+.gantt-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-card);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-glass);
+  padding: 1.25rem;
+}
+
+.gantt-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--gantt-header-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-card);
+}
+
+/* Gantt Grid System */
+.gantt-grid {
+  display: grid;
+  grid-template-columns: 240px repeat(var(--gantt-columns, 30), minmax(44px, 1fr));
+  position: relative;
+  min-width: 900px;
+}
+
+/* Header Cells */
+.gantt-cell-header {
+  padding: 0.625rem 0.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--gantt-grid-line);
+}
+
+.gantt-cell-header.is-weekend {
+  background: var(--gantt-weekend-bg);
+  color: var(--text-muted);
+}
+
+.gantt-cell-header.is-today {
+  color: var(--primary-accent);
+  font-weight: 700;
+  position: relative;
+}
+
+.gantt-cell-header.is-today::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background-color: var(--gantt-today-line);
+  border-radius: 2px;
+}
+
+/* Gantt Task Rows */
+.gantt-row {
+  display: contents;
+}
+
+.gantt-task-meta {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--gantt-grid-line);
+  border-right: 1px solid var(--gantt-grid-line);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--bg-surface);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.gantt-track-area {
+  grid-column: 2 / -1;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--gantt-columns, 30), minmax(44px, 1fr));
+  align-items: center;
+  border-bottom: 1px solid var(--gantt-grid-line);
+  min-height: 48px;
+}
+
+/* Gantt Task Bar */
+.gantt-bar {
+  grid-column: var(--start-col, 1) / span var(--duration-col, 4);
+  height: 28px;
+  background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.625rem;
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gantt-bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
+}
+
+.gantt-bar.is-critical {
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.35);
+}
+
+.gantt-bar.is-done {
+  background: linear-gradient(135deg, #10B981, #34D399);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+/* Progress Fill inside Gantt Bar */
+.gantt-bar-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--progress, 0%);
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   8. STATUS & PRIORITY BADGES (colorweb.md Section 2 & 3)
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Status Badges */
+.badge-todo {
+  background-color: var(--kanban-todo-bg);
+  color: var(--kanban-todo-text);
+  border: 1px solid var(--kanban-todo-border);
+}
+
+.badge-doing {
+  background-color: var(--kanban-doing-bg);
+  color: var(--kanban-doing-text);
+  border: 1px solid var(--kanban-doing-border);
+}
+
+.badge-done {
+  background-color: var(--kanban-done-bg);
+  color: var(--kanban-done-text);
+  border: 1px solid var(--kanban-done-border);
+}
+
+/* Priority Badges */
+.badge-critical {
+  background-color: var(--priority-critical-bg);
+  color: var(--priority-critical-text);
+  border: 1px solid var(--priority-critical-border);
+}
+
+.badge-high {
+  background-color: var(--priority-high-bg);
+  color: var(--priority-high-text);
+  border: 1px solid var(--priority-high-border);
+}
+
+.badge-medium {
+  background-color: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
+  border: 1px solid var(--priority-medium-border);
+}
+
+.badge-low {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-text);
+  border: 1px solid var(--priority-low-border);
+}
+
+/* Priority Dot indicator */
+.priority-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background-color: currentColor;
+}
+
+/* ==========================================================================
+   9. AMBIENT BACKGROUND GLOW ORBS (colorweb.md Section 4)
+   ========================================================================== */
+
+.ambient-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: -10;
+}
+
+.ambient-orb-primary {
+  position: absolute;
+  top: -10rem;
+  left: -10rem;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 9999px;
+  filter: blur(128px);
+}
+
+.ambient-orb-secondary {
+  position: absolute;
+  top: 50%;
+  right: -10rem;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(139, 92, 246, 0.15);
+  border-radius: 9999px;
+  filter: blur(128px);
+}
+
+.ambient-orb-accent {
+  position: absolute;
+  bottom: -10rem;
+  left: 33.333%;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(14, 165, 233, 0.15);
+  border-radius: 9999px;
+  filter: blur(128px);
+}
+
+/* Light mode orb opacity adjustment */
+[data-theme="light"] .ambient-orb-primary,
+body.light-theme .ambient-orb-primary {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+[data-theme="light"] .ambient-orb-secondary,
+body.light-theme .ambient-orb-secondary {
+  background: rgba(139, 92, 246, 0.06);
+}
+
+[data-theme="light"] .ambient-orb-accent,
+body.light-theme .ambient-orb-accent {
+  background: rgba(14, 165, 233, 0.06);
+}
+
+/* ==========================================================================
+   10. HIGH CONTRAST DATA TABLES & EMPTY STATES (ai_detected.md)
+   ========================================================================== */
+
+/* Report Tables: High legibility & solid backgrounds */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-card);
+  background: var(--bg-surface-solid);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.data-table th {
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-card);
+  background: var(--bg-surface-solid);
+}
+
+.data-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.data-table tr:hover td {
+  background-color: var(--bg-surface-hover);
+}
+
+/* Empty States */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+  color: var(--primary-accent);
+}
+
+.empty-state-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.empty-state-desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 260px;
+}
+
+/* ==========================================================================
+   11. ACCESSIBILITY & MOTION PREFERENCES
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
