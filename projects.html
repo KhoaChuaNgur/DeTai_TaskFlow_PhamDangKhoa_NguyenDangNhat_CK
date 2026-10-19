@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow - Quản Lý Không Gian Dự Án</title>
+  <meta name="description" content="Khởi tạo, cấu hình thời hạn và phân bổ nguồn lực đội ngũ theo phương pháp Agile" />
+
+  <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('taskflow_theme');
+        const isDark = savedTheme ? savedTheme === 'dark' : true;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            main: 'var(--bg-main)',
+            surface: 'var(--bg-surface)',
+            primary: '#6366F1',
+            secondary: '#8B5CF6'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom Styles: Glassmorphism, 3D Card Flip, Custom Scrollbar & Keyframe Animations -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="bg-[#F8FAFC] dark:bg-[#090D16] text-slate-800 dark:text-slate-100 min-h-screen font-sans antialiased overflow-hidden selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+
+  <!-- ========================================================================
+       1. AMBIENT BACKGROUND GLOW ORBS
+       ======================================================================== -->
+  <div class="ambient-container" aria-hidden="true">
+    <div class="ambient-orb-primary"></div>
+    <div class="ambient-orb-secondary"></div>
+    <div class="ambient-orb-accent"></div>
+  </div>
+
+  <!-- ========================================================================
+       2. BỐ CỤC KHUNG ỨNG DỤNG (APP SHELL CONTAINER)
+       Chỉ sử dụng 2 thẻ giữ chỗ duy nhất để AppLayout.init() nạp động
+       ======================================================================== -->
+  <div class="flex h-screen overflow-hidden">
+    <!-- Vị trí nạp động Sidebar chung -->
+    <aside id="app-sidebar"></aside>
+
+    <!-- Khối Nội dung Chính và Header -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <!-- Vị trí nạp động Header chung -->
+      <header id="app-header"></header>
+
+      <!-- Vùng cuộn nội dung Projects -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 custom-scroll bg-transparent">
+
+        <!-- ====================================================================
+             3. THANH ĐIỀU KHIỂN & TÌM KIẾM THÔNG MINH AUTOCOMPLETE
+             ==================================================================== -->
+        <section class="glass-card p-5 sm:p-6 relative border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            
+            <!-- Ô tìm kiếm Google-style Autocomplete -->
+            <div class="relative flex-1 max-w-xl">
+              <label for="projectSearchInput" class="sr-only">Tìm kiếm dự án</label>
+              <div class="relative flex items-center">
+                <span class="absolute left-4 text-slate-400 pointer-events-none">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="projectSearchInput" 
+                  autocomplete="off"
+                  placeholder="Tìm kiếm dự án theo tên, mã PRJ, công nghệ..." 
+                  class="w-full pl-12 pr-10 py-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm transition-all"
+                />
+                <button 
+                  id="btnClearSearch" 
+                  type="button" 
+                  title="Xóa tìm kiếm" 
+                  class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden p-1"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              <!-- Google-style Autocomplete Dropdown Menu -->
+              <div 
+                id="searchAutocompleteDropdown" 
+                class="absolute left-0 right-0 top-full mt-2 glass-card bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 shadow-2xl rounded-xl hidden z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-72 overflow-y-auto custom-scroll"
+                role="listbox"
+              >
+                <!-- Render động các gợi ý -->
+              </div>
+            </div>
+
+            <!-- Nút hành động & Tạo dự án -->
+            <div class="flex items-center gap-3">
+              <!-- Bộ đếm tổng dự án -->
+              <span id="projectTotalCounter" class="text-xs font-semibold text-slate-600 dark:text-slate-400 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 hidden sm:inline-flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                <span>0 dự án</span>
+              </span>
+
+              <!-- Nút Tạo dự án mới (Phân quyền: Admin) -->
+              <button 
+                id="btnOpenCreateProjectModal" 
+                type="button" 
+                class="btn-touch px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 flex items-center gap-2 active:scale-95"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Tạo Dự Án Mới</span>
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ====================================================================
+             4. KHỐI PHÂN BỔ NGUỒN LỰC ĐỘI NGŨ (RESOURCE ALLOCATION WORKLOAD)
+             ==================================================================== -->
+        <section class="glass-card p-5 sm:p-6 border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Phân Bổ Nguồn Lực Đội Ngũ (Workload Allocation)
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Theo dõi khối lượng công việc thực tế và cân bằng tải nhân sự</p>
+            </div>
+            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5">
+              Thời gian thực
+            </span>
+          </div>
+
+          <!-- Danh sách thanh đo tải của từng nhân sự -->
+          <div id="resourceAllocationContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Render động từ renderResourceAllocation() -->
+          </div>
+        </section>
+
+        <!-- ====================================================================
+             5. LƯỚI DỰ ÁN 3D CARD FLIP VỚI TYPEWRITER MẶT SAU
+             ==================================================================== -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Không Gian Dự Án Đang Vận Hành</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Rê chuột lên thẻ để lật 3D xem giải mã thông tin chi tiết</p>
+            </div>
+          </div>
+
+          <!-- Lưới 3 cột Responsive -->
+          <div id="projectsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Sẽ được nạp động từ renderProjectsGrid() -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       6. MODAL TẠO / CHỈNH SỬA DỰ ÁN (GLASSMORPHISM POPUP)
+       ======================================================================== -->
+  <div id="projectModalBackdrop" class="glass-modal-backdrop hidden" aria-hidden="true">
+    <div class="glass-modal p-6 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10 mb-6">
+        <div>
+          <h3 id="modalTitle" class="text-lg font-bold text-slate-900 dark:text-white">Khởi Tạo Không Gian Dự Án Mới</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Điền đầy đủ thông số mục tiêu và phân bổ nhân sự</p>
+        </div>
+        <button 
+          id="btnCloseProjectModal" 
+          type="button" 
+          title="Đóng modal" 
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Form nhập liệu -->
+      <form id="projectForm" class="space-y-4">
+        <input type="hidden" id="editProjectId" value="" />
+
+        <!-- Tên dự án -->
+        <div>
+          <label for="projectNameInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+            Tên dự án <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="projectNameInput" 
+            required 
+            placeholder="VD: Cổng thanh toán & Tích hợp VNPay" 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+          />
+        </div>
+
+        <!-- Mã dự án & Danh mục -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="projectCodeInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+              Mã dự án (Code) <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="projectCodeInput" 
+              required 
+              placeholder="VD: VNPAY-GW" 
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm uppercase focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+            />
+          </div>
+          <div>
+            <label for="projectCategoryInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+              Danh mục / Tag
+            </label>
+            <input 
+              type="text" 
+              id="projectCategoryInput" 
+              placeholder="VD: Fintech / Backend" 
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Chọn hạn chót bằng thẻ chuẩn: <input type="datetime-local"> -->
+        <div>
+          <label for="projectDeadline" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+            Hạn chót hoàn thành (Deadline) <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="datetime-local" 
+            id="projectDeadline" 
+            required 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+          />
+        </div>
+
+        <!-- Mô tả dự án -->
+        <div>
+          <label for="projectDescInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+            Mô tả chi tiết &amp; Mục tiêu
+          </label>
+          <textarea 
+            id="projectDescInput" 
+            rows="3" 
+            placeholder="Mô tả các yêu cầu kỹ thuật và cột mốc Sprint cần bàn giao..."
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Màu sắc nhận diện -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+            Màu sắc nhận diện
+          </label>
+          <div class="flex items-center gap-3" id="colorPickerContainer">
+            <button type="button" data-color="#6366F1" class="w-8 h-8 rounded-full bg-[#6366F1] ring-2 ring-offset-2 ring-indigo-500 ring-offset-slate-900 focus:outline-none color-choice"></button>
+            <button type="button" data-color="#8B5CF6" class="w-8 h-8 rounded-full bg-[#8B5CF6] focus:outline-none color-choice"></button>
+            <button type="button" data-color="#06B6D4" class="w-8 h-8 rounded-full bg-[#06B6D4] focus:outline-none color-choice"></button>
+            <button type="button" data-color="#10B981" class="w-8 h-8 rounded-full bg-[#10B981] focus:outline-none color-choice"></button>
+            <button type="button" data-color="#F59E0B" class="w-8 h-8 rounded-full bg-[#F59E0B] focus:outline-none color-choice"></button>
+            <button type="button" data-color="#F43F5E" class="w-8 h-8 rounded-full bg-[#F43F5E] focus:outline-none color-choice"></button>
+            <input type="hidden" id="selectedProjectColor" value="#6366F1" />
+          </div>
+        </div>
+
+        <!-- Phân bổ thành viên chịu trách nhiệm -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+            Phân bổ thành viên đội ngũ
+          </label>
+          <div id="membersCheckboxContainer" class="space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 max-h-40 overflow-y-auto custom-scroll">
+            <!-- Nạp động danh sách checkbox thành viên -->
+          </div>
+        </div>
+
+        <!-- Nút Submit / Cancel -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+          <button 
+            type="button" 
+            id="btnCancelProjectModal" 
+            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          >
+            Hủy Bỏ
+          </button>
+          <button 
+            type="submit" 
+            id="btnSaveProject" 
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all"
+          >
+            Lưu Dự Án
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       7. CÁC MODULE JAVASCRIPT ĐỘC LẬP & KHỞI CHẠY APP SHELL
+       ======================================================================== -->
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/projects.js"></script>
+
+  <script>
+    // Kích hoạt App Shell theo chuẩn quy định
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.AppLayout && typeof AppLayout.init === "function") {
+        AppLayout.init(
+          "Quản Lý Không Gian Dự Án", 
+          "Khởi tạo, cấu hình thời hạn và phân bổ nguồn lực đội ngũ"
+        );
+      }
+    });
+  </script>
+</body>
+</html>
