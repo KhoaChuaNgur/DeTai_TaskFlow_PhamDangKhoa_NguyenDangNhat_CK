@@ -26,6 +26,10 @@ Tuyệt đối không gộp chung HTML, CSS, JS trong một file. Tuân thủ s�
   - `timeline.js`: Biểu đồ Gantt trực quan bằng CSS Grid.
   - `reports.js`: Stopwatch timer, Timesheet logs, Export CSV.
   - `sheets-sync.js`: Kết nối Google Apps Script Webhook.
+### QUY CHUẨN ĐỒNG BỘ APP SHELL (SIDEBAR & HEADER):
+- Mọi trang HTML (1, 2, 3, 4, 5) KHÔNG ĐƯỢC tự viết cứng lại HTML của Sidebar và Header.
+- Bắt buộc dùng 2 thẻ giữ chỗ: `<aside id="app-sidebar"></aside>` và `<header id="app-header"></header>`.
+- Cuối mỗi trang, nhúng file `js/layout.js` và gọi `AppLayout.init(pageTitle, pageDesc)` để tự động render Sidebar, Header, nút Dark Mode và nhận diện active link chính xác 100%.
 
 ---
 

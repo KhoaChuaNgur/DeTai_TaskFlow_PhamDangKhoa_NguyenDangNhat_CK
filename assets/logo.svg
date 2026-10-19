@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="tfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="tfGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.3" />
+    </linearGradient>
+    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#4F46E5" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Vòng tròn nền với gradient sang trọng -->
+  <circle cx="60" cy="60" r="54" fill="url(#tfGrad)" filter="url(#shadowFilter)" />
+
+  <!-- Viền sáng bán trong suốt tạo chiều sâu kính -->
+  <circle cx="60" cy="60" r="53" fill="none" stroke="rgba(255, 255, 255, 0.35)" stroke-width="2" />
+
+  <!-- Biểu tượng TaskFlow Geometric (Chữ T & F cách điệu tích hợp mũi tên tiến trình) -->
+  <g transform="translate(30, 28)" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Thanh ngang chính của T -->
+    <path d="M 4 8 L 56 8" stroke-width="7" />
+    <!-- Thân dọc của T & F -->
+    <path d="M 20 8 L 20 54" stroke-width="7" />
+    <!-- Nhánh ngang của F -->
+    <path d="M 20 28 L 44 28" stroke-width="7" />
+    <!-- Mũi tên tiến trình Agile nhỏ ở góc dưới -->
+    <path d="M 38 46 L 48 46 L 48 36" stroke-width="4.5" stroke="#38BDF8" />
+    <path d="M 28 56 L 48 46" stroke-width="4.5" stroke="#38BDF8" />
+  </g>
+</svg>
