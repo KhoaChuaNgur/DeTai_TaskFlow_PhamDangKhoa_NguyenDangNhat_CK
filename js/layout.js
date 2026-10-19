@@ -102,6 +102,30 @@ const AppLayout = {
   },
 
   bindEvents() {
+    // Cập nhật thông tin user từ Auth nếu có
+    const authService = window.Auth || window.TaskFlowAuth;
+    if (authService && typeof authService.getCurrentUser === 'function') {
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const avatarEl = document.getElementById("userAvatar");
+        if (nameEl && currentUser.name) nameEl.textContent = currentUser.name;
+        if (roleEl && currentUser.role) roleEl.textContent = currentUser.role;
+        if (avatarEl && currentUser.avatar) avatarEl.src = currentUser.avatar;
+      }
+    }
+
+    // Lắng nghe đếm ngược nhịp tim phiên ngân hàng từ auth.js
+    window.addEventListener("sessionTick", (e) => {
+      const countdownEl = document.getElementById("sessionCountdown");
+      if (countdownEl && e.detail && typeof e.detail.remainingSeconds === "number") {
+        const mins = String(Math.floor(e.detail.remainingSeconds / 60)).padStart(2, "0");
+        const secs = String(e.detail.remainingSeconds % 60).padStart(2, "0");
+        countdownEl.textContent = `${mins}:${secs}`;
+      }
+    });
+
     const btnTheme = document.getElementById("themeToggleBtn");
     if (btnTheme) {
       btnTheme.addEventListener("click", () => {
@@ -115,8 +139,13 @@ const AppLayout = {
     }
 
     const btnLogout = document.getElementById("btnLogout");
-    if (btnLogout && window.Auth && Auth.logout) {
-      btnLogout.addEventListener("click", () => Auth.logout());
+    if (btnLogout) {
+      btnLogout.addEventListener("click", () => {
+        const auth = window.Auth || window.TaskFlowAuth;
+        if (auth && typeof auth.logout === 'function') {
+          auth.logout();
+        }
+      });
     }
   }
 };

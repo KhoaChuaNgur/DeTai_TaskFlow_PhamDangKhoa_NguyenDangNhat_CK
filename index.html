@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow - Bảng Điều Hành & Tổng Quan Tiến Độ</title>
+  <meta name="description" content="Hệ thống Quản lý Dự án & Tiến độ Công việc Trực quan theo Phương pháp Agile/Kanban" />
+
+  <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('taskflow_theme');
+        const isDark = savedTheme ? savedTheme === 'dark' : true;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            main: '#090D16',
+            surface: 'rgba(15, 23, 42, 0.65)',
+            primary: '#6366F1',
+            secondary: '#8B5CF6'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom Styles: Glassmorphism, CSS Grid, Custom Scrollbar & Keyframe Animations -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <style>
+    /* Con trỏ nhấp nháy cho hiệu ứng gõ chữ Typewriter */
+    .typewriter-cursor {
+      display: inline-block;
+      margin-left: 2px;
+      font-weight: 300;
+      color: #818CF8;
+      animation: blinkCursor 0.8s infinite;
+    }
+    @keyframes blinkCursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+
+<body class="bg-main text-slate-100 min-h-screen font-sans antialiased overflow-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- ========================================================================
+       1. AMBIENT BACKGROUND GLOW ORBS (Hiệu ứng ánh sáng 3D mờ sau kính)
+       ======================================================================== -->
+  <div class="ambient-container" aria-hidden="true">
+    <div class="ambient-orb-primary"></div>
+    <div class="ambient-orb-secondary"></div>
+    <div class="ambient-orb-accent"></div>
+  </div>
+
+  <!-- ========================================================================
+       2. BỐ CỤC KHUNG ỨNG DỤNG (APP SHELL CONTAINER)
+       Tuân thủ nghiêm ngặt yêu cầu: Không viết cứng Sidebar và Header,
+       chỉ sử dụng 2 thẻ giữ chỗ duy nhất để AppLayout.init() nạp động.
+       ======================================================================== -->
+  <div class="flex h-screen overflow-hidden">
+    <!-- Vị trí nạp động Sidebar chung -->
+    <aside id="app-sidebar"></aside>
+
+    <!-- Khối Nội dung Chính và Header -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <!-- Vị trí nạp động Header chung -->
+      <header id="app-header"></header>
+
+      <!-- Vùng cuộn nội dung Dashboard -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 custom-scroll">
+
+        <!-- ====================================================================
+             3. HERO BANNER CHUYÊN NGHIỆP VỚI LOGO TRÒN & TYPEWRITER LOOP
+             ==================================================================== -->
+        <section class="glass-card p-6 sm:p-8 relative overflow-hidden border border-white/10 shadow-2xl">
+          <!-- Hiệu ứng ánh sáng nền mờ bên trong thẻ Hero -->
+          <div class="absolute -right-16 -top-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute right-1/3 -bottom-16 w-48 h-48 bg-violet-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div class="relative z-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <!-- Bên trái: Logo tròn viền phát sáng & Fallback thông minh -->
+            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+              <img 
+                id="hero-logo"
+                src="assets/logo.svg" 
+                alt="TaskFlow Logo" 
+                class="w-full h-full rounded-full object-cover border-2 border-indigo-500/40 shadow-lg shadow-indigo-500/20 transition-transform duration-300 hover:scale-105"
+                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full rounded-full bg-gradient-to-tr from-indigo-500 via-violet-500 to-sky-400 flex items-center justify-center text-white font-black text-2xl border-2 border-indigo-500/40 shadow-lg shadow-indigo-500/20\'>TF</div>';"
+              />
+            </div>
+
+            <!-- Bên phải: Tiêu đề Typewriter Loop và Slogan -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
+                <span class="text-xs uppercase tracking-widest font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                  Agile Platform 2026
+                </span>
+                <span class="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Hệ thống trực tuyến
+                </span>
+              </div>
+
+              <!-- Dòng chữ thương hiệu lớn có hiệu ứng gõ chữ từng ký tự kèm con trỏ nhấp nháy -->
+              <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white flex items-center justify-center sm:justify-start">
+                <span id="typewriter-text" class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-sky-300"></span>
+                <span class="typewriter-cursor">|</span>
+              </h1>
+
+              <!-- Slogan nghiệp vụ chuẩn mực -->
+              <p class="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
+                Hệ thống Quản lý Dự án &amp; Tiến độ Công việc Trực quan theo Phương pháp Agile/Kanban
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================================
+             4. 4 THẺ KPI METRICS GLASSMORPHISM (TÍNH TOÁN TỰ ĐỘNG)
+             ==================================================================== -->
+        <section aria-label="KPI Metrics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          
+          <!-- KPI 1: Dự án đang chạy -->
+          <article class="glass-card p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Dự án đang chạy</span>
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="kpi-active-projects" class="text-3xl font-bold text-white tracking-tight">0</span>
+              <span class="text-xs text-slate-400">dự án</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+              <span class="text-indigo-400 font-semibold">Trạng thái:</span> Đang vận hành Sprint
+            </p>
+          </article>
+
+          <!-- KPI 2: Tiến độ trung bình % -->
+          <article class="glass-card p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tiến độ trung bình</span>
+              <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="kpi-avg-progress" class="text-3xl font-bold text-white tracking-tight">0%</span>
+              <span class="text-xs text-emerald-400 font-medium">Toàn hệ thống</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+              <div id="kpi-progress-bar" class="bg-gradient-to-r from-sky-400 to-indigo-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </article>
+
+          <!-- KPI 3: Tỉ số hoàn thành task -->
+          <article class="glass-card p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tỉ số hoàn thành</span>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="kpi-completion-ratio" class="text-3xl font-bold text-white tracking-tight">0 / 0</span>
+              <span class="text-xs text-slate-400">công việc</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+              <span class="text-emerald-400 font-semibold">Done:</span> Đã nghiệm thu chất lượng
+            </p>
+          </article>
+
+          <!-- KPI 4: Tổng giờ đã cống hiến -->
+          <article class="glass-card p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tổng giờ cống hiến</span>
+              <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="kpi-total-hours" class="text-3xl font-bold text-white tracking-tight">0.0</span>
+              <span class="text-xs text-slate-400">giờ làm</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+              <span class="text-violet-400 font-semibold">Timesheet:</span> Ghi nhận từ Stopwatch
+            </p>
+          </article>
+        </section>
+
+        <!-- ====================================================================
+             5. BỐ CỤC 2 CỘT CHÍNH: TIẾN ĐỘ DỰ ÁN & BIỂU ĐỒ HIỆU SUẤT TUẦN
+             ==================================================================== -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Cột 1 & 2: Danh sách Dự án kèm Progress Bar động -->
+          <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-bold text-white tracking-tight">Tiến Độ Dự Án Trọng Điểm</h2>
+                <p class="text-xs text-slate-400">Tỷ lệ hoàn thành tính tự động theo số task Done</p>
+              </div>
+              <a href="projects.html" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                Xem tất cả
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </a>
+            </div>
+
+            <!-- Container danh sách dự án nạp động từ JS -->
+            <div id="projects-progress-list" class="space-y-3.5">
+              <!-- Sẽ được nạp động từ renderProjects() -->
+            </div>
+          </div>
+
+          <!-- Cột 3: Biểu đồ Hiệu suất tuần (CSS Flexbox Bar Chart 100% thuần) -->
+          <div class="glass-card p-6 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h2 class="text-base font-bold text-white">Hiệu Suất Tuần</h2>
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
+                  Tuần hiện tại
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mb-6">Số giờ làm việc phân bổ từ T2 đến Chủ Nhật</p>
+
+              <!-- Khung Biểu đồ cột CSS Flexbox -->
+              <div class="h-48 flex items-end justify-between gap-2 pt-6 pb-2 border-b border-slate-700/40" id="weekly-chart-bars">
+                <!-- Sẽ được nạp động từ renderWeeklyChart() -->
+              </div>
+            </div>
+
+            <div class="pt-4 flex items-center justify-between text-[11px] text-slate-400">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-indigo-600 to-violet-400"></span>
+                <span>Giờ làm thực tế</span>
+              </div>
+              <span id="chart-max-indicator">Mục tiêu: 8h/ngày</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================================
+             6. DANH SÁCH TÁC VỤ KHẨN CẤP & CẢNH BÁO QUÁ HẠN (CRITICAL / HIGH)
+             ==================================================================== -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold text-white tracking-tight">Tác Vụ Ưu Tiên Cao &amp; Khẩn Cấp</h2>
+              <span id="urgent-count-badge" class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                0
+              </span>
+            </div>
+            <a href="board.html" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+              Mở Bảng Kanban
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+
+          <!-- Container tác vụ khẩn cấp nạp động từ JS -->
+          <div id="urgent-tasks-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Sẽ được nạp động từ renderUrgentTasks() -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       7. CÁC MODULE JAVASCRIPT ĐỘC LẬP & KHỞI CHẠY APP SHELL
+       ======================================================================== -->
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/dashboard.js"></script>
+
+  <script>
+    // Kích hoạt App Shell theo chuẩn quy định
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.AppLayout && typeof AppLayout.init === "function") {
+        AppLayout.init(
+          "Bảng Điều Hành & Tổng Quan Tiến Độ", 
+          "Hệ thống theo dõi hiệu suất và tiến độ dự án thời gian thực"
+        );
+      }
+    });
+  </script>
+</body>
+</html>

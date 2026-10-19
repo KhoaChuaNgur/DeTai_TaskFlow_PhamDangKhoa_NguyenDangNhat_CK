@@ -539,7 +539,8 @@
     Auth.checkFlashMessages();
   }
 
-  // Đóng gói vào namespace toàn cục
+  // Đóng gói vào namespace toàn cục (hỗ trợ cả TaskFlowAuth và Auth alias)
   window.TaskFlowAuth = Auth;
+  window.Auth = Auth;
 
 })(window, document);
