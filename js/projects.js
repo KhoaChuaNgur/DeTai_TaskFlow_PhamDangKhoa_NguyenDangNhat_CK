@@ -153,7 +153,9 @@
    * Helper hiển thị Toast đồng bộ
    */
   function showToast(message, type = 'success') {
-    if (window.TaskFlowAuth && typeof window.TaskFlowAuth.showToast === 'function') {
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, type);
+    } else if (window.TaskFlowAuth && typeof window.TaskFlowAuth.showToast === 'function') {
       window.TaskFlowAuth.showToast(message, type);
     } else {
       alert(message);

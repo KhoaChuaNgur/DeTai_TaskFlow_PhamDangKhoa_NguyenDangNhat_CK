@@ -189,6 +189,10 @@
    * Hiển thị thông báo trượt mượt mà góc màn hình chuẩn design system
    */
   function showToast(message, type = 'success') {
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, type);
+      return;
+    }
     let container = document.getElementById('toastContainer');
     if (!container) {
       container = document.createElement('div');
