@@ -10,7 +10,7 @@
   <script>
     (function () {
       try {
-        const savedTheme = localStorage.getItem('taskflow_theme');
+        const savedTheme = localStorage.getItem('taskflow_theme') || localStorage.getItem('TASKFLOW_THEME');
         const isDark = savedTheme ? savedTheme === 'dark' : true;
         document.documentElement.classList.toggle('dark', isDark);
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -67,12 +67,12 @@
       <header id="app-header"></header>
 
       <!-- Vùng cuộn nội dung Projects -->
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 custom-scroll bg-transparent">
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-7 custom-scroll bg-transparent">
 
         <!-- ====================================================================
-             3. THANH ĐIỀU KHIỂN & TÌM KIẾM THÔNG MINH AUTOCOMPLETE
+             3. THANH ĐIỀU KHIỂN, TÌM KIẾM AUTOCOMPLETE & QUICK FILTER CHIPS
              ==================================================================== -->
-        <section class="glass-card p-5 sm:p-6 relative border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl">
+        <section class="glass-card p-5 sm:p-6 relative z-30 border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl">
           <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             
             <!-- Ô tìm kiếm Google-style Autocomplete -->
@@ -86,23 +86,23 @@
                   type="text" 
                   id="projectSearchInput" 
                   autocomplete="off"
-                  placeholder="Tìm kiếm dự án theo tên, mã PRJ, công nghệ..." 
+                  placeholder="Tìm kiếm theo tên dự án, mã PRJ, công nghệ..." 
                   class="w-full pl-12 pr-10 py-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm transition-all"
                 />
                 <button 
                   id="btnClearSearch" 
                   type="button" 
                   title="Xóa tìm kiếm" 
-                  class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden p-1"
+                  class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden p-1 cursor-pointer"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
 
-              <!-- Google-style Autocomplete Dropdown Menu -->
+              <!-- Google-style Autocomplete Dropdown Menu (Solid Opaque, Elevated Z-Index, No Backdrop Bleed) -->
               <div 
                 id="searchAutocompleteDropdown" 
-                class="absolute left-0 right-0 top-full mt-2 glass-card bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 shadow-2xl rounded-xl hidden z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-72 overflow-y-auto custom-scroll"
+                class="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/15 shadow-2xl rounded-2xl hidden z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80 max-h-72 overflow-y-auto custom-scroll ring-1 ring-black/5 dark:ring-white/10"
                 role="listbox"
               >
                 <!-- Render động các gợi ý -->
@@ -117,11 +117,11 @@
                 <span>0 dự án</span>
               </span>
 
-              <!-- Nút Tạo dự án mới (Phân quyền: Admin) -->
+              <!-- Nút Tạo dự án mới -->
               <button 
                 id="btnOpenCreateProjectModal" 
                 type="button" 
-                class="btn-touch px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 flex items-center gap-2 active:scale-95"
+                class="btn-touch px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Tạo Dự Án Mới</span>
@@ -129,13 +129,30 @@
             </div>
 
           </div>
+
+          <!-- Quick Filter Chips: Bộ lọc trạng thái nhanh phong cách Trello/Notion -->
+          <div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200/60 dark:border-white/5 overflow-x-auto custom-scroll pb-1">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1">Bộ lọc:</span>
+            <button type="button" data-filter="all" class="filter-chip active px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-500/20 cursor-pointer">
+              Tất Cả (<span id="countFilterAll">0</span>)
+            </button>
+            <button type="button" data-filter="active" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
+              ⚡ Đang Chạy (<span id="countFilterActive">0</span>)
+            </button>
+            <button type="button" data-filter="overdue" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
+              ⚠️ Quá Hạn (<span id="countFilterOverdue">0</span>)
+            </button>
+            <button type="button" data-filter="my-projects" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
+              👤 Tôi Tham Gia (<span id="countFilterMine">0</span>)
+            </button>
+          </div>
         </section>
 
         <!-- ====================================================================
-             4. KHỐI PHÂN BỔ NGUỒN LỰC ĐỘI NGŨ (RESOURCE ALLOCATION WORKLOAD)
+             4. KHỐI PHÂN BỔ NGUỒN LỰC ĐỘI NGŨ (THU GỌN / MỞ RỘNG CÔNG THÁI HỌC)
              ==================================================================== -->
-        <section class="glass-card p-5 sm:p-6 border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <section class="glass-card p-5 sm:p-6 relative z-10 border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl transition-all duration-300">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -143,29 +160,46 @@
               </h2>
               <p class="text-xs text-slate-500 dark:text-slate-400">Theo dõi khối lượng công việc thực tế và cân bằng tải nhân sự</p>
             </div>
-            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5">
-              Thời gian thực
-            </span>
+            
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+              <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5 hidden md:inline-block">
+                Thời gian thực
+              </span>
+              <button 
+                id="btnToggleWorkload" 
+                type="button" 
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1 transition-all cursor-pointer"
+                title="Thu gọn hoặc mở rộng danh sách nhân sự"
+              >
+                <span id="toggleWorkloadText">Thu gọn</span>
+                <svg id="toggleWorkloadIcon" class="w-3.5 h-3.5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Danh sách thanh đo tải của từng nhân sự -->
-          <div id="resourceAllocationContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Danh sách thanh đo tải của từng nhân sự (có thể thu gọn/mở rộng) -->
+          <div id="resourceAllocationContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300">
             <!-- Render động từ renderResourceAllocation() -->
           </div>
         </section>
 
         <!-- ====================================================================
-             5. LƯỚI DỰ ÁN 3D CARD FLIP VỚI TYPEWRITER MẶT SAU
+             5. LƯỚI KHÔNG GIAN DỰ ÁN (CLICK-TO-OPEN & CHỦ ĐỘNG LẬT 3D)
              ==================================================================== -->
         <section class="space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Không Gian Dự Án Đang Vận Hành</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Rê chuột lên thẻ để lật 3D xem giải mã thông tin chi tiết</p>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <span>Không Gian Dự Án Đang Vận Hành</span>
+                <span id="badgeActiveFilterText" class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-500/20">Tất cả</span>
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                👉 Nhấp vào thẻ để mở ngay Bảng Kanban • Bấm nút <b class="text-indigo-500">ℹ️ Chi tiết</b> để lật 3D xem giải mã
+              </p>
             </div>
           </div>
 
-          <!-- Lưới 3 cột Responsive -->
+          <!-- Lưới 3 cột Responsive (Bao gồm thẻ shortcut tạo nhanh ở vị trí đầu tiên) -->
           <div id="projectsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Sẽ được nạp động từ renderProjectsGrid() -->
           </div>
@@ -176,28 +210,55 @@
   </div>
 
   <!-- ========================================================================
-       6. MODAL TẠO / CHỈNH SỬA DỰ ÁN (GLASSMORPHISM POPUP)
+       6. MODAL TẠO / CHỈNH SỬA DỰ ÁN (LIVE PREVIEW & AGILE PRESETS)
        ======================================================================== -->
   <div id="projectModalBackdrop" class="glass-modal-backdrop hidden" aria-hidden="true">
-    <div class="glass-modal p-6 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="glass-modal p-6 sm:p-7 max-w-2xl w-full" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       
       <!-- Header Modal -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10 mb-6">
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-white/10 mb-4">
         <div>
           <h3 id="modalTitle" class="text-lg font-bold text-slate-900 dark:text-white">Khởi Tạo Không Gian Dự Án Mới</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Điền đầy đủ thông số mục tiêu và phân bổ nhân sự</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Thiết lập mục tiêu Sprint, màu nhận diện và phân bổ nguồn lực</p>
         </div>
         <button 
           id="btnCloseProjectModal" 
           type="button" 
           title="Đóng modal" 
-          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <!-- Form nhập liệu -->
+      <!-- KHUNG XEM TRƯỚC THẺ TRỰC TIẾP (LIVE CARD PREVIEW THEO CHUẨN WYSIWYG) -->
+      <div class="mb-5 p-3.5 rounded-2xl bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Xem trước diện mạo thẻ (Live Card Preview)
+          </span>
+          <span id="previewProjectCode" class="px-2 py-0.5 text-[10px] font-mono font-bold rounded uppercase tracking-wider bg-indigo-500/15 text-indigo-500 border border-indigo-500/30">
+            PRJ-NEW
+          </span>
+        </div>
+        
+        <!-- Hộp thẻ mô phỏng -->
+        <div id="liveCardPreviewBox" class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-500/40 shadow-md transition-all duration-300">
+          <h4 id="previewProjectName" class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-1">
+            Tên dự án sẽ hiển thị tại đây...
+          </h4>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-2">
+            <span id="previewCategory">Agile Sprint</span>
+            <span id="previewDeadlineText">Hạn chót: 30 ngày tới</span>
+          </div>
+          <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="previewProgressBar" class="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-300" style="width: 45%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form nhập liệu chính -->
       <form id="projectForm" class="space-y-4">
         <input type="hidden" id="editProjectId" value="" />
 
@@ -211,24 +272,34 @@
             id="projectNameInput" 
             required 
             placeholder="VD: Cổng thanh toán & Tích hợp VNPay" 
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
           />
         </div>
 
-        <!-- Mã dự án & Danh mục -->
+        <!-- Mã dự án (Code) & Danh mục -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="projectCodeInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-              Mã dự án (Code) <span class="text-rose-500">*</span>
-            </label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="projectCodeInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Mã dự án (Code)
+              </label>
+              <button 
+                type="button" 
+                id="btnAutoGenerateCode" 
+                class="text-[11px] font-semibold text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer"
+                title="Tự động sinh mã ngẫu nhiên"
+              >
+                <span>🎲</span> Sinh mã
+              </button>
+            </div>
             <input 
               type="text" 
               id="projectCodeInput" 
-              required 
-              placeholder="VD: VNPAY-GW" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm uppercase focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+              placeholder="Tự động sinh hoặc gõ tay" 
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm uppercase focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none font-mono"
             />
           </div>
+
           <div>
             <label for="projectCategoryInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
               Danh mục / Tag
@@ -242,79 +313,154 @@
           </div>
         </div>
 
-        <!-- Chọn hạn chót bằng thẻ chuẩn: <input type="datetime-local"> -->
+        <!-- Hạn chót hoàn thành kèm Agile Quick Presets -->
         <div>
-          <label for="projectDeadline" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-            Hạn chót hoàn thành (Deadline) <span class="text-rose-500">*</span>
-          </label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="projectDeadline" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Hạn chót hoàn thành (Deadline)
+            </label>
+            <div class="flex items-center gap-1 text-[11px]">
+              <span class="text-slate-400 mr-0.5 hidden xs:inline">Nhanh:</span>
+              <button type="button" class="btn-preset-deadline px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 hover:bg-indigo-500/15 hover:text-indigo-500 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer" data-days="7">⚡ 1 tuần</button>
+              <button type="button" class="btn-preset-deadline px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 hover:bg-indigo-500/15 hover:text-indigo-500 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer" data-days="14">🚀 2 tuần</button>
+              <button type="button" class="btn-preset-deadline px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 hover:bg-indigo-500/15 hover:text-indigo-500 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer" data-days="30">📅 1 tháng</button>
+            </div>
+          </div>
           <input 
             type="datetime-local" 
             id="projectDeadline" 
-            required 
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none cursor-pointer"
           />
         </div>
 
         <!-- Mô tả dự án -->
         <div>
           <label for="projectDescInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-            Mô tả chi tiết &amp; Mục tiêu
+            Mục tiêu &amp; Mô tả kỹ thuật
           </label>
           <textarea 
             id="projectDescInput" 
-            rows="3" 
-            placeholder="Mô tả các yêu cầu kỹ thuật và cột mốc Sprint cần bàn giao..."
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none"
+            rows="2" 
+            placeholder="Mô tả mục tiêu Sprint để hiển thị khi lật thẻ 3D..."
+            class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none"
           ></textarea>
         </div>
 
-        <!-- Màu sắc nhận diện -->
+        <!-- Màu sắc nhận diện (Gán DNA màu sắc dự án) -->
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-            Màu sắc nhận diện
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+            Màu sắc nhận diện (Click đổi diện mạo Live Preview)
           </label>
           <div class="flex items-center gap-3" id="colorPickerContainer">
-            <button type="button" data-color="#6366F1" class="w-8 h-8 rounded-full bg-[#6366F1] ring-2 ring-offset-2 ring-indigo-500 ring-offset-slate-900 focus:outline-none color-choice"></button>
-            <button type="button" data-color="#8B5CF6" class="w-8 h-8 rounded-full bg-[#8B5CF6] focus:outline-none color-choice"></button>
-            <button type="button" data-color="#06B6D4" class="w-8 h-8 rounded-full bg-[#06B6D4] focus:outline-none color-choice"></button>
-            <button type="button" data-color="#10B981" class="w-8 h-8 rounded-full bg-[#10B981] focus:outline-none color-choice"></button>
-            <button type="button" data-color="#F59E0B" class="w-8 h-8 rounded-full bg-[#F59E0B] focus:outline-none color-choice"></button>
-            <button type="button" data-color="#F43F5E" class="w-8 h-8 rounded-full bg-[#F43F5E] focus:outline-none color-choice"></button>
+            <button type="button" data-color="#6366F1" title="Chàm Indigo" class="w-8 h-8 rounded-full bg-[#6366F1] ring-2 ring-offset-2 ring-indigo-500 ring-offset-slate-900 focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
+            <button type="button" data-color="#8B5CF6" title="Tím Neo-Violet" class="w-8 h-8 rounded-full bg-[#8B5CF6] focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
+            <button type="button" data-color="#06B6D4" title="Xanh Cyan" class="w-8 h-8 rounded-full bg-[#06B6D4] focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
+            <button type="button" data-color="#10B981" title="Xanh Emerald" class="w-8 h-8 rounded-full bg-[#10B981] focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
+            <button type="button" data-color="#F59E0B" title="Vàng Amber" class="w-8 h-8 rounded-full bg-[#F59E0B] focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
+            <button type="button" data-color="#F43F5E" title="Đỏ Rose" class="w-8 h-8 rounded-full bg-[#F43F5E] focus:outline-none color-choice cursor-pointer transition-transform hover:scale-110"></button>
             <input type="hidden" id="selectedProjectColor" value="#6366F1" />
           </div>
         </div>
 
-        <!-- Phân bổ thành viên chịu trách nhiệm -->
+        <!-- Phân bổ thành viên đội ngũ -->
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-            Phân bổ thành viên đội ngũ
-          </label>
-          <div id="membersCheckboxContainer" class="space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 max-h-40 overflow-y-auto custom-scroll">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Phân bổ nhân sự (<span id="selectedMemberCountBadge" class="text-indigo-500 font-bold">1</span> đã chọn)
+            </label>
+            <div class="flex items-center gap-2 text-[11px]">
+              <button type="button" id="btnSelectAllMembers" class="text-indigo-500 hover:underline cursor-pointer">Chọn tất cả</button>
+              <span class="text-slate-400">•</span>
+              <button type="button" id="btnClearMembers" class="text-slate-400 hover:text-rose-500 hover:underline cursor-pointer">Bỏ chọn</button>
+            </div>
+          </div>
+          <div id="membersCheckboxContainer" class="space-y-1.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 max-h-36 overflow-y-auto custom-scroll">
             <!-- Nạp động danh sách checkbox thành viên -->
           </div>
         </div>
 
         <!-- Nút Submit / Cancel -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
           <button 
             type="button" 
             id="btnCancelProjectModal" 
-            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+            class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
           >
             Hủy Bỏ
           </button>
           <button 
             type="submit" 
             id="btnSaveProject" 
-            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all"
+            class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all cursor-pointer"
           >
-            Lưu Dự Án
+            Lưu Không Gian Dự Án
           </button>
         </div>
       </form>
 
     </div>
   </div>
+
+  <!-- ========================================================================
+       7. MODAL XÁC NHẬN XÓA DỰ ÁN (CUSTOM GLASS CONFIRMATION MODAL)
+       ======================================================================== -->
+  <div id="deleteConfirmModalBackdrop" class="glass-modal-backdrop hidden" aria-hidden="true">
+    <div class="glass-modal p-6 max-w-md w-full border border-rose-500/20 dark:border-rose-500/30 text-center relative overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+      
+      <!-- Họa tiết phát sáng cảnh báo đỏ nhẹ ở nền -->
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-rose-500/10 dark:bg-rose-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+      <!-- Icon cảnh báo dạng huy hiệu (Danger Badge) -->
+      <div class="mx-auto w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center text-rose-500 dark:text-rose-400 mb-4 shadow-inner ring-4 ring-rose-500/5">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+
+      <!-- Tiêu đề & Thông điệp -->
+      <h3 id="deleteModalTitle" class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+        Xác Nhận Xóa Không Gian Dự Án
+      </h3>
+      
+      <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+        Bạn có chắc chắn muốn xóa không gian dự án <b id="deleteProjectNameTarget" class="text-rose-600 dark:text-rose-400 font-extrabold text-sm"></b> <span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400" id="deleteProjectCodeTarget">PRJ</span> không?
+      </p>
+
+      <!-- Hộp cảnh báo dữ liệu liên kết -->
+      <div class="p-3.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-500/20 text-left mb-6 flex items-start gap-3">
+        <span class="text-rose-500 flex-shrink-0 mt-0.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </span>
+        <div class="text-[11px] text-rose-700 dark:text-rose-300 space-y-1">
+          <p class="font-bold">Hành động này không thể hoàn tác!</p>
+          <p class="text-rose-600/90 dark:text-rose-300/80">Toàn bộ thẻ công việc trên <span class="font-semibold text-rose-700 dark:text-rose-200">Bảng Kanban</span> thuộc dự án này cũng sẽ bị xóa vĩnh viễn.</p>
+        </div>
+      </div>
+
+      <!-- Các nút hành động -->
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          id="btnCancelDeleteModal" 
+          type="button" 
+          class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+        >
+          Hủy Bỏ
+        </button>
+        <button 
+          id="btnConfirmDeleteProject" 
+          type="button" 
+          class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs shadow-lg shadow-rose-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          <span>Xóa Vĩnh Viễn</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container chuẩn Glassmorphism -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
   <!-- ========================================================================
        7. CÁC MODULE JAVASCRIPT ĐỘC LẬP & KHỞI CHẠY APP SHELL
