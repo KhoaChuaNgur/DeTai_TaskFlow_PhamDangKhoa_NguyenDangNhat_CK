@@ -1,9 +1,24 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="vi" class="dark" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaskFlow - Đăng Nhập Hệ Thống</title>
+
+  <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện khi đổi chế độ sáng/tối -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('taskflow_theme') || localStorage.getItem('TASKFLOW_THEME');
+        const isDark = savedTheme ? savedTheme === 'dark' : true;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -15,13 +30,13 @@
           }
         }
       }
-    }
+    };
   </script>
   <link rel="stylesheet" href="css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
-<body class="bg-slate-50 dark:bg-[#090D16] text-slate-800 dark:text-slate-100 min-h-screen flex items-center justify-center p-4 relative selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-50 dark:bg-[#090D16] text-slate-800 dark:text-slate-100 min-h-screen flex items-center justify-center p-4 relative selection:bg-indigo-500 selection:text-white transition-colors duration-200">
 
   <!-- Ambient Light Orbs -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -41,23 +56,21 @@
       <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Đăng nhập để vào không gian quản lý tiến độ dự án</p>
     </div>
 
-    <!-- Thông báo lỗi (nếu có) -->
+    <!-- Thông báo lỗi hoặc hết hạn phiên -->
     <div id="loginError" class="hidden mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium text-center"></div>
 
     <!-- Form Đăng Nhập -->
- feature/projects-page
-    <form id="loginForm" onsubmit="return false;" class="space-y-4">
- develop
+    <form id="loginForm" class="space-y-4">
       <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Tài khoản Email</label>
         <input type="email" id="loginEmail" required value="admin@taskflow.dev"
-               class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 text-sm transition-all">
+               class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 text-sm transition-all text-slate-900 dark:text-slate-100">
       </div>
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Mật khẩu</label>
         <input type="password" id="loginPassword" required value="admin123"
-               class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 text-sm transition-all">
+               class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 text-sm transition-all text-slate-900 dark:text-slate-100">
       </div>
 
       <!-- Gợi ý tài khoản demo -->
@@ -66,53 +79,75 @@
         <p>💡 <b>Tài khoản Member:</b> member@taskflow.dev | user123</p>
       </div>
 
- feature/projects-page
-      <button type="button" id ="btnLogin" 
- develop
-              class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all">
+      <button type="submit" id="btnLogin" 
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center cursor-pointer">
         Đăng Nhập Ngay
       </button>
     </form>
   </div>
 
+  <!-- Toast Notification Container chuẩn Glassmorphism -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>
   <script>
- feature/projects-page
-    // Chặn submit mặc định của form
-  document.getElementById("loginForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    submitLogin();
-  });
+    // Kiểm tra thông báo phiên hết hạn từ sessionStorage
+    document.addEventListener("DOMContentLoaded", function () {
+      const expiredMsg = sessionStorage.getItem("SESSION_EXPIRED_MSG");
+      if (expiredMsg) {
+        sessionStorage.removeItem("SESSION_EXPIRED_MSG");
+        const errBox = document.getElementById("loginError");
+        if (errBox) {
+          errBox.textContent = expiredMsg;
+          errBox.classList.remove("hidden");
+        }
+      }
 
-  const btnLogin = document.getElementById("btnLogin");
-  if (btnLogin) {
-    btnLogin.addEventListener("click", submitLogin);
-  }
+      // Xử lý submit form
+      const loginForm = document.getElementById("loginForm");
+      if (loginForm) {
+        loginForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          submitLogin();
+        });
+      }
+    });
 
-  function submitLogin() {
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value.trim();
-    const errBox = document.getElementById("loginError");
+    function submitLogin() {
+      const emailInput = document.getElementById("loginEmail");
+      const passwordInput = document.getElementById("loginPassword");
+      const errBox = document.getElementById("loginError");
 
-    const success = Auth.login(email, password);
+      const email = emailInput ? emailInput.value.trim() : "";
+      const password = passwordInput ? passwordInput.value.trim() : "";
 
-    if (success) {
-      if (errBox) errBox.classList.add("hidden");
-      // Chuyển về trang trước đó đã lưu hoặc mặc định vào index.html
-      const nextUrl = sessionStorage.getItem("REDIRECT_AFTER_LOGIN") || "index.html";
-      sessionStorage.removeItem("REDIRECT_AFTER_LOGIN");
-      window.location.href = nextUrl;
-    } else {
-      if (errBox) {
-        errBox.textContent = "Email hoặc mật khẩu không chính xác!";
-        errBox.classList.remove("hidden");
+      const authService = window.Auth || window.TaskFlowAuth;
+      if (!authService || typeof authService.login !== "function") {
+        if (errBox) {
+          errBox.textContent = "Hệ thống xác thực chưa sẵn sàng. Vui lòng tải lại trang!";
+          errBox.classList.remove("hidden");
+        }
+        return;
+      }
+
+      const success = authService.login(email, password);
+
+      if (success) {
+        if (errBox) errBox.classList.add("hidden");
+        // Chuyển về trang trước đó đã lưu hoặc mặc định vào index.html
+        const nextUrl = sessionStorage.getItem("REDIRECT_AFTER_LOGIN") || "index.html";
+        sessionStorage.removeItem("REDIRECT_AFTER_LOGIN");
+        window.location.href = nextUrl;
       } else {
-        alert("Email hoặc mật khẩu không chính xác!");
+        if (errBox) {
+          errBox.textContent = "Email hoặc mật khẩu không chính xác!";
+          errBox.classList.remove("hidden");
+        } else {
+          alert("Email hoặc mật khẩu không chính xác!");
+        }
       }
     }
-  }
- develop
   </script>
 </body>
 </html>

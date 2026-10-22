@@ -288,6 +288,10 @@
    * 3. GLASSMORPHISM TOAST NOTIFICATION ENGINE
    */
   function showToast(message, type = 'success') {
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, type);
+      return;
+    }
     let container = document.getElementById('toastContainer');
     if (!container) {
       container = document.createElement('div');
