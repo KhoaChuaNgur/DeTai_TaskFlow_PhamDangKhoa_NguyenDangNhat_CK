@@ -218,3 +218,315 @@ Khi người dùng nhập từ khóa vào ô tìm kiếm `#projectSearchInput`, 
 3. **Dọn sạch dữ liệu sạch sẽ (No Orphan Tasks):**
    - Không chỉ xóa dự án trong `TASKFLOW_PROJECTS`, hệ thống còn tự động lọc và xóa sạch toàn bộ các công việc (tasks) của dự án đó trong `TASKFLOW_TASKS`.
    - Bắn thông báo Toast Glassmorphism nhẹ nhàng xác nhận kết quả xóa.
+
+
+---
+
+## 🔐 BƯỚC 1: NÂNG CẤP HỆ THỐNG ĐĂNG KÝ TÀI KHOẢN & BẢO MẬT ĐĂNG NHẬP (23/10/2026)
+**Nhánh thực hiện:** `develop`
+
+### 1. Hiện trạng trước khi nâng cấp:
+- Hệ thống chỉ có màn hình Đăng nhập cơ bản, tài khoản được gán cứng tĩnh trong code (`admin123`, `user123`), người dùng mới không thể tự đăng ký tài khoản.
+- Không có cơ chế băm mật khẩu: Mật khẩu lưu dạng văn bản thô (plain-text) rất nguy hiểm nếu bị soi `localStorage`.
+- Lỗ hổng soi lén mật khẩu qua DevTools: Người khác có thể mở Inspect Element, sửa thuộc tính `type="password"` thành `type="text"` để đọc lén mật khẩu đã gõ.
+
+### 2. Các giải pháp kiến trúc đã triển khai:
+1. **Giao diện Tab Segmented Control cao cấp tại [`login.html`](file:///c:/ThietKeWeb_PhamDangKhoa/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/login.html):**
+   - Chuyển đổi mượt mà giữa 2 chế độ: **Đăng Nhập** và **Đăng Ký Tài Khoản**.
+   - Hỗ trợ nút điền nhanh 1-click Demo Account cho cả 2 vai trò: **🛡️ Admin (Phạm Đăng Khoa)** và **👤 Member (Nguyễn Đăng Nhật)**.
+2. **Form Đăng Ký Tài Khoản Mới:**
+   - Thu thập đầy đủ: Họ tên, Email (kiểm tra tính duy nhất), Mật khẩu, Xác nhận mật khẩu, và Vị trí chuyên môn (Chủ dự án / Frontend / Backend / UI-UX / Tester...).
+   - Tự động sinh `id` định danh duy nhất (`mem-{timestamp}`) và gán Avatar cá nhân hóa theo seed tên người dùng từ Dicebear API.
+   - Lưu trữ đồng bộ 2 chiều vào cả `taskflow_members` và bundle `TASKFLOW_DATA.members`.
+   - Tự động kích hoạt phiên đăng nhập ngay sau khi đăng ký thành công.
+3. **Thước đo độ mạnh mật khẩu (Password Strength Meter):**
+   - Tính toán chỉ số phức tạp theo thời gian thực (độ dài, chữ hoa/thường, số, ký tự đặc biệt).
+   - Thanh tiến độ màu trực quan (Đỏ: Yếu -> Vàng: Trung bình -> Xanh lục: Rất mạnh).
+   - Kiểm tra khớp mật khẩu xác nhận thời gian thực.
+4. **Bảo mật Anti-Tamper DOM Guard (Chống can thiệp Inspect Element):**
+   - Tích hợp `MutationObserver` giám sát chặt chẽ thuộc tính `type` của các thẻ input mật khẩu.
+   - Khi phát hiện hành vi mở DevTools đổi `type="password"` thành `type="text"` trái phép: Lập tức ép ngược về `password`, xóa sạch ký tự trong ô nhập liệu và kích hoạt banner cảnh báo an ninh màu đỏ nhấp nháy!
+   - Nút mắt xem mật khẩu chính thống `[👁️]` có cơ chế tự động ẩn lại sau 4 giây để chống nhìn trộm (Shoulder Surfing).
+5. **Mã hóa Deterministic Salt-Hash trong [`js/auth.js`](file:///c:/ThietKeWeb_PhamDangKhoa/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/auth.js):**
+   - Toàn bộ mật khẩu lưu trong `localStorage` đều được băm với Salt bí mật của TaskFlow (`tf_sec_...`), không bao giờ để lộ mật khẩu gốc.
+
+
+---
+
+## 🛡️ NÂNG CẤP BẢO MẬT ĐĂNG KÝ V2: FIX TAMPER RESET STATE, TÍCH HỢP OTP EMAIL & DẤU SAO BẮT BUỘC (23/10/2026)
+**Nhánh thực hiện:** `develop`
+
+### 1. Phân tích 3 vấn đề người dùng phát hiện qua Video thực nghiệm:
+- **Vấn đề 1 (Anti-Tamper UI Out-of-Sync):** Khi người dùng mở DevTools đổi `type="password"` sang `text`, lá chắn bảo mật đã can thiệp xóa sạch giá trị của ô input, nhưng thanh độ mạnh mật khẩu (Strength Meter) và dòng "Mật khẩu trùng khớp" vẫn giữ nguyên giá trị cũ mà không tự động reset về `0%` và trạng thái ẩn.
+- **Vấn đề 2 (Xác thực OTP Email & Kiểm tra Email có thực):** Cần một bước xác thực OTP qua Email (sử dụng Webhook Google Apps Script) trước khi tài khoản được kích hoạt, vừa gia tăng tính bảo mật chuẩn Fintech/SaaS vừa tích hợp tiêu chí kết nối Cloud/Google Sheet của đồ án.
+- **Vấn đề 3 (Ký hiệu bắt buộc - Mandatory Indicators):** Thiếu dấu hoa thị đỏ `*` để người dùng nhận diện ngay trường nào bắt buộc phải điền.
+
+### 2. Các giải pháp đã triển khai toàn diện:
+1. **Đồng bộ hóa toàn diện Anti-Tamper UI State:**
+   - Hàm `resetPasswordSecurityState()` lập tức được kích hoạt ngay khi phát hiện can thiệp DOM:
+     - Xóa sạch cả 2 ô mật khẩu (`regPassword` và `regConfirmPassword`).
+     - Reset thanh độ mạnh về `width: 0%`, màu nền xám mặc định và nhãn `Chưa nhập` (`text-slate-400`).
+     - Ẩn hoàn toàn dòng thông báo `passwordMatchText`.
+     - Kích hoạt banner cảnh báo an ninh màu đỏ kèm hiệu ứng rung lắc `shake-anim`.
+2. **Ký hiệu trường bắt buộc công thái học (UX Standard):**
+   - Bổ sung `<span class="text-rose-500 font-bold ml-0.5" title="Bắt buộc">*</span>` tại tất cả các trường bắt buộc trên Form Đăng Nhập và Form Đăng Ký.
+   - Bổ sung dòng chỉ dẫn: *"Các trường đánh dấu (*) là thông tin bắt buộc."*
+3. **Modal Xác Thực Mã OTP Email (Fintech-Grade OTP Modal):**
+   - **Giao diện Modal Glassmorphism:** Hiệu ứng làm mờ sâu `backdrop-blur-md`, huy hiệu phong thư phát sáng, hiển thị đích danh email nhận mã.
+   - **Hộp thư đến mô phỏng & Webhook Google Apps Script:**
+     - Gọi Webhook URL chính thức tới Google Apps Script (`js/sheets-sync.js`) gửi email và ghi log xác thực.
+     - Hiển thị badge OTP mô phỏng kèm nút `[⚡ Điền nhanh]` để chấm bài và kiểm thử tiện lợi trong 3 giây.
+   - **Cụm 6 ô nhập số rời rạc (Discrete Digit Inputs):**
+     - Tự động nhảy ô tiếp theo khi gõ số (`auto-advance`).
+     - Tự động lùi ô khi xóa (`Backspace`).
+     - Hỗ trợ dán (`Paste`) chuỗi 6 số tự động điền và kích hoạt xác thực ngay lập tức.
+   - **Đồng hồ đếm ngược 120s (Countdown Timer):**
+     - Đếm lùi từ `02:00` về `00:00`.
+     - Nút "Gửi lại mã OTP" (Resend OTP) tự động mở khóa khi hết 120s để người dùng yêu cầu mã mới.
+   - **Phản hồi lỗi bảo mật:** Rung lắc 6 ô số và viền đỏ nếu nhập sai OTP; đổi màu xanh ngọc rực rỡ khi OTP chính xác trước khi tự động kích hoạt tài khoản và chuyển hướng vào Dashboard.
+
+
+---
+
+## 🚀 CHUYỂN ĐỔI CHUẨN XÁC THỰC OTP EMAIL THỰC TẾ & GOOGLE APPS SCRIPT CODE.GS (23/10/2026)
+**Nhánh thực hiện:** `develop`
+
+### 1. Phản hồi yêu cầu của người dùng:
+- Xóa bỏ hoàn toàn khung hiển thị lộ mã OTP giả lập trên màn hình để giống 100% các nền tảng công nghệ thực tế (Google, Stripe, Binance).
+- Người dùng bắt buộc phải mở hộp thư Gmail của mình ra lấy mã xác thực thật.
+- Giữ nguyên vẹn 100% hai tài khoản clone cũ: `admin@taskflow.dev` / `admin123` và `member@taskflow.dev` / `user123`.
+
+### 2. Triển khai kỹ thuật:
+1. **Tạo tệp [`GoogleAppsScript_TaskFlow.gs`](file:///c:/ThietKeWeb_PhamDangKhoa/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/GoogleAppsScript_TaskFlow.gs):**
+   - Viết sẵn toàn bộ mã nguồn Google Apps Script chuẩn xác để gửi email thật qua `GmailApp.sendEmail()`.
+   - Mẫu email HTML Glassmorphism cao cấp, tiêu đề kèm mã OTP, thông báo thời hạn 120 giây.
+   - Vẫn bảo toàn và tích hợp song song chức năng ghi dữ liệu chấm công Google Sheets của đồng đội.
+2. **Cập nhật giao diện [`login.html`](file:///c:/ThietKeWeb_PhamDangKhoa/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/login.html):**
+   - Xóa bỏ hoàn toàn thẻ mô phỏng hiển thị mã OTP và nút điền nhanh.
+   - Thay bằng khối chỉ dẫn người dùng mở Gmail kiểm tra hộp thư đến (Inbox / Spam / Promotions) kèm nút tiện ích mở nhanh Gmail (`https://mail.google.com`).
+   - Cụm 6 ô nhập mã số OTP tự động nhận số, phím điều hướng và tự động xác thực khi nhập đủ 6 chữ số.
+
+---
+
+## 🛠️ TỐI ƯU HÀNH VI NGƯỜI DÙNG CỤM 6 Ô NHẬP MÃ OTP CHUẨN FINTECH (23/10/2026)
+
+### 1. Hiện trạng lỗi (Bug Analysis):
+- **Triệu chứng:** Khi người dùng nhập dãy số (ví dụ `144588`), sau khi bấm số đầu tiên `1`, ô tiếp theo cũng tự nhảy số `1`. Khi người dùng xóa và nhập `4` thì ô kế tiếp lại bị điền số `4`. Người dùng phải xóa từng ô rồi gõ lại mới nhận số mới.
+- **Nguyên nhân kỹ thuật:**
+  - Trên hệ điều hành Windows khi người dùng bật bộ gõ tiếng Việt (UniKey / EVKey ở chế độ Telex/VNI): Khi gõ phím số, sự kiện bàn phím gửi chuỗi ký tự qua hook.
+  - Việc gọi `focus()` đồng bộ ngay bên trong sự kiện `input` khiến con trỏ chuyển sang ô tiếp theo trong khi chuỗi sự kiện bàn phím của ký tự trước chưa kết thúc, dẫn đến ô tiếp theo vô tình nhận cùng một ký tự.
+  - Thuộc tính `maxlength="1"` chặn người dùng gõ số đè trực tiếp nếu ô đã có giá trị.
+
+### 2. Giải pháp kỹ thuật chuẩn công thái học (Fintech UX):
+1. **Cơ chế Overwrite & Tự động bôi đen:**
+   - Lắng nghe sự kiện `focus` và `click` trên từng ô số để tự động gọi `.select()`. Bất cứ khi nào người dùng trỏ vào ô nào, số cũ sẽ được bôi đen và sẵn sàng bị ghi đè tức thì.
+2. **Kiểm soát sự kiện bàn phím `keydown` chống lặp phím:**
+   - Bắt phím số `0-9` bằng `e.preventDefault()` để triệt tiêu hoàn toàn hiện tượng UniKey/EVKey gửi lặp phím sang ô bên cạnh.
+   - Gán trực tiếp giá trị `digit.value = e.key`.
+   - Chuyển `focus()` sang ô tiếp theo thông qua bộ đệm phi đồng bộ siêu ngắn `setTimeout(..., 10)` kèm `.select()`.
+3. **Phím điều hướng thông minh:**
+   - Phím `Backspace`: Nếu ô hiện tại có số thì xóa số; nếu ô trống thì tự động lùi về ô trước đó, xóa số và bôi đen.
+   - Phím `Delete`: Xóa số tại ô hiện tại.
+   - Phím mũi tên `ArrowLeft` / `ArrowRight`: Điều hướng qua lại giữa 6 ô mượt mà.
+4. **Trợ lực Dán mã nhanh (`Paste`) & Mobile:**
+   - Hỗ trợ dán mã OTP trực tiếp từ clipboard, tự tách 6 chữ số và kích hoạt xác thực ngay lập tức.
+
+
+---
+
+## 🎯 BƯỚC 2: CÁ NHÂN HÓA KHÔNG GIAN LÀM VIỆC & DỰ ÁN KHỞI ĐẦU ONBOARDING (23/10/2026)
+**Nhánh thực hiện:** `develop`
+
+### 1. Phản hồi yêu cầu của người dùng:
+- Khắc phục hiện tượng tài khoản mới tạo bị lẫn lộn dữ liệu dự án của các tài khoản mẫu cũ (`admin@taskflow.dev` / `member@taskflow.dev`).
+- Thiết lập cơ chế phân quyền dữ liệu (RBAC Data Scoping): Người dùng mới chỉ thấy dự án mình làm chủ hoặc được mời tham gia.
+- Bổ sung bộ lọc chuyển đổi góc nhìn ("Công việc của tôi" vs "Toàn cảnh dự án") và dropdown chọn dự án cụ thể trên Dashboard.
+- **Dự Án Khởi Đầu (Onboarding & Training Project):** Tự động cấp phát cho tài khoản mới một dự án mẫu `PRJ-START` kèm 4 tasks hướng dẫn thực hành kéo thả Kanban, bấm giờ Stopwatch, cảnh báo thẻ khẩn cấp. Người dùng có thể tự do trải nghiệm hoặc xóa vĩnh viễn khi đã thành thạo để giải phóng không gian.
+
+### 2. Triển khai kỹ thuật:
+1. **Module Lưu Trữ (`js/storage.js`):**
+   - Viết hàm `ensureUserOnboarding(currentUser)`: Kiểm tra nếu người dùng chưa có dự án nào thì tự động tạo dự án `🚀 Chào Mừng Bạn Đến Với TaskFlow (Dự Án Khởi Đầu)` kèm 4 tasks thực hành.
+   - Xuất API qua `window.TaskFlowStorage.ensureUserOnboarding`.
+2. **Module Xác Thực (`js/auth.js`):**
+   - Tích hợp gọi `ensureUserOnboarding` ngay khi kích hoạt tài khoản đăng ký mới.
+3. **Giao Diện Dashboard (`index.html`):**
+   - Cá nhân hóa Hero Banner: Tên thật của người dùng, Avatar đồng bộ, Huy hiệu vai trò.
+   - Huy hiệu dự án Khởi đầu (`#onboardingNoticeBadge`) kèm nút mở nhanh bảng Kanban.
+   - Thêm thanh điều phối `Control Bar`:
+     - Bộ chuyển đổi 2 tầng: `[💼 Công Việc Của Tôi]` vs `[🌐 Toàn Cảnh Dự Án]` kèm badge số lượng realtime.
+     - Dropdown chọn lọc theo từng dự án cụ thể (`#dashboardProjectFilter`).
+     - Phím tắt `[+ Tạo Dự Án]`.
+4. **Bộ Xử Lý Dashboard (`js/dashboard.js`):**
+   - Quản lý trạng thái đa tầng: `currentViewMode` ('mine' | 'all') và `currentProjectFilter` ('all' | projectId).
+   - Tự động nhận diện quyền: Admin mặc định mở Toàn cảnh, Member mặc định mở Việc của tôi.
+   - Tính toán 4 thẻ KPI, Tiến độ dự án, Biểu đồ tuần và Tác vụ khẩn cấp phản hồi ngay lập tức theo bộ lọc trong 0ms.
+5. **Đồng Bộ Không Gian Dự Án & Kanban (`js/projects.js` & `js/kanban.js`):**
+   - Phân quyền danh sách dự án: Member chỉ thấy các dự án thuộc quyền sở hữu/tham gia của mình.
+   - Hỗ trợ tham số URL `board.html?projectId=...` tự động trỏ đến đúng dự án được chọn.
+
+---
+
+## 🐛 KHẮC PHỤC TRIỆT ĐỂ LỖI BỐ CỤC HIỂN THỊ TRÊN EXECUTIVE DASHBOARD (23/10/2026)
+
+### 1. Hiện trạng lỗi (Ảnh chụp màn hình từ người dùng):
+- **Hiện tượng:** Tất cả các khối trên trang Dashboard (`index.html`) gồm: Thanh điều hướng Control Bar, 4 thẻ KPI Metrics, Danh sách Dự án trọng điểm, Biểu đồ hiệu suất tuần và Danh sách tác vụ khẩn cấp bị co rúm xếp ngang thành từng cột dọc siêu hẹp kế tiếp nhau thay vì chảy dọc theo bố cục lưới chuẩn.
+- **Nguyên nhân kỹ thuật sâu:**
+  - Tại dòng 133 trong `index.html`, do quá trình ghép thẻ Hero Banner cá nhân hóa xuất hiện một thẻ đóng dư `</div>`.
+  - Thẻ đóng dư này đã vô tình đóng sớm phần tử chứa nội dung chính `<main class="flex-1 overflow-y-auto...">`.
+  - Hậu quả: Toàn bộ các thẻ `<section>` bên dưới bị đẩy ra ngoài thành con trực tiếp của thẻ cha ngoài cùng `<div class="flex h-screen">`. Do thẻ cha này có class `flex` (mặc định là `flex-row`), trình duyệt đã render tất cả các section như những cột flex nằm ngang kẹp nhau.
+
+### 2. Giải pháp khắc phục:
+- Loại bỏ thẻ đóng thừa `</div>`, cân bằng toàn bộ cấu trúc cây DOM của `index.html` (chính xác 48 thẻ mở/đóng `<div>`, 5 thẻ `<section>`, 4 thẻ `<article>`, 1 thẻ `<main>`).
+- Bố cục dọc mượt mà với thanh cuộn tự động được khôi phục 100%, hiển thị chuẩn mực trên mọi độ phân giải màn hình.
+
+---
+
+## 🛡️ RÀ SOÁT TOÀN DIỆN & HOÀN THIỆN PHÂN QUYỀN RBAC CÁ NHÂN HÓA XUYÊN SUỐT HỆ THỐNG (23/10/2026)
+
+### 1. Phân tích lỗ hổng bảo mật & Trải nghiệm người dùng:
+1. **Lỗi Kéo thả chéo tác vụ trên Bảng Kanban (`board.html` & `js/kanban.js`):**
+   - *Hiện trạng:* Thẻ công việc của bất kỳ thành viên nào cũng mở thuộc tính `draggable="true"`. Một thành viên thông thường có thể tự ý kéo thả công việc của người khác sang cột khác mà không có bất kỳ cơ chế ngăn cản nào.
+   - *Nguy cơ:* Vi phạm tính toàn vẹn dữ liệu cá nhân, làm sai lệch báo cáo tiến độ và KPI của đồng đội.
+2. **Lỗi Can thiệp chỉnh sửa Form chi tiết Task Modal:**
+   - Khi nhấn vào xem công việc của người khác, thành viên vẫn có thể sửa đổi tiêu đề, mô tả, subtasks và bấm lưu đè lên dữ liệu của đồng đội.
+3. **Lỗi Phân quyền Dự án trên trang Quản lý (`projects.html` & `js/projects.js`):**
+   - Nút Chỉnh sửa và Xóa dự án bị khóa cứng chỉ dành riêng cho tài khoản có vai trò `admin`. Người dùng mới khi tạo dự án riêng hoặc sở hữu dự án Onboarding `PRJ-START` lại không thể sửa hoặc xóa dự án của chính mình để giải phóng không gian.
+4. **Lỗi Rò rỉ dữ liệu khi xem "Tất cả dự án" trên Bảng Kanban & Timeline:**
+   - Nếu để bộ lọc mặc định là "Tất cả dự án", hệ thống lấy toàn bộ task từ LocalStorage mà không giới hạn theo phạm vi truy cập của người dùng hiện tại, làm lộ các task mẫu của tài khoản clone.
+
+### 2. Giải pháp kỹ thuật nâng cấp triệt để:
+1. **Thuật toán Phân quyền Kéo thả 3 lớp trên Bảng Kanban (`js/kanban.js`):**
+   - Xây dựng hàm `canUserMoveTask(task, project)`:
+     - Quản trị viên (Admin) -> Toàn quyền di chuyển mọi task.
+     - Chủ dự án (Project Owner) -> Toàn quyền điều phối các task trong dự án mình làm chủ.
+     - Người được gán việc (Assignee) -> Toàn quyền di chuyển task của chính mình.
+     - Task chưa có người nhận trong dự án tham gia -> Được nhận và kéo.
+     - Ngược lại: **Khóa cứng kéo thả (`draggable="false"`)**, hiển thị huy hiệu ổ khóa `🔒 [Tên người phụ trách]` trên thẻ card.
+   - Bắt sự kiện `dragstart`: Lập tức `e.preventDefault()` và hiển thị cảnh báo Toast nếu cố tình kéo task của người khác.
+   - Kiểm tra logic trong `moveTaskToStatus`: Ngăn chặn triệt để can thiệp mã nguồn từ bảng điều khiển console.
+2. **Kích hoạt Chế độ Chỉ Đọc (View-Only Mode) trong Task Modal:**
+   - Khi thành viên xem task của người khác: Hiển thị Banner cảnh báo màu hổ phách `🔒 Chế độ Chỉ đọc`, vô hiệu hóa (`disabled`) toàn bộ các trường nhập liệu, ẩn nút Lưu và nút Xóa.
+   - Bảo toàn khung **Bình luận trao đổi (Comments Feed)** để các thành viên vẫn có thể cộng tác và thảo luận nghiệp vụ bình thường.
+3. **Cung cấp nút lọc nhanh 1 chạm `💼 Việc Của Tôi` trên Bảng Kanban:**
+   - Bổ sung nút lọc `[💼 Việc của tôi]` ngay đầu thanh lọc thành viên, giúp người dùng lọc tức thì các công việc của riêng mình trong 0ms.
+4. **Phân quyền Sở hữu Dự án (Project Ownership RBAC) trong `js/projects.js`:**
+   - Mở quyền Chỉnh sửa và Xóa dự án cho cả Quản trị viên **VÀ** Chủ dự án (`isAdmin || project.ownerId === currentUserId`).
+   - Người dùng mới giờ đây có thể tự do chỉnh sửa dự án do mình tạo hoặc xóa dự án Onboarding `PRJ-START` khi đã làm quen xong.
+5. **Đồng bộ phân quyền dữ liệu trên Timeline/Gantt (`js/timeline.js`):**
+   - Giới hạn các dự án và task hiển thị trên biểu đồ Gantt theo đúng phạm vi truy cập của tài khoản đang đăng nhập.
+
+---
+
+## 📊 BƯỚC 3: CHUẨN HÓA SCHEMA DỮ LIỆU BÁO CÁO & LỊCH SỬ HOẠT ĐỘNG (23/10/2026)
+**Nhánh thực hiện:** `develop`  
+**Nguyên tắc cam kết:** Bảo toàn 100% ranh giới phân chia công việc trong nhóm: **Tuyệt đối không can thiệp vào `reports.html` hay `js/reports.js`** (phần việc của đồng đội Nguyễn Đăng Nhật). Thay vào đó, xây dựng và chuẩn hóa toàn bộ hạ tầng dữ liệu (Data Foundation) và các helper API mạnh mẽ trong [`js/storage.js`](file:///c:/ThietKeWeb_PhamDangKhoa/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/storage.js).
+
+### 1. Mục tiêu kiến trúc dữ liệu:
+- Khi đồng đội bắt tay vào xây dựng Trang 5 (Báo Cáo & Logs), bạn ấy chỉ cần gọi hàm API có sẵn của `window.TaskFlowStorage` là có ngay toàn bộ số liệu thực tế đã được tổng hợp sẵn (KPIs, phân bổ tải nhân sự, tiến độ Sprint, nhật ký kiểm toán, xuất file CSV chuẩn UTF-8).
+- Đảm bảo dữ liệu luôn đầy đủ, không bị rỗng, và tự động liên kết với mọi thao tác thực tế trên Bảng Kanban, Quản lý dự án và Đăng nhập.
+
+### 2. Triển khai kỹ thuật chi tiết:
+
+#### A. Hệ thống Nhật ký kiểm toán (Audit Trail / Activity Logging Engine):
+- **Khóa lưu trữ:** `taskflow_activity_logs` (tự động đồng bộ 2 chiều với gói tổng `TASKFLOW_DATA`).
+- **Cấu trúc Schema chuẩn mực:**
+  ```javascript
+  {
+    id: "act-1729680000000-123",
+    timestamp: "2026-10-23T08:30:00.000Z",
+    userId: "mem-01",
+    userName: "Phạm Đăng Khoa",
+    userAvatar: "https://api.dicebear.com/...",
+    userRole: "admin",
+    action: "TASK_MOVE", // PROJECT_CREATE, PROJECT_UPDATE, TASK_APPROVE, STOPWATCH_LOG, ...
+    entityType: "task",  // "project" | "task" | "time_log" | "auth"
+    entityId: "task-001",
+    entityTitle: "Xây dựng giao diện Bảng Kanban & kéo thả 60fps",
+    details: "Chuyển trạng thái sang 'Đang làm (Doing)'"
+  }
+  ```
+- **Hàm nghiệp vụ:**
+  - `TaskFlowStorage.logActivity({ action, entityType, entityId, entityTitle, details, user })`: Tự động thêm bản ghi, lưu trữ tối đa 250 sự kiện gần nhất (FIFO) và phát sự kiện tùy biến `activityLogged` ra toàn cục.
+  - `TaskFlowStorage.getActivityLogs(filter)`: Truy xuất nhật ký kèm bộ lọc theo người dùng, dự án, hành động.
+- **Tích hợp tự động vào luồng thao tác thực tế:**
+  - Kéo thả thẻ trên Kanban -> Tự động ghi log `TASK_MOVE`.
+  - Phê duyệt nghiệm thu task -> Tự động ghi log `TASK_APPROVE`.
+  - Tạo / Cập nhật / Xóa dự án -> Tự động ghi log `PROJECT_CREATE / UPDATE / DELETE`.
+
+#### B. Hệ thống Chấm công & Bấm giờ (Time Tracking Engine):
+- **Khóa lưu trữ:** `taskflow_time_logs` (đồng bộ 2 chiều `TASKFLOW_DATA`).
+- **Cấu trúc Schema:**
+  ```javascript
+  {
+    id: "time-1729680000000-456",
+    taskId: "task-001",
+    taskTitle: "Xây dựng giao diện Bảng Kanban & kéo thả 60fps",
+    projectId: "proj-101",
+    projectName: "Hệ thống Quản trị Dự án TaskFlow Core",
+    userId: "mem-01",
+    userName: "Phạm Đăng Khoa",
+    spentHours: 4.5,
+    date: "2026-10-20",
+    timestamp: "2026-10-20T10:30:00.000Z",
+    type: "stopwatch", // "stopwatch" | "manual"
+    note: "Dựng khung Kanban board 3 cột và cấu hình CSS Grid"
+  }
+  ```
+- **Hàm nghiệp vụ:**
+  - `TaskFlowStorage.logTime({ taskId, taskTitle, projectId, projectName, userId, userName, spentHours, date, note, type })`: Ghi nhận giờ làm việc, phát sự kiện `timeLogged` và tự động kích hoạt Webhook chuyển tiếp sang Google Sheets nếu module `SheetsSync` khả dụng.
+  - `TaskFlowStorage.getTimeLogs(filter)`: Lấy danh sách giờ làm theo nhân sự, dự án hoặc khoảng ngày.
+
+#### C. Bộ tổng hợp báo cáo sẵn sàng cho Trang 5 (`ReportingEngine`):
+- **Hàm API 1-chạm:** `TaskFlowStorage.getReportsSummary(filter)` trả về đối tượng phân tích toàn diện:
+  - `kpis`: Tổng dự án, tổng công việc, tỷ lệ hoàn thành %, tổng giờ làm việc thực tế, tổng giờ ước tính.
+  - `projectsSummary`: Phân tích từng dự án (tiến độ %, số giờ tiêu tốn thực tế, số thành viên).
+  - `membersWorkload`: Phân tích tải công việc theo từng thành viên, tự động đánh giá trạng thái công suất (`'normal'`, `'overload'` nếu > 35h hoặc >= 4 việc đang làm, `'idle'` nếu 0 việc).
+  - `priorityBreakdown`: Thống kê số lượng theo độ ưu tiên (`critical`, `high`, `medium`, `low`).
+  - `dailyProductivity`: Mảng 7 ngày gần nhất kèm số giờ cống hiến thực tế để sẵn sàng vẽ biểu đồ đường (Line Chart) hoặc cột (Bar Chart).
+  - `recentActivityLogs`: 20 hoạt động mới nhất để hiển thị trực tiếp lên bảng Activity Stream.
+- **Hàm Xuất CSV chuẩn Excel:** `TaskFlowStorage.exportReportsCSV(type)`:
+  - Hỗ trợ xuất 3 loại: `'tasks'`, `'timesheet'`, `'activities'`.
+  - Tự động gắn tiền tố **UTF-8 BOM (`\uFEFF`)** để phần mềm Microsoft Excel hiển thị tiếng Việt có dấu hoàn hảo không bị lỗi font.
+
+#### D. Dữ liệu mẫu (Seed Data) phong phú:
+- Nạp sẵn **6 bản ghi TimeLogs** và **6 bản ghi ActivityLogs** phân bổ đồng đều giữa 2 thành viên `Phạm Đăng Khoa` (Admin) và `Nguyễn Đăng Nhật` (Member).
+- Đảm bảo ngay khi đồng đội mở trang Báo cáo lần đầu tiên thì giao diện đã lập tức tràn ngập số liệu trực quan mà không bị trạng thái màn hình trắng.
+
+
+---
+
+## 🚀 9. TỐI ƯU HÓA TRẢI NGHIỆM UX/UI, PHÂN QUYỀN KANBAN RBAC & TIÊU CHUẨN ĐỊNH NGHĨA HOÀN THÀNH (DoD GATE) - ĐỢT PHẢN HỒI VIDEOTEST.MP4
+
+**Ngày thực hiện:** 23/10/2026  
+**Chuyên gia phụ trách:** Phạm Đăng Khoa (Lead Frontend Architect & UX/UI Specialist)  
+**Mục tiêu:** Giải quyết dứt điểm 3 tồn đọng nghiêm trọng phát hiện qua video kiểm thử thực tế (`videotest.mp4`):
+1. **Chuyển trang mượt mà không chớp giật (Smooth Page Transitions):** Tích hợp có chọn lọc thư viện `animate.css` (CDN) để triệt tiêu hiện tượng nháy trắng khi chuyển giữa các trang `index.html`, `projects.html`, `board.html`, `timeline.html`.
+2. **Khóa chặt phân quyền kéo thả Kanban (Strict RBAC Drag & Drop Authorization):** Tài khoản Member (`Nguyễn Đăng Nhật`) tuyệt đối không thể kéo thả hoặc can thiệp thẻ công việc của thành viên khác.
+3. **Cổng kiểm soát nghiệm thu bắt buộc (Definition of Done Gate):** Khi kéo thẻ từ "Đang làm (In-Progress)" sang "Đã hoàn thành (Done)", hệ thống BẮT BUỘC người dùng phải nộp Link sản phẩm bàn giao (GitHub PR, Live Demo, Figma...). Nếu hủy bỏ hoặc không nhập link, thẻ tự động bật về vị trí cũ và không được phép cập nhật trạng thái.
+
+---
+
+### 🔍 CHI TIẾT KỸ THUẬT & GIẢI PHÁP THỰC HIỆN:
+
+#### 1. Triệt tiêu chớp giật & Chuyển trang 60fps mượt mà:
+* **Tích hợp Animate.css CDN:** Bổ sung liên kết `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>` tại `<head>` của các trang: `index.html`, `projects.html`, `board.html`, `timeline.html`, `login.html`.
+* **Cơ chế Điều hướng Mượt trong `js/layout.js` (`setupPageTransitions`):**
+  - Khi trang tải, thẻ `<main>` tự động thêm class `animate__animated animate__fadeIn animate__faster` để xuất hiện êm ái.
+  - Chặn sự kiện click liên kết nội bộ (`sidebarEl a[href]`, logo): Áp dụng hiệu ứng biến mất `animate__animated animate__fadeOut animate__faster` trong 150ms trước khi `window.location.href` thay đổi, loại bỏ hoàn toàn khoảng trắng giật cục giữa các lần chuyển trang.
+  - Lắng nghe sự kiện `pageshow` (hỗ trợ bfcache - Back/Forward Cache) giúp khi người dùng bấm nút Back/Forward trên trình duyệt, giao diện luôn hiển thị mượt mà không bị kẹt hiệu ứng.
+
+#### 2. Khóa phân quyền kéo thả Kanban (RBAC Drag & Drop Enforcement):
+* **Xử lý triệt để tại `js/kanban.js`:**
+  - `canUserMoveTask(task, project)`: Chuẩn hóa kiểm tra quyền độc lập chữ hoa/chữ thường (`user.role.toLowerCase() === 'admin'`). Chỉ **Admin**, **Chủ dự án (Project Owner)** và **Người phụ trách chính (Lead Assignee)** mới có quyền di chuyển thẻ việc. Xóa bỏ lỗ hổng cho phép member trong dự án tự tiện kéo việc chưa gán.
+  - `createTaskCardElement()`: Khi `canMove === false`, gỡ bỏ hoàn toàn thuộc tính `draggable`, thêm class `.is-locked-task`, và chặn sự kiện `dragstart` trên toàn bộ các phần tử con (`img`, `span`, `h3`, `div`). Thêm huy hiệu thị giác `🔒 Chỉ xem` để người dùng nhận biết ngay lập tức lý do không kéo được thẻ.
+  - Bổ sung lớp phòng thủ thứ hai trong sự kiện `drop` của `.kanban-list`: Nếu phát hiện thẻ thả vào không thuộc quyền sở hữu của người dùng, lập tức từ chối, hủy lệnh di chuyển, hiển thị Toast cảnh báo và render lại vị trí gốc.
+  - **Bộ lọc thành viên (`getFilteredTasks`):** Lọc chuẩn xác theo `t.assigneeId === this.currentMemberFilter`, giúp khi bấm vào chip "Phạm Đăng Khoa" hoặc "Nguyễn Đăng Nhật", danh sách hiển thị đúng 100% công việc do người đó làm chính.
+
+#### 3. Cổng kiểm soát bắt buộc Link nghiệm thu (Definition of Done Gate):
+* **Nâng cấp `moveTaskToStatus(taskId, targetStatus)` trong `js/kanban.js`:**
+  - Khi mục tiêu là `'done'`: Kiểm tra `task.evidence?.doneUrl`. Nếu chưa có link hợp lệ, **KHÔNG CẬP NHẬT `task.status = 'done'`**!
+  - Lập tức đưa thẻ về lại cột ban đầu, bắn Toast cảnh báo: `"⚠️ Bắt buộc phải có Link sản phẩm hoàn thiện để chuyển sang Đã hoàn thành!"`.
+  - Mở `quickEvidenceModal` ở chế độ bắt buộc (`isMandatoryGate: true`).
+  - Nút đóng/bỏ qua đổi thành `"Hủy bỏ (Giữ nguyên trạng thái)"`. Nếu người dùng hủy hoặc đóng modal, thẻ vẫn giữ nguyên trạng thái cũ.
+  - Chỉ khi người dùng điền URL hợp lệ và bấm `"Lưu Bằng Chứng"`, hệ thống mới chính thức cập nhật `task.status = 'done'`, tính lại tiến độ dự án, ghi vào Nhật ký kiểm toán (Audit Trail) và hiển thị thông báo chúc mừng kèm animation `animate-spring-drop`.
+  - Bổ sung chốt chặn tương tự bên trong Modal 2 cột (`taskForm submit`) để ngăn chặn việc đổi dropdown sang "Đã hoàn thành" mà bỏ trống link bàn giao.

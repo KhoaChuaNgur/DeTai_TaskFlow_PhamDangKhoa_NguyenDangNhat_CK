@@ -54,6 +54,68 @@
     },
 
     /**
+     * Thuật toán băm mật khẩu có Salt chống soi lén (Deterministic Salt-Hash)
+     * Đảm bảo không lưu mật khẩu dạng plain-text trên LocalStorage
+     * @param {string} password
+     * @returns {string}
+     */
+    hashPassword(password) {
+      if (!password) return '';
+      let hash = 0x811c9dc5;
+      const salt = 'TaskFlow_Secure_Salt_2026';
+      const combined = salt + password + salt;
+      for (let i = 0; i < combined.length; i++) {
+        hash ^= combined.charCodeAt(i);
+        hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+      }
+      return 'tf_sec_' + (hash >>> 0).toString(16);
+    },
+
+    /**
+     * Lấy danh sách toàn bộ người dùng trong cơ sở dữ liệu
+     * @returns {Array}
+     */
+    getUsers() {
+      try {
+        if (window.TaskFlowStorage && typeof window.TaskFlowStorage.get === 'function') {
+          const list = window.TaskFlowStorage.get(window.TaskFlowStorage.KEYS.MEMBERS, []);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+        const raw = localStorage.getItem('TASKFLOW_DATA');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.members) && parsed.members.length > 0) {
+            return parsed.members;
+          }
+        }
+      } catch (e) {
+        console.error('[Auth.getUsers] Lỗi đọc danh sách người dùng:', e);
+      }
+      return [
+        {
+          id: 'mem-01',
+          name: 'Phạm Đăng Khoa',
+          role: 'Admin',
+          title: 'Frontend Lead & System Architect',
+          email: 'admin@taskflow.dev',
+          passwordHash: 'tf_sec_fc762ef4',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa',
+          status: 'online'
+        },
+        {
+          id: 'mem-02',
+          name: 'Nguyễn Đăng Nhật',
+          role: 'Member',
+          title: 'Backend & Cloud Infrastructure Dev',
+          email: 'member@taskflow.dev',
+          passwordHash: 'tf_sec_76564790',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
+          status: 'online'
+        }
+      ];
+    },
+
+    /**
      * Kiểm tra người dùng có quyền cụ thể hay không (RBAC)
      * @param {string} role - 'admin' hoặc 'member'
      * @returns {boolean}
@@ -66,33 +128,49 @@
 
     /**
      * Đăng nhập với tài khoản hợp lệ
+     * Hỗ trợ xác thực qua Database LocalStorage lẫn tài khoản Demo
      * @param {string} email
      * @param {string} password
      * @returns {boolean}
      */
     login(email, password) {
-      let user = null;
-      if (email === 'admin@taskflow.dev' && password === 'admin123') {
-        user = {
-          name: 'Phạm Đăng Khoa',
-          email: email,
-          role: 'admin',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa'
-        };
-      } else if (email === 'member@taskflow.dev' && password === 'user123') {
-        user = {
-          name: 'Nguyễn Đăng Nhật',
-          email: email,
-          role: 'member',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat'
-        };
+      this.lastError = '';
+      if (!email || !password) {
+        this.lastError = 'Vui lòng nhập đầy đủ Email và Mật khẩu!';
+        return false;
       }
 
-      if (!user) return false;
+      const normalizedEmail = email.trim().toLowerCase();
+      const inputHash = this.hashPassword(password);
+      const allUsers = this.getUsers();
+
+      // Tìm kiếm người dùng khớp email và mật khẩu (hỗ trợ hash hoặc demo credential)
+      let matchedUser = allUsers.find((u) => {
+        if (!u.email || u.email.toLowerCase() !== normalizedEmail) return false;
+        if (u.passwordHash && u.passwordHash === inputHash) return true;
+        // Hỗ trợ đăng nhập tài khoản demo mặc định
+        if (normalizedEmail === 'admin@taskflow.dev' && password === 'admin123') return true;
+        if (normalizedEmail === 'member@taskflow.dev' && password === 'user123') return true;
+        return false;
+      });
+
+      if (!matchedUser) {
+        this.lastError = 'Email hoặc mật khẩu không chính xác!';
+        return false;
+      }
 
       const now = Date.now();
+      const sessionUser = {
+        id: matchedUser.id || ('mem-' + now),
+        name: matchedUser.name || 'Người Dùng',
+        email: matchedUser.email,
+        role: (matchedUser.role || 'member').toLowerCase(),
+        title: matchedUser.title || 'Thành viên dự án',
+        avatar: matchedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matchedUser.name || 'User')}`
+      };
+
       const sessionData = {
-        user: user,
+        user: sessionUser,
         loginTime: now,
         lastActivity: now,
         expiresAt: now + SESSION_DURATION
@@ -101,11 +179,142 @@
       // Đồng bộ vào TẤT CẢ các khóa lưu trữ để mọi module đều đọc được
       localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionData));
       localStorage.setItem(STORAGE_KEYS.SESSION_META, JSON.stringify(sessionData));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
-      localStorage.setItem(STORAGE_KEYS.LEGACY_USER, JSON.stringify(user));
-      localStorage.setItem(STORAGE_KEYS.NAMESPACED_USER, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(sessionUser));
+      localStorage.setItem(STORAGE_KEYS.LEGACY_USER, JSON.stringify(sessionUser));
+      localStorage.setItem(STORAGE_KEYS.NAMESPACED_USER, JSON.stringify(sessionUser));
 
       return true;
+    },
+
+    /**
+     * ĐĂNG KÝ TÀI KHOẢN MỚI TRÊN HỆ THỐNG TASKFLOW
+     * @param {Object} payload { name, email, password, role, title }
+     * @returns {Object} { success: boolean, message: string, user?: Object }
+     */
+    register({ name, email, password, role = 'member', title = 'Thành viên dự án' }) {
+      if (!name || name.trim().length < 2) {
+        return { success: false, message: 'Họ và tên phải có ít nhất 2 ký tự!' };
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email.trim())) {
+        return { success: false, message: 'Định dạng Email không hợp lệ!' };
+      }
+
+      if (!password || password.length < 6) {
+        return { success: false, message: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự!' };
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const allUsers = this.getUsers();
+
+      // Kiểm tra trùng lặp email
+      const isDuplicate = allUsers.some((u) => u.email && u.email.toLowerCase() === normalizedEmail);
+      if (isDuplicate) {
+        return { success: false, message: 'Tài khoản Email này đã được đăng ký. Vui lòng đăng nhập!' };
+      }
+
+      const newId = 'mem-' + Date.now();
+      const newMember = {
+        id: newId,
+        name: name.trim(),
+        email: normalizedEmail,
+        passwordHash: this.hashPassword(password),
+        role: role.toLowerCase() === 'admin' ? 'Admin' : 'Member',
+        title: (title || 'Thành viên dự án').trim(),
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name.trim())}`,
+        status: 'online',
+        createdAt: new Date().toISOString()
+      };
+
+      allUsers.push(newMember);
+
+      // Lưu trữ đồng bộ 2 chiều qua Storage
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
+        window.TaskFlowStorage.set(window.TaskFlowStorage.KEYS.MEMBERS, allUsers);
+      } else {
+        localStorage.setItem('taskflow_members', JSON.stringify(allUsers));
+      }
+
+      try {
+        const rawBundle = localStorage.getItem('TASKFLOW_DATA');
+        const bundle = rawBundle ? JSON.parse(rawBundle) : {};
+        bundle.members = allUsers;
+        localStorage.setItem('TASKFLOW_DATA', JSON.stringify(bundle));
+      } catch (e) {
+        console.error('[Auth.register] Lỗi đồng bộ TASKFLOW_DATA:', e);
+      }
+
+      // Tự động khởi tạo Dự Án Khởi Đầu (Onboarding) riêng biệt cho người dùng mới
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+        window.TaskFlowStorage.ensureUserOnboarding(newMember);
+      }
+
+      // Tự động đăng nhập luôn cho người dùng mới
+      this.login(newMember.email, password);
+
+      return {
+        success: true,
+        message: 'Đăng ký tài khoản thành công! Đang chuyển hướng...',
+        user: newMember
+      };
+    },
+
+    /**
+     * ĐO ĐỘ MẠNH CỦA MẬT KHẨU (Password Strength Meter)
+     * @param {string} password
+     * @returns {Object} { score, label, colorClass, widthPercent }
+     */
+    checkPasswordStrength(password) {
+      if (!password) {
+        return { score: 0, label: 'Chưa nhập', colorClass: 'bg-slate-300 dark:bg-white/10', widthPercent: '0%' };
+      }
+
+      let score = 0;
+      if (password.length >= 6) score++;
+      if (password.length >= 8) score++;
+      if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+      if (/[0-9]/.test(password)) score++;
+      if (/[^A-Za-z0-9]/.test(password)) score++;
+
+      if (score <= 1) {
+        return { score: 1, label: 'Yếu', colorClass: 'bg-rose-500', widthPercent: '25%' };
+      } else if (score <= 3) {
+        return { score: 2, label: 'Trung bình', colorClass: 'bg-amber-500', widthPercent: '60%' };
+      } else {
+        return { score: 3, label: 'Rất mạnh', colorClass: 'bg-emerald-500', widthPercent: '100%' };
+      }
+    },
+
+    /**
+     * BẢO MẬT CHỐNG SOI LÉN / CAN THIỆP DOM (Anti-Tamper DOM Guard)
+     * Ngăn chặn hành vi vào Inspect Element đổi thuộc tính password thành text
+     * @param {HTMLInputElement} inputElement
+     * @param {Function} onTamperDetected Callback khi phát hiện can thiệp trái phép
+     */
+    setupAntiTamperGuard(inputElement, onTamperDetected) {
+      if (!inputElement) return;
+
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.type === 'attributes' && m.attributeName === 'type') {
+            const currentType = inputElement.getAttribute('type');
+            // Nếu thuộc tính type bị đổi sang text mà không có cờ cho phép chính thức
+            if (currentType !== 'password' && !inputElement.dataset.authorizedToggle) {
+              // 1. Lập tức ép ngược về password
+              inputElement.setAttribute('type', 'password');
+              // 2. Xóa sạch giá trị ô nhập liệu để chống lộ ký tự
+              inputElement.value = '';
+              // 3. Kích hoạt cảnh báo bảo mật
+              if (typeof onTamperDetected === 'function') {
+                onTamperDetected(inputElement);
+              }
+            }
+          }
+        }
+      });
+
+      observer.observe(inputElement, { attributes: true });
     },
 
     /**

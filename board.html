@@ -39,6 +39,8 @@
   </script>
 
   <!-- Custom Styles: Glassmorphism, CSS Grid Kanban, Custom Scrollbar & Keyframe Animations -->
+  <!-- Animate.css CDN (UI/UX Micro-interactions & Smooth Transitions) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 
@@ -301,6 +303,17 @@
       <!-- Main Form Container: Bố cục 2 cột -->
       <form id="taskForm">
         <input type="hidden" id="taskFormId" value="" />
+
+        <!-- Banner Chế độ Chỉ Đọc (RBAC View-Only Banner) -->
+        <div id="taskModalReadOnlyBanner" class="hidden mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-xs text-amber-700 dark:text-amber-300 font-medium animate-fadeIn">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <div class="flex-1 leading-relaxed" id="taskModalReadOnlyText">
+            Chế độ <b>Chỉ đọc (View-only)</b>: Công việc này thuộc về thành viên khác. Bạn không thể chỉnh sửa nội dung nhưng vẫn có thể theo dõi tiến độ và để lại bình luận trao đổi bên dưới.
+          </div>
+        </div>
+
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           

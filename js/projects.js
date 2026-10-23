@@ -299,9 +299,12 @@
    * ==========================================================================
    */
   function updateFilterCounts() {
-    const projects = DataEngine.getProjects();
+    const rawProjects = DataEngine.getProjects();
     const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
     const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+    const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
+
+    const projects = isAdmin ? rawProjects : rawProjects.filter(p => p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId)));
 
     let countAll = projects.length;
     let countActive = 0;
@@ -359,9 +362,12 @@
   }
 
   function getFilteredProjects() {
-    const projects = DataEngine.getProjects();
+    const rawProjects = DataEngine.getProjects();
     const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
     const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+    const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
+
+    const projects = isAdmin ? rawProjects : rawProjects.filter(p => p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId)));
 
     return projects.filter((p) => {
       const deadline = formatDeadlineInfo(p.deadline);
@@ -448,7 +454,9 @@
       return;
     }
 
-    const isAdmin = authService && typeof authService.hasRole === 'function' ? authService.hasRole('admin') : true;
+    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+    const currentUserId = currentUser ? currentUser.id : null;
+    const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
 
     const cardsHtml = projects.map((project) => {
       const projTasks = tasks.filter((t) => t.projectId === project.id);
@@ -461,6 +469,8 @@
         : (project.progress || 0);
 
       const deadlineInfo = formatDeadlineInfo(project.deadline);
+      const isOwner = project.ownerId === currentUserId;
+      const canManage = isAdmin || isOwner;
 
       const assignedMembers = (project.members || [])
         .map((id) => members.find((m) => m.id === id))
@@ -523,7 +533,7 @@
                     <span>ℹ️ Chi tiết</span>
                   </button>
 
-                  ${isAdmin ? `
+                  ${canManage ? `
                     <button 
                       type="button" 
                       data-action="edit" 
@@ -1305,9 +1315,19 @@
 
   // 9. Xử lý Chỉnh sửa dự án
   function handleEditProject(projectId) {
+    const authService = window.Auth || window.TaskFlowAuth;
+    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+    const currentUserId = currentUser ? currentUser.id : null;
+    const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+
     const projects = DataEngine.getProjects();
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
+
+    if (!isAdmin && project.ownerId !== currentUserId) {
+      if (typeof showToast === 'function') showToast('Bạn chỉ có quyền chỉnh sửa dự án do chính mình làm chủ!', 'error');
+      return;
+    }
 
     const modalBackdrop = document.getElementById('projectModalBackdrop');
     const form = document.getElementById('projectForm');
@@ -1443,6 +1463,18 @@
       const updatedTasks = allTasks.filter((t) => t.projectId !== pendingDeleteProjectId);
       DataEngine.saveTasks(updatedTasks);
 
+      // Tự động ghi nhận vào Nhật ký kiểm toán (Audit Trail)
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.logActivity === 'function') {
+        window.TaskFlowStorage.logActivity({
+          action: 'PROJECT_DELETE',
+          entityType: 'project',
+          entityId: pendingDeleteProjectId,
+          entityTitle: projectName,
+          details: 'Xóa dự án và toàn bộ công việc liên kết',
+          user: currentUser
+        });
+      }
+
       // 3. Hiển thị thông báo Toast chuẩn Glassmorphism
       showToast(`Đã xóa vĩnh viễn không gian dự án "${projectName}".`, 'info');
 
@@ -1455,9 +1487,19 @@
 
   // Mở modal xác nhận xóa thay thế hộp thoại confirm mặc định của trình duyệt
   function handleDeleteProject(projectId) {
+    const authService = window.Auth || window.TaskFlowAuth;
+    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+    const currentUserId = currentUser ? currentUser.id : null;
+    const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+
     const projects = DataEngine.getProjects();
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
+
+    if (!isAdmin && project.ownerId !== currentUserId) {
+      if (typeof showToast === 'function') showToast('Bạn chỉ có quyền xóa dự án do chính mình làm chủ!', 'error');
+      return;
+    }
 
     pendingDeleteProjectId = projectId;
     const modalBackdrop = document.getElementById('deleteConfirmModalBackdrop');
@@ -1478,6 +1520,10 @@
    * ==========================================================================
    */
   function initProjectsPage() {
+    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+    if (currentUser && window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+      window.TaskFlowStorage.ensureUserOnboarding(currentUser);
+    }
     renderResourceAllocation();
     initWorkloadToggle();
     initFilterChips();

@@ -484,7 +484,7 @@
       }
       if (!user) {
         try {
-          const raw = localStorage.getItem('currentUser');
+          const raw = localStorage.getItem('currentUser') || localStorage.getItem('TASKFLOW_USER') || localStorage.getItem('taskflow_current_user');
           if (raw) user = JSON.parse(raw);
         } catch (e) {}
       }
@@ -497,7 +497,88 @@
       };
     },
 
+    /**
+     * Lấy danh sách các dự án người dùng hiện tại có quyền truy cập
+     */
+    getUserAccessibleProjects() {
+      const allProjects = KanbanData.getProjects();
+      const currentUser = this.getCurrentUser();
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+      if (isAdmin) return allProjects;
+      return allProjects.filter(p => p && (p.ownerId === currentUser.id || (Array.isArray(p.members) && p.members.includes(currentUser.id))));
+    },
+
+    /**
+     * Kiểm tra quyền kéo thả / di chuyển công việc (RBAC Drag & Drop Authorization)
+     * 1. Quản trị viên (Admin) -> Toàn quyền di chuyển mọi task
+     * 2. Chủ dự án (Project Owner) -> Toàn quyền điều phối các task trong dự án của mình
+     * 3. Người được phân công (Assignee) -> Toàn quyền di chuyển task của chính mình
+     * 4. Task chưa có người nhận trong dự án tham gia -> Được nhận và kéo
+     * 5. Ngược lại -> KHÔNG ĐƯỢC DI CHUYỂN
+     */
+    canUserMoveTask(task, project) {
+      if (!task) return false;
+      const user = this.getCurrentUser();
+      if (!user) return false;
+
+      // 1. Quản trị viên (Admin) -> Toàn quyền di chuyển mọi task
+      const userRole = (user.role || '').toLowerCase();
+      const userEmail = (user.email || '').toLowerCase();
+      const isAdmin = userRole === 'admin' || userEmail === 'admin@taskflow.dev';
+      if (isAdmin) return true;
+
+      if (!project) {
+        const projects = KanbanData.getProjects();
+        project = projects.find(p => p.id === task.projectId);
+      }
+
+      // 2. Chủ dự án có toàn quyền trong dự án mình làm chủ
+      if (project && project.ownerId === user.id) return true;
+
+      // 3. Người được gán trực tiếp công việc này (Lead Assignee)
+      if (task.assigneeId && task.assigneeId === user.id) return true;
+      if (task.assignee && (task.assignee.id === user.id || (task.assignee.name && user.name && task.assignee.name.toLowerCase() === user.name.toLowerCase()))) {
+        return true;
+      }
+
+      // Thành viên bình thường (Member) tuyệt đối KHÔNG ĐƯỢC di chuyển task của người khác!
+      return false;
+    },
+
+    /**
+     * Kiểm tra quyền chỉnh sửa form công việc (RBAC Task Edit Permission)
+     */
+    canUserEditTask(task, project) {
+      if (!task) return false;
+      const user = this.getCurrentUser();
+      if (!user) return false;
+
+      const isAdmin = user.role === 'admin' || user.email === 'admin@taskflow.dev';
+      if (isAdmin) return true;
+
+      if (!project) {
+        const projects = KanbanData.getProjects();
+        project = projects.find(p => p.id === task.projectId);
+      }
+
+      if (project && project.ownerId === user.id) return true;
+
+      if (task.assigneeId === user.id) return true;
+      if (task.assignee && (task.assignee.id === user.id || task.assignee.name === user.name)) return true;
+
+      return false;
+    },
+
     init() {
+      const currentUser = this.getCurrentUser();
+      if (currentUser && window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+        window.TaskFlowStorage.ensureUserOnboarding(currentUser);
+      }
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('projectId');
+        if (pId) this.currentProjectFilter = pId;
+      } catch (e) {}
       this.updateCommentAuthorAvatar();
       this.populateProjectFilter();
       this.populateMemberFilterBar();
@@ -550,7 +631,10 @@
       const filterSelect = document.getElementById('filterProject');
       if (!filterSelect) return;
 
-      const projects = KanbanData.getProjects();
+      const allProjects = KanbanData.getProjects();
+      const currentUser = this.getCurrentUser();
+      const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
+      const projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser.id || (Array.isArray(p.members) && p.members.includes(currentUser.id)));
       const currentVal = filterSelect.value || 'all';
 
       filterSelect.innerHTML = `<option value="all">Tất cả dự án (${projects.length})</option>`;
@@ -586,6 +670,20 @@
       });
       bar.appendChild(allBtn);
 
+      // Chip 'Việc của tôi' (1-click My Tasks Filter)
+      const currentUser = this.getCurrentUser();
+      const myBtn = document.createElement('button');
+      myBtn.type = 'button';
+      const isMyFilterActive = this.currentMemberFilter === currentUser.id;
+      myBtn.className = `member-filter-chip ${isMyFilterActive ? 'is-active ring-2 ring-indigo-500' : ''} bg-indigo-50/80 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-500/30`;
+      myBtn.innerHTML = `<span class="flex items-center gap-1"><span>💼</span> Việc của tôi</span>`;
+      myBtn.addEventListener('click', () => {
+        this.currentMemberFilter = (this.currentMemberFilter === currentUser.id) ? 'all' : currentUser.id;
+        this.populateMemberFilterBar();
+        this.render();
+      });
+      bar.appendChild(myBtn);
+
       // Chips từng thành viên
       members.forEach(m => {
         const chip = document.createElement('button');
@@ -611,9 +709,9 @@
       const projectSelect = document.getElementById('taskInputProject');
       const assigneeSelect = document.getElementById('taskInputAssignee');
 
-      // 1. Dropdown Dự án
+      // 1. Dropdown Dự án (Chỉ lấy dự án được phép truy cập)
       if (projectSelect) {
-        const projects = KanbanData.getProjects();
+        const projects = this.getUserAccessibleProjects();
         projectSelect.innerHTML = '';
         projects.forEach(p => {
           const opt = document.createElement('option');
@@ -679,6 +777,11 @@
      */
     getFilteredTasks() {
       let tasks = KanbanData.getTasks();
+      const accessibleProjects = this.getUserAccessibleProjects();
+      const allowedProjectIds = new Set(accessibleProjects.map(p => p.id));
+
+      // PHÂN QUYỀN DỮ LIỆU: Chỉ lấy task thuộc các dự án người dùng được phép truy cập
+      tasks = tasks.filter(t => allowedProjectIds.has(t.projectId));
 
       // 1. Lọc theo Dự án
       if (this.currentProjectFilter !== 'all') {
@@ -690,14 +793,10 @@
         tasks = tasks.filter(t => t.priority === this.currentPriorityFilter);
       }
 
-      // 3. Lọc theo Thành viên (My Tasks Mode: Làm chính hoặc tham gia việc con)
+      // 3. Lọc theo Thành viên (Chính xác theo Người phụ trách chính)
       if (this.currentMemberFilter !== 'all') {
         const memId = this.currentMemberFilter;
-        tasks = tasks.filter(t => {
-          const isLead = t.assigneeId === memId;
-          const isSubtaskAssignee = (t.subtasks || []).some(s => (s.assigneeIds || []).includes(memId));
-          return isLead || isSubtaskAssignee;
-        });
+        tasks = tasks.filter(t => t.assigneeId === memId);
       }
 
       // 4. Lọc theo Từ khóa tìm kiếm
@@ -791,8 +890,9 @@
      */
     createTaskCardElement(task, project) {
       const card = document.createElement('div');
-      card.className = 'task-card animate-card-enter cursor-pointer';
-      card.setAttribute('draggable', 'true');
+      const canMove = this.canUserMoveTask(task, project);
+      card.className = `task-card animate-card-enter cursor-pointer ${canMove ? 'cursor-grab' : 'is-locked-task'}`;
+      card.setAttribute('draggable', canMove ? 'true' : 'false');
       card.setAttribute('data-task-id', task.id);
       card.setAttribute('data-status', task.status);
 
@@ -935,6 +1035,12 @@
             </span>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
+            ${!canMove ? `
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5" title="Chỉ người phụ trách (${task.assignee?.name || 'thành viên khác'}) hoặc Chủ dự án mới có quyền kéo thả công việc này">
+                <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span class="truncate max-w-[55px]">${task.assignee?.name || 'Khác'}</span>
+              </span>
+            ` : ''}
             ${overdueBadge}
             <span class="badge ${prio.class}">
               <span class="priority-dot"></span>
@@ -985,18 +1091,44 @@
         </div>
       `;
 
-      // Kéo thả HTML5 Drag & Drop
-      card.addEventListener('dragstart', (e) => {
-        this.draggedTaskId = task.id;
-        card.classList.add('is-dragging');
-        e.dataTransfer.setData('text/plain', task.id);
-        e.dataTransfer.effectAllowed = 'move';
-      });
+      // Kéo thả HTML5 Drag & Drop có kiểm tra phân quyền RBAC
+      if (canMove) {
+        card.setAttribute('draggable', 'true');
+        card.addEventListener('dragstart', (e) => {
+          this.draggedTaskId = task.id;
+          card.classList.add('is-dragging');
+          e.dataTransfer.setData('text/plain', task.id);
+          e.dataTransfer.effectAllowed = 'move';
+        });
 
-      card.addEventListener('dragend', () => {
-        this.draggedTaskId = null;
-        card.classList.remove('is-dragging');
-      });
+        card.addEventListener('dragend', () => {
+          this.draggedTaskId = null;
+          card.classList.remove('is-dragging');
+        });
+      } else {
+        card.removeAttribute('draggable');
+        card.classList.add('is-locked-task');
+        card.addEventListener('dragstart', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.draggedTaskId = null;
+          const assigneeName = task.assignee?.name || 'thành viên khác';
+          showToast(`🔒 Bạn không thể di chuyển công việc của "${assigneeName}"! Chỉ người phụ trách (${assigneeName}), Chủ dự án hoặc Quản trị viên mới có quyền thao tác.`, 'warning');
+          return false;
+        });
+
+        // Chặn drag hoàn toàn trên các phần tử con (ảnh đại diện, text...)
+        setTimeout(() => {
+          card.querySelectorAll('*').forEach(child => {
+            child.setAttribute('draggable', 'false');
+            child.addEventListener('dragstart', (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              return false;
+            });
+          });
+        }, 10);
+      }
 
       // Nhấn trực tiếp vào Card mở Modal 2 cột chi tiết
       card.addEventListener('click', (e) => {
@@ -1064,6 +1196,16 @@
       if (taskIndex === -1) return;
 
       const task = tasks[taskIndex];
+      const projects = KanbanData.getProjects();
+      const project = projects.find(p => p.id === task.projectId);
+
+      // KIỂM TRA QUYỀN TRƯỚC KHI CHUYỂN TRẠNG THÁI
+      if (!this.canUserMoveTask(task, project)) {
+        showToast('Từ chối quyền: Bạn không có quyền di chuyển công việc của thành viên khác!', 'error');
+        this.render();
+        return;
+      }
+
       const prevStatus = task.status;
       if (prevStatus === targetStatus) return;
 
@@ -1143,6 +1285,19 @@
       } else if (prevStatus === 'doing' && targetStatus === 'todo') {
         task.timerStartedAt = null;
         task.isTracking = false;
+      // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT KHI CHUYỂN SANG DONE (DEFINITION OF DONE GATE)
+      // Bắt buộc phải có Link sản phẩm/nghiệm thu hợp lệ mới được chuyển sang Đã hoàn thành
+      if (targetStatus === 'done') {
+        const hasDoneLink = Boolean(task.evidence && task.evidence.doneUrl && task.evidence.doneUrl.trim().length > 0);
+        if (!hasDoneLink) {
+          // KHÔNG CẬP NHẬT task.status! Giữ nguyên vị trí ở cột trước đó
+          this.render(); // Snap thẻ về lại vị trí cũ ngay lập tức
+          showToast('⚠️ Bắt buộc phải có Link sản phẩm nghiệm thu để chuyển sang "Đã hoàn thành"!', 'warning');
+          setTimeout(() => {
+            this.openQuickEvidenceModal(task, 'done', { isMandatoryGate: true, fromStatus: prevStatus });
+          }, 150);
+          return;
+        }
       }
 
       task.status = targetStatus;
@@ -1182,20 +1337,38 @@
         showToast(`Đã chuyển sang "${statusLabels[targetStatus]}"${progressText}`, 'success');
       }
 
-      // Tự động kích hoạt Quick Evidence Modal nếu chuyển sang Doing/Done mà chưa có link
+      // Tự động ghi nhận vào Nhật ký kiểm toán (Audit Trail)
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.logActivity === 'function') {
+        window.TaskFlowStorage.logActivity({
+          action: 'TASK_MOVE',
+          entityType: 'task',
+          entityId: task.id,
+          entityTitle: task.title,
+          details: `Chuyển trạng thái sang "${statusLabels[targetStatus]}"`,
+          user: this.getCurrentUser()
+        });
+      }
+
+      // Tự động kích hoạt Quick Evidence Modal nếu chuyển sang Doing mà chưa có link
       if (targetStatus === 'doing' && !task.evidence?.inProgressUrl) {
         setTimeout(() => this.openQuickEvidenceModal(task, 'doing'), 350);
-      } else if (targetStatus === 'done' && !task.evidence?.doneUrl) {
-        setTimeout(() => this.openQuickEvidenceModal(task, 'done'), 350);
       }
     },
 
     /**
      * Mở Quick Evidence Modal
+     * Hỗ trợ cờ isMandatoryGate khi kéo sang Done bắt buộc phải có Link
      */
-    openQuickEvidenceModal(task, targetStatus) {
+    openQuickEvidenceModal(task, targetStatus, options = {}) {
       const modal = document.getElementById('quickEvidenceModal');
       if (!modal) return;
+
+      this.pendingEvidenceData = {
+        taskId: task.id,
+        targetStatus: targetStatus,
+        isMandatoryGate: Boolean(options.isMandatoryGate),
+        fromStatus: options.fromStatus || task.status
+      };
 
       document.getElementById('quickEvidenceTaskId').value = task.id;
       document.getElementById('quickEvidenceTargetStatus').value = targetStatus;
@@ -1207,6 +1380,7 @@
       const noteInput = document.getElementById('quickEvidenceNote');
       const iconEl = document.getElementById('quickEvidenceIcon');
       const hintEl = document.getElementById('quickEvidenceHint');
+      const btnSkip = document.getElementById('btnSkipQuickEvidence');
 
       if (targetStatus === 'doing') {
         modalTitle.textContent = 'Nộp Bằng Chứng Tiến Độ Đang Làm (WIP Link)';
@@ -1217,24 +1391,38 @@
         iconEl.textContent = '⚡';
         iconEl.className = 'w-8 h-8 rounded-lg bg-sky-500/20 text-sky-500 flex items-center justify-center font-bold text-base';
         hintEl.textContent = 'Dán link Figma hoặc GitHub branch để người phân công kiểm tra tiến độ trực tiếp.';
+        if (btnSkip) {
+          btnSkip.textContent = 'Bỏ qua & Cập nhật sau';
+          btnSkip.classList.remove('hidden');
+        }
       } else if (targetStatus === 'done') {
-        modalTitle.textContent = 'Nộp Link Nghiệm Thu Hoàn Thành (Done Delivery)';
-        urlLabel.innerHTML = `Link Sản Phẩm Bàn Giao / Live Demo / PR Merged <span class="text-rose-500">*</span>`;
+        modalTitle.textContent = 'Bắt Buộc: Nộp Link Sản Phẩm Nghiệm Thu (DoD Gate)';
+        urlLabel.innerHTML = `Link Sản Phẩm Bàn Giao / Live Demo / PR Merged <span class="text-rose-500">* (Bắt buộc)</span>`;
         urlInput.placeholder = 'https://demo-app.vercel.app hoặc https://github.com/TaskFlow/pull/1';
         urlInput.value = task.evidence?.doneUrl || '';
         noteInput.value = task.evidence?.doneNote || '';
         iconEl.textContent = '🏆';
         iconEl.className = 'w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-base';
-        hintEl.textContent = 'Dán link sản phẩm hoàn thiện để Quản trị viên (Admin) kiểm tra và duyệt nghiệm thu.';
+        hintEl.textContent = '⚠️ Tiêu chuẩn hoàn thành (Definition of Done): Bắt buộc phải có link sản phẩm bàn giao thực tế mới được chuyển sang Đã hoàn thành.';
+        if (btnSkip) {
+          btnSkip.textContent = 'Hủy bỏ (Giữ nguyên trạng thái)';
+          btnSkip.classList.remove('hidden');
+        }
       }
 
       modal.classList.remove('hidden');
       setTimeout(() => urlInput.focus(), 100);
     },
 
-    closeQuickEvidenceModal() {
+    closeQuickEvidenceModal(isCancelled = false) {
       const modal = document.getElementById('quickEvidenceModal');
       if (modal) modal.classList.add('hidden');
+
+      if (isCancelled && this.pendingEvidenceData && this.pendingEvidenceData.isMandatoryGate) {
+        showToast('ℹ️ Đã hủy chuyển trạng thái. Công việc được giữ ở trạng thái ban đầu.', 'info');
+        this.render();
+      }
+      this.pendingEvidenceData = null;
     },
 
     /**
@@ -1613,31 +1801,93 @@
      */
     updateFormPermissions(task) {
       const user = this.getCurrentUser();
-      const isAdmin = user.role === 'admin';
+      const isAdmin = user && (user.role === 'admin' || user.email === 'admin@taskflow.dev');
+      
+      const projects = KanbanData.getProjects();
+      const project = task ? projects.find(p => p.id === task.projectId) : null;
+      const isOwner = project && project.ownerId === user.id;
+      const isAssignee = task && (task.assigneeId === user.id || (task.assignee && (task.assignee.id === user.id || task.assignee.name === user.name)));
+      
+      const isPrivileged = isAdmin || isOwner;
+      const isReadOnly = task && !isPrivileged && !isAssignee;
 
+      // Banner thông báo Chế độ Chỉ Đọc (View-only)
+      const banner = document.getElementById('taskModalReadOnlyBanner');
+      const bannerText = document.getElementById('taskModalReadOnlyText');
+      if (banner) {
+        if (isReadOnly) {
+          banner.classList.remove('hidden');
+          banner.classList.add('flex');
+          if (bannerText) {
+            bannerText.innerHTML = `Chế độ <b>Chỉ đọc (View-only)</b>: Công việc này thuộc về <b>${task.assignee?.name || 'thành viên khác'}</b>. Bạn có thể theo dõi tiến độ và gửi bình luận trao đổi bên dưới.`;
+          }
+        } else {
+          banner.classList.add('hidden');
+          banner.classList.remove('flex');
+        }
+      }
+
+      // Các trường form chính
+      const titleInput = document.getElementById('taskInputTitle');
+      const descInput = document.getElementById('taskInputDesc');
+      const statusInput = document.getElementById('taskInputStatus');
+      const hoursInput = document.getElementById('taskInputHours');
+      const tagsInput = document.getElementById('taskInputTags');
       const startInput = document.getElementById('taskInputStart');
       const dueInput = document.getElementById('taskInputDue');
       const projectSelect = document.getElementById('taskInputProject');
       const prioritySelect = document.getElementById('taskInputPriority');
       const assigneeSelect = document.getElementById('taskInputAssignee');
+      const btnSave = document.getElementById('btnSaveTask');
+      const btnDelete = document.getElementById('btnDeleteTaskInModal');
       const lockIndicators = document.querySelectorAll('.admin-only-lock');
+      const subtaskInput = document.getElementById('newSubtaskInput');
+      const btnAddSubtask = document.getElementById('btnAddSubtask');
 
-      const adminOnlyInputs = [startInput, dueInput, projectSelect, prioritySelect, assigneeSelect];
+      if (isReadOnly) {
+        // KHÓA TOÀN BỘ CÁC Ô NHẬP LIỆU (Giữ nguyên khung thảo luận)
+        [titleInput, descInput, statusInput, hoursInput, tagsInput, startInput, dueInput, projectSelect, prioritySelect, assigneeSelect, subtaskInput].forEach(el => {
+          if (el) {
+            el.disabled = true;
+            el.classList.add('cursor-not-allowed', 'opacity-70');
+          }
+        });
+        if (btnAddSubtask) btnAddSubtask.disabled = true;
+        if (btnSave) btnSave.classList.add('hidden');
+        if (btnDelete) btnDelete.classList.add('hidden');
+      } else {
+        // Cho phép sửa các mục trong thẩm quyền
+        [titleInput, descInput, statusInput, hoursInput, tagsInput, subtaskInput].forEach(el => {
+          if (el) {
+            el.disabled = false;
+            el.classList.remove('cursor-not-allowed', 'opacity-70');
+          }
+        });
+        if (btnAddSubtask) btnAddSubtask.disabled = false;
+        if (btnSave) btnSave.classList.remove('hidden');
 
-      adminOnlyInputs.forEach(el => {
-        if (!el) return;
-        el.disabled = !isAdmin;
-        if (!isAdmin) {
-          el.classList.add('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
-          el.title = '🔒 Chỉ Quản trị viên (Admin) mới có quyền chỉnh sửa mục này';
-        } else {
-          el.classList.remove('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
-          el.removeAttribute('title');
+        // Phân quyền quản lý (Admin / Chủ dự án): Được sửa Project, Assignee, Priority, Dates
+        const adminOnlyInputs = [startInput, dueInput, projectSelect, prioritySelect, assigneeSelect];
+        adminOnlyInputs.forEach(el => {
+          if (!el) return;
+          el.disabled = !isPrivileged;
+          if (!isPrivileged) {
+            el.classList.add('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
+            el.title = '🔒 Chỉ Chủ dự án hoặc Quản trị viên mới có quyền chỉnh sửa mục này';
+          } else {
+            el.classList.remove('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
+            el.removeAttribute('title');
+          }
+        });
+
+        // Nút xóa chỉ dành cho Admin hoặc Chủ dự án
+        if (btnDelete) {
+          btnDelete.classList.toggle('hidden', !isPrivileged);
         }
-      });
+      }
 
       lockIndicators.forEach(lock => {
-        lock.classList.toggle('hidden', isAdmin);
+        lock.classList.toggle('hidden', isPrivileged || isReadOnly);
       });
     },
 
@@ -1814,15 +2064,18 @@
       if (btnApprove) {
         btnApprove.addEventListener('click', async () => {
           const user = this.getCurrentUser();
-          if (user.role !== 'admin') {
-            showToast('Chỉ Quản trị viên (Admin) mới có quyền duyệt nghiệm thu!', 'error');
+          const tasks = KanbanData.getTasks();
+          const task = tasks.find(t => t.id === this.currentEditingTaskId);
+          const projects = KanbanData.getProjects();
+          const project = task ? projects.find(p => p.id === task.projectId) : null;
+          const canApprove = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+
+          if (!canApprove) {
+            showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền duyệt nghiệm thu!', 'error');
             return;
           }
 
-          if (!this.currentEditingTaskId) return;
-          const tasks = KanbanData.getTasks();
-          const task = tasks.find(t => t.id === this.currentEditingTaskId);
-          if (!task) return;
+          if (!this.currentEditingTaskId || !task) return;
 
           if (!task.evidence) task.evidence = {};
           task.evidence.isApproved = true;
@@ -1855,18 +2108,21 @@
       if (btnRequestChanges) {
         btnRequestChanges.addEventListener('click', async () => {
           const user = this.getCurrentUser();
-          if (user.role !== 'admin') {
-            showToast('Chỉ Admin mới có quyền yêu cầu sửa lại!', 'error');
+          const tasks = KanbanData.getTasks();
+          const task = tasks.find(t => t.id === this.currentEditingTaskId);
+          const projects = KanbanData.getProjects();
+          const project = task ? projects.find(p => p.id === task.projectId) : null;
+          const canRequest = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+
+          if (!canRequest) {
+            showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền yêu cầu sửa lại!', 'error');
             return;
           }
 
           const reason = window.prompt('Nhập lý do hoặc nội dung cần chỉnh sửa bổ sung:');
           if (reason === null) return;
 
-          if (!this.currentEditingTaskId) return;
-          const tasks = KanbanData.getTasks();
-          const task = tasks.find(t => t.id === this.currentEditingTaskId);
-          if (!task) return;
+          if (!this.currentEditingTaskId || !task) return;
 
           task.status = 'doing'; // Chuyển ngược về In-Progress
           if (!task.evidence) task.evidence = {};
@@ -1973,12 +2229,19 @@
                 const finalAssigneeId = isAdmin ? assigneeId : prevTask.assigneeId;
                 const finalAssignee = isAdmin ? { name: assigneeName, avatar: assigneeAvatar } : prevTask.assignee;
 
+                const submittedDoneUrl = doneUrlInput ? doneUrlInput.value.trim() : (prevEvidence.doneUrl || '');
+                let finalStatus = status;
+                if (finalStatus === 'done' && !submittedDoneUrl) {
+                  showToast('⚠️ Bắt buộc phải có Link sản phẩm hoàn thiện để chuyển sang "Đã hoàn thành"! Trạng thái được giữ nguyên.', 'warning');
+                  finalStatus = prevTask.status !== 'done' ? prevTask.status : 'doing';
+                }
+
                 tasks[taskIndex] = {
                   ...prevTask,
                   title,
                   description,
                   projectId: finalProjectId,
-                  status,
+                  status: finalStatus,
                   priority: finalPriority,
                   assigneeId: finalAssigneeId,
                   assignee: finalAssignee,
@@ -1990,7 +2253,7 @@
                   evidence: {
                     inProgressUrl: wipUrlInput ? wipUrlInput.value.trim() : prevEvidence.inProgressUrl || '',
                     inProgressNote: wipNoteInput ? wipNoteInput.value.trim() : prevEvidence.inProgressNote || '',
-                    doneUrl: doneUrlInput ? doneUrlInput.value.trim() : prevEvidence.doneUrl || '',
+                    doneUrl: submittedDoneUrl,
                     doneNote: doneNoteInput ? doneNoteInput.value.trim() : prevEvidence.doneNote || '',
                     isApproved: prevEvidence.isApproved || false,
                     approvedBy: prevEvidence.approvedBy || '',
@@ -2003,12 +2266,18 @@
                 showToast(`Đã lưu công việc "${title}"!`, 'success');
               }
             } else {
+              const newDoneUrl = doneUrlInput ? doneUrlInput.value.trim() : '';
+              let finalNewStatus = status;
+              if (finalNewStatus === 'done' && !newDoneUrl) {
+                showToast('⚠️ Công việc mới không thể đặt là "Đã hoàn thành" khi chưa có Link sản phẩm hoàn thiện! Đã chuyển về "Chờ thực hiện".', 'warning');
+                finalNewStatus = 'todo';
+              }
               targetTask = {
                 id: 'task-' + Date.now(),
                 projectId,
                 title,
                 description,
-                status,
+                status: finalNewStatus,
                 priority,
                 assigneeId,
                 assignee: { name: assigneeName, avatar: assigneeAvatar },
@@ -2051,13 +2320,13 @@
       const btnCloseQuick = document.getElementById('btnCloseQuickEvidenceModal');
       const btnSkipQuick = document.getElementById('btnSkipQuickEvidence');
 
-      if (btnCloseQuick) btnCloseQuick.addEventListener('click', () => this.closeQuickEvidenceModal());
-      if (btnSkipQuick) btnSkipQuick.addEventListener('click', () => this.closeQuickEvidenceModal());
+      if (btnCloseQuick) btnCloseQuick.addEventListener('click', () => this.closeQuickEvidenceModal(true));
+      if (btnSkipQuick) btnSkipQuick.addEventListener('click', () => this.closeQuickEvidenceModal(true));
 
       const quickModalEl = document.getElementById('quickEvidenceModal');
       if (quickModalEl) {
         quickModalEl.addEventListener('click', (e) => {
-          if (e.target === quickModalEl) this.closeQuickEvidenceModal();
+          if (e.target === quickModalEl) this.closeQuickEvidenceModal(true);
         });
       }
 
@@ -2074,7 +2343,7 @@
           const tasks = KanbanData.getTasks();
           const task = tasks.find(t => t.id === taskId);
           if (!task) {
-            this.closeQuickEvidenceModal();
+            this.closeQuickEvidenceModal(false);
             return;
           }
 
@@ -2084,20 +2353,53 @@
             };
           }
 
-          if (targetStatus === 'doing') {
-            task.evidence.inProgressUrl = evidenceUrl;
-            task.evidence.inProgressNote = evidenceNote;
-          } else {
+          if (targetStatus === 'done') {
+            if (!evidenceUrl) {
+              showToast('⚠️ Vui lòng nhập link sản phẩm bàn giao để hoàn tất!', 'error');
+              return;
+            }
             task.evidence.doneUrl = evidenceUrl;
             task.evidence.doneNote = evidenceNote;
             task.evidence.isApproved = false; // Chờ Admin duyệt
+            task.status = 'done'; // NÂNG CẤP TRẠNG THÁI SANG DONE SAU KHI CÓ LINK
+          } else if (targetStatus === 'doing') {
+            task.evidence.inProgressUrl = evidenceUrl;
+            task.evidence.inProgressNote = evidenceNote;
           }
 
           KanbanData.saveTasks(tasks);
-          this.closeQuickEvidenceModal();
+          const progressResult = recalculateProjectProgress(task.projectId);
+          this.pendingEvidenceData = null;
+          this.closeQuickEvidenceModal(false);
           this.render();
 
-          showToast('Đã lưu bằng chứng làm việc!', 'success');
+          setTimeout(() => {
+            const movedCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (movedCard) {
+              movedCard.classList.add('animate-spring-drop');
+              setTimeout(() => movedCard.classList.remove('animate-spring-drop'), 450);
+            }
+          }, 50);
+
+          if (targetStatus === 'done') {
+            const projName = progressResult?.project?.name || 'Dự án';
+            const progressText = progressResult ? ` • Tiến độ ${projName}: ${progressResult.progress}%` : '';
+            showToast(`🎉 Chúc mừng! Đã hoàn thành công việc và nộp link nghiệm thu${progressText}`, 'success');
+
+            // Ghi Audit Trail
+            if (window.TaskFlowStorage && typeof window.TaskFlowStorage.logActivity === 'function') {
+              window.TaskFlowStorage.logActivity({
+                action: 'TASK_MOVE',
+                entityType: 'task',
+                entityId: task.id,
+                entityTitle: task.title,
+                details: `Hoàn thành công việc kèm link nghiệm thu: ${evidenceUrl}`,
+                user: this.getCurrentUser()
+              });
+            }
+          } else {
+            showToast('Đã lưu bằng chứng làm việc!', 'success');
+          }
 
           if (shouldSyncSheets) {
             await syncEvidenceToSheets(task, targetStatus, evidenceUrl, evidenceNote, false, 'EVIDENCE_SUBMIT');
@@ -2126,9 +2428,23 @@
           const taskId = e.dataTransfer.getData('text/plain') || this.draggedTaskId;
           const targetStatus = listEl.getAttribute('data-status');
 
-          if (taskId && targetStatus) {
-            this.moveTaskToStatus(taskId, targetStatus);
+          if (!taskId || !targetStatus) return;
+
+          const tasks = KanbanData.getTasks();
+          const task = tasks.find(t => t.id === taskId);
+          if (!task) return;
+          const projects = KanbanData.getProjects();
+          const project = task ? projects.find(p => p.id === task.projectId) : null;
+
+          if (!this.canUserMoveTask(task, project)) {
+            this.draggedTaskId = null;
+            const assigneeName = task.assignee?.name || 'thành viên khác';
+            showToast(`🔒 Từ chối quyền: Bạn không có quyền di chuyển công việc của "${assigneeName}"!`, 'error');
+            this.render();
+            return;
           }
+
+          this.moveTaskToStatus(taskId, targetStatus);
         });
       });
 
@@ -2143,14 +2459,18 @@
      */
     deleteTask(taskId) {
       const user = this.getCurrentUser();
-      if (user.role !== 'admin') {
-        showToast('Chỉ Quản trị viên (Admin) mới có quyền xóa công việc!', 'error');
-        return;
-      }
-
       const tasks = KanbanData.getTasks();
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
+
+      const projects = KanbanData.getProjects();
+      const project = projects.find(p => p.id === task.projectId);
+      const canDelete = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+
+      if (!canDelete) {
+        showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền xóa công việc này!', 'error');
+        return;
+      }
 
       const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn công việc:\n"${task.title}"?`);
       if (!confirmed) return;
