@@ -1,14 +1,18 @@
 /**
  * ==============================================================================
  * TASKFLOW EXECUTIVE DASHBOARD ENGINE (js/dashboard.js)
- * Mô tả: Bộ xử lý trung tâm cho Bảng Điều Hành & Tổng Quan Tiến Độ.
+ * Mô tả: Bộ xử lý trung tâm cho Bảng Điều Hành, Phân Quyền Dữ Liệu & Cá Nhân Hóa.
  * Nhiệm vụ:
  *   1. Bảo vệ tuyến đường qua Auth.requireAuth().
  *   2. Thuật toán gõ chữ Typewriter lặp 3s cho tiêu đề thương hiệu TASKFLOW.
- *   3. Tính toán KPI tự động bằng hàm bậc cao (map, filter, reduce).
- *   4. Render danh sách dự án với thanh tiến độ % động.
- *   5. Dựng biểu đồ hiệu suất tuần (Weekly Productivity) 100% CSS Flexbox.
- *   6. Lọc và hiển thị danh sách tác vụ khẩn cấp (Critical / High Priority).
+ *   3. Cá nhân hóa chào đón người dùng (Hero Avatar, Tên, Role Badge, Onboarding).
+ *   4. Phân quyền dữ liệu (RBAC Scoping): Người dùng mới/Member chỉ thấy dự án/task của mình.
+ *   5. Bộ lọc góc nhìn SaaS: "Công Việc Của Tôi" (My Tasks) vs "Toàn Cảnh Dự Án" (All Projects).
+ *   6. Dropdown lọc theo từng Dự án cụ thể phản ứng tức thì (Reactive KPI recalculation).
+ *   7. Tính toán KPI tự động bằng hàm bậc cao (map, filter, reduce).
+ *   8. Render danh sách dự án với thanh tiến độ % động.
+ *   9. Dựng biểu đồ hiệu suất tuần (Weekly Productivity) 100% CSS Flexbox.
+ *   10. Lọc và hiển thị danh sách tác vụ khẩn cấp (Critical / High Priority).
  * Tuân thủ: Rubric học phần, colorweb.md, skill.md và ai_detected.md.
  * Tác giả: Lead Frontend Architect & Performance Specialist
  * ==============================================================================
@@ -101,7 +105,215 @@
 
   /**
    * ==========================================================================
-   * 2. TÍNH TOÁN VÀ HIỂN THỊ CÁC CHỈ SỐ KPI METRICS (DÙNG MAP, FILTER, REDUCE)
+   * 2. STATE QUẢN LÝ DỮ LIỆU & BỘ LỌC ĐIỀU HÀNH
+   * ==========================================================================
+   */
+  const DashboardState = {
+    currentUser: null,
+    isAdmin: false,
+    allProjects: [],
+    allTasks: [],
+    allMembers: [],
+    allTimeLogs: [],
+    userAccessibleProjects: [],
+    viewMode: 'mine',           // 'mine' | 'all'
+    selectedProjectId: 'all'    // 'all' | projectId cụ thể
+  };
+
+  /**
+   * Truy xuất thông tin người dùng hiện tại an toàn từ đa nguồn
+   */
+  function getCurrentUser() {
+    if (authService && typeof authService.getCurrentUser === 'function') {
+      const u = authService.getCurrentUser();
+      if (u) return u;
+    }
+    try {
+      const sessionRaw = localStorage.getItem('TASKFLOW_SESSION') || localStorage.getItem('taskflow_session_meta');
+      if (sessionRaw) {
+        const s = JSON.parse(sessionRaw);
+        if (s && s.user) return s.user;
+      }
+      const rawUser = localStorage.getItem('currentUser') || localStorage.getItem('TASKFLOW_USER') || localStorage.getItem('taskflow_current_user');
+      if (rawUser) return JSON.parse(rawUser);
+    } catch (err) {
+      console.warn('[Dashboard] Không thể đọc current user:', err);
+    }
+    return {
+      id: 'guest',
+      name: 'Người Dùng',
+      email: '',
+      role: 'member',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TaskFlow'
+    };
+  }
+
+  /**
+   * ==========================================================================
+   * 3. KHỞI TẠO CÁ NHÂN HÓA HERO SECTION
+   * ==========================================================================
+   */
+  function renderUserHero(currentUser, userProjects) {
+    const elAvatar = document.getElementById('userHeroAvatar');
+    const elName = document.getElementById('userHeroName');
+    const elRole = document.getElementById('userHeroRoleBadge');
+    const elOnboardingNotice = document.getElementById('onboardingNoticeBadge');
+    const elOpenOnboardingKanban = document.getElementById('btnOpenOnboardingKanban');
+
+    const displayName = currentUser.name || currentUser.fullname || currentUser.username || 'Thành viên mới';
+    const roleText = (currentUser.role === 'admin') ? 'Quản trị viên (Admin)' : 'Thành viên (Member)';
+    const avatarUrl = currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}`;
+
+    if (elAvatar) elAvatar.src = avatarUrl;
+    if (elName) elName.textContent = displayName;
+    if (elRole) {
+      elRole.textContent = roleText;
+      if (currentUser.role === 'admin') {
+        elRole.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30 w-fit';
+      }
+    }
+
+    // Kiểm tra xem có dự án Onboarding Training hay không
+    const onboardingProj = userProjects.find(p => p.id === 'PRJ-START' || (p.code && p.code === 'START'));
+    if (elOnboardingNotice) {
+      if (onboardingProj) {
+        elOnboardingNotice.classList.remove('hidden');
+        elOnboardingNotice.classList.add('flex');
+        if (elOpenOnboardingKanban) {
+          elOpenOnboardingKanban.href = `board.html?projectId=${onboardingProj.id}`;
+        }
+      } else {
+        elOnboardingNotice.classList.add('hidden');
+        elOnboardingNotice.classList.remove('flex');
+      }
+    }
+  }
+
+  /**
+   * ==========================================================================
+   * 4. ĐỒNG BỘ CONTROL BAR & DROPDOWN DỰ ÁN
+   * ==========================================================================
+   */
+  function setupControlBar(userProjects, scopedTasks) {
+    const btnMine = document.getElementById('btnViewMine');
+    const btnAll = document.getElementById('btnViewAll');
+    const badgeMine = document.getElementById('badgeMyTasksCount');
+    const badgeAll = document.getElementById('badgeAllProjectsCount');
+    const selectFilter = document.getElementById('dashboardProjectFilter');
+
+    // Cập nhật số đếm trên badge
+    if (badgeAll) badgeAll.textContent = userProjects.length;
+
+    // Số việc thuộc về tôi
+    const myTasksCount = DashboardState.allTasks.filter(t => {
+      const isMine = (t.assigneeId === DashboardState.currentUser.id) ||
+        (!t.assigneeId && userProjects.some(p => p.id === t.projectId && p.ownerId === DashboardState.currentUser.id));
+      const inScope = userProjects.some(p => p.id === t.projectId);
+      return isMine && inScope;
+    }).length;
+
+    if (badgeMine) badgeMine.textContent = myTasksCount;
+
+    // Đổ danh sách dự án vào Dropdown
+    if (selectFilter) {
+      const currentSelected = selectFilter.value || 'all';
+      let optionsHtml = `<option value="all">📌 Tất cả dự án (${userProjects.length})</option>`;
+      userProjects.forEach(p => {
+        const codePrefix = p.code ? `[${p.code}] ` : '';
+        optionsHtml += `<option value="${p.id}">${codePrefix}${p.name}</option>`;
+      });
+      selectFilter.innerHTML = optionsHtml;
+
+      // Giữ nguyên giá trị đang chọn nếu còn hợp lệ
+      if (userProjects.some(p => p.id === currentSelected)) {
+        selectFilter.value = currentSelected;
+        DashboardState.selectedProjectId = currentSelected;
+      } else {
+        selectFilter.value = 'all';
+        DashboardState.selectedProjectId = 'all';
+      }
+
+      // Lắng nghe sự kiện đổi dự án
+      selectFilter.onchange = function () {
+        DashboardState.selectedProjectId = this.value;
+        renderDashboardData();
+      };
+    }
+
+    // Toggle góc nhìn: Công việc của tôi vs Toàn cảnh dự án
+    function updateSwitchButtons() {
+      if (!btnMine || !btnAll) return;
+      if (DashboardState.viewMode === 'mine') {
+        btnMine.className = 'view-switch-btn active flex-1 md:flex-none px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm';
+        btnAll.className = 'view-switch-btn flex-1 md:flex-none px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      } else {
+        btnAll.className = 'view-switch-btn active flex-1 md:flex-none px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm';
+        btnMine.className = 'view-switch-btn flex-1 md:flex-none px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      }
+    }
+
+    if (btnMine) {
+      btnMine.onclick = function () {
+        if (DashboardState.viewMode !== 'mine') {
+          DashboardState.viewMode = 'mine';
+          updateSwitchButtons();
+          renderDashboardData();
+        }
+      };
+    }
+
+    if (btnAll) {
+      btnAll.onclick = function () {
+        if (DashboardState.viewMode !== 'all') {
+          DashboardState.viewMode = 'all';
+          updateSwitchButtons();
+          renderDashboardData();
+        }
+      };
+    }
+
+    updateSwitchButtons();
+  }
+
+  /**
+   * ==========================================================================
+   * 5. LỌC DỮ LIỆU ĐỘNG THEO GÓC NHÌN & DỰ ÁN
+   * ==========================================================================
+   */
+  function getFilteredDashboardData() {
+    const { currentUser, isAdmin, userAccessibleProjects, allTasks, viewMode, selectedProjectId } = DashboardState;
+
+    // 1. Lọc dự án theo dropdown
+    let activeProjects = userAccessibleProjects;
+    if (selectedProjectId !== 'all') {
+      activeProjects = userAccessibleProjects.filter(p => p.id === selectedProjectId);
+    }
+
+    const activeProjectIds = new Set(activeProjects.map(p => p.id));
+
+    // 2. Lấy các task nằm trong phạm vi dự án đang hiển thị
+    let activeTasks = allTasks.filter(t => activeProjectIds.has(t.projectId));
+
+    // 3. Nếu ở chế độ "Công việc của tôi", chỉ lấy task gán cho user hoặc do user sở hữu dự án
+    if (viewMode === 'mine') {
+      activeTasks = activeTasks.filter(t => {
+        if (t.assigneeId === currentUser.id) return true;
+        // Nếu task chưa gán nhưng dự án do người này tạo (hoặc onboarding)
+        const isOwner = activeProjects.some(p => p.id === t.projectId && p.ownerId === currentUser.id);
+        if (isOwner && (!t.assigneeId || t.assigneeId === 'mem-onboarding')) return true;
+        return false;
+      });
+    }
+
+    return {
+      projects: activeProjects,
+      tasks: activeTasks
+    };
+  }
+
+  /**
+   * ==========================================================================
+   * 6. TÍNH TOÁN VÀ HIỂN THỊ CÁC CHỈ SỐ KPI METRICS (DÙNG MAP, FILTER, REDUCE)
    * ==========================================================================
    */
   function renderKpiMetrics(projects, tasks, timeLogs) {
@@ -132,21 +344,35 @@
     }
 
     // 4. Tổng giờ đã cống hiến: Cộng dồn từ mảng timeLogs bằng reduce()
+    const currentUserId = DashboardState.currentUser ? DashboardState.currentUser.id : null;
+    const projectIds = new Set(projects.map(p => p.id));
+
     const totalHours = timeLogs.reduce((acc, log) => {
-      const hours = Number(log.hoursSpent) || Number(log.hours) || Number(log.duration) || 0;
-      return acc + hours;
+      // Nếu là admin và ở view All thì tính hết, ngược lại tính theo user hoặc project
+      const matchUser = !currentUserId || log.userId === currentUserId || log.memberId === currentUserId;
+      const matchProj = !log.projectId || projectIds.has(log.projectId);
+
+      if (DashboardState.isAdmin && DashboardState.viewMode === 'all') {
+        const hours = Number(log.hoursSpent) || Number(log.hours) || Number(log.duration) || 0;
+        return acc + hours;
+      }
+
+      if (matchUser || matchProj) {
+        const hours = Number(log.hoursSpent) || Number(log.hours) || Number(log.duration) || 0;
+        return acc + hours;
+      }
+      return acc;
     }, 0);
 
     const elTotalHours = document.getElementById('kpi-total-hours');
     if (elTotalHours) {
-      // Nếu chưa có log giờ nào, hiển thị 0.0 hoặc lấy tổng ước tính từ tasks
-      elTotalHours.textContent = totalHours > 0 ? totalHours.toFixed(1) : '0.0';
+      elTotalHours.textContent = totalHours > 0 ? totalHours.toFixed(1) : (totalTasks > 0 ? (doneTasks.length * 2.5).toFixed(1) : '0.0');
     }
   }
 
   /**
    * ==========================================================================
-   * 3. RENDER DANH SÁCH DỰ ÁN TRỌNG ĐIỂM KÈM TIẾN ĐỘ % ĐỘNG
+   * 7. RENDER DANH SÁCH DỰ ÁN TRỌNG ĐIỂM KÈM TIẾN ĐỘ % ĐỘNG
    * Logic nghiệp vụ:
    *   Tiến độ của từng dự án được tính toán độc lập bằng cách lọc các task
    *   thuộc projectId tương ứng và đếm số task 'done'.
@@ -158,18 +384,24 @@
 
     if (!projects || projects.length === 0) {
       container.innerHTML = `
-        <div class="empty-state glass-card p-6">
-          <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          <p class="empty-state-title">Chưa có dự án nào</p>
-          <p class="empty-state-desc">Hãy tạo dự án đầu tiên để bắt đầu theo dõi tiến độ.</p>
+        <div class="empty-state glass-card p-8 text-center flex flex-col items-center justify-center">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-3 border border-indigo-200 dark:border-indigo-500/20">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <p class="empty-state-title text-base font-bold text-slate-800 dark:text-white mb-1">Chưa có dự án nào trong phạm vi này</p>
+          <p class="empty-state-desc text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-4">Bạn có thể tạo một dự án mới để bắt đầu sắp xếp công việc và theo dõi hiệu suất đội ngũ.</p>
+          <a href="projects.html" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tạo Dự Án Đầu Tiên
+          </a>
         </div>
       `;
       return;
     }
 
     const projectsHtml = projects.map((project) => {
-      // Lấy toàn bộ task thuộc dự án này bằng hàm filter
-      const projectTasks = tasks.filter((t) => t.projectId === project.id);
+      // Lấy toàn bộ task thuộc dự án này từ allTasks (để tính toán % chuẩn của dự án)
+      const projectTasks = DashboardState.allTasks.filter((t) => t.projectId === project.id);
       const projectDoneTasks = projectTasks.filter((t) => t.status === 'done');
 
       // Tính % tiến độ thực tế theo task
@@ -186,7 +418,7 @@
         if (!mem) return '';
         return `
           <img 
-            src="${mem.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + mem.name}" 
+            src="${mem.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(mem.name)}" 
             alt="${mem.name}" 
             title="${mem.name} (${mem.title || mem.role})"
             class="w-7 h-7 rounded-full border-2 border-slate-900 object-cover bg-slate-800 -ml-2 first:ml-0"
@@ -194,14 +426,19 @@
         `;
       }).join('');
 
+      const isOnboarding = project.id === 'PRJ-START' || project.code === 'START';
+
       return `
-        <article class="glass-card p-5 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/50 dark:hover:border-indigo-500/30 transition-all duration-200">
+        <article class="glass-card p-5 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/50 dark:hover:border-indigo-500/30 transition-all duration-200 ${isOnboarding ? 'ring-1 ring-indigo-500/30 bg-indigo-50/20 dark:bg-indigo-950/20' : ''}">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2.5">
-              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/25">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md ${isOnboarding ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30' : 'bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/25'}">
                 ${project.code || 'PRJ'}
               </span>
-              <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${project.name}</h3>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                ${project.name}
+                ${isOnboarding ? '<span class="text-[10px] px-2 py-0.2 rounded-full bg-indigo-500 text-white font-semibold">Tập sự</span>' : ''}
+              </h3>
             </div>
             
             <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -241,9 +478,14 @@
             <div class="flex items-center">
               ${memberAvatarsHtml || '<span class="text-xs text-slate-500">Chưa gán thành viên</span>'}
             </div>
-            <a href="projects.html" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
-              Chi tiết dự án &rarr;
-            </a>
+            <div class="flex items-center gap-3">
+              <a href="board.html?projectId=${project.id}" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1">
+                Bảng Kanban &rarr;
+              </a>
+              <a href="projects.html" class="text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                Chi tiết
+              </a>
+            </div>
           </div>
         </article>
       `;
@@ -254,7 +496,7 @@
 
   /**
    * ==========================================================================
-   * 4. DỰNG BIỂU ĐỒ HIỆU SUẤT TUẦN (WEEKLY PRODUCTIVITY CHART 100% CSS FLEXBOX)
+   * 8. DỰNG BIỂU ĐỒ HIỆU SUẤT TUẦN (WEEKLY PRODUCTIVITY CHART 100% CSS FLEXBOX)
    * Yêu cầu:
    *   - Dựng bằng CSS Flexbox theo % chiều cao, không sử dụng thư viện ngoài.
    *   - Hiển thị 7 ngày từ Thứ 2 đến Chủ Nhật.
@@ -275,7 +517,6 @@
       { key: 'Sun', label: 'CN', defaultHours: 1.0 }
     ];
 
-    // Tính toán giờ làm thực tế nếu có trong timeLogs, ngược lại dùng workload thực tế
     const MAX_TARGET_HOURS = 8.0;
 
     const chartHtml = days.map((day) => {
@@ -310,7 +551,7 @@
 
   /**
    * ==========================================================================
-   * 5. RENDER DANH SÁCH TÁC VỤ KHẨN CẤP (CRITICAL / HIGH PRIORITY)
+   * 9. RENDER DANH SÁCH TÁC VỤ KHẨN CẤP (CRITICAL / HIGH PRIORITY)
    * Kèm cảnh báo quá hạn dựa theo mốc dueDate
    * ==========================================================================
    */
@@ -330,10 +571,10 @@
 
     if (urgentTasks.length === 0) {
       container.innerHTML = `
-        <div class="col-span-full empty-state glass-card p-6">
-          <svg class="empty-state-icon text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <p class="empty-state-title text-slate-900 dark:text-white">Tuyệt vời! Không có tác vụ khẩn cấp nào tồn đọng</p>
-          <p class="empty-state-desc text-slate-600 dark:text-slate-400">Toàn bộ công việc ưu tiên cao đã được nghiệm thu hoặc giải quyết đúng hạn.</p>
+        <div class="col-span-full empty-state glass-card p-6 text-center">
+          <svg class="empty-state-icon text-emerald-500 dark:text-emerald-400 mx-auto w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="empty-state-title text-slate-900 dark:text-white font-bold text-sm">Tuyệt vời! Không có tác vụ khẩn cấp nào tồn đọng</p>
+          <p class="empty-state-desc text-slate-600 dark:text-slate-400 text-xs mt-1">Toàn bộ công việc ưu tiên cao đã được nghiệm thu hoặc giải quyết đúng hạn.</p>
         </div>
       `;
       return;
@@ -342,11 +583,12 @@
     const now = new Date();
 
     const tasksHtml = urgentTasks.map((task) => {
-      const project = projects.find((p) => p.id === task.projectId);
-      const assignee = members.find((m) => m.id === task.assigneeId);
+      const project = projects.find((p) => p.id === task.projectId) || DashboardState.allProjects.find(p => p.id === task.projectId);
+      const assignee = members.find((m) => m.id === task.assigneeId) || (task.assignee ? task.assignee : null);
 
       // Kiểm tra quá hạn
-      const dueDateObj = task.dueDate ? new Date(task.dueDate) : null;
+      const dueDateVal = task.dueDateTime || task.dueDate;
+      const dueDateObj = dueDateVal ? new Date(dueDateVal) : null;
       const isOverdue = dueDateObj && dueDateObj < now;
       const dueDateFormatted = dueDateObj ? dueDateObj.toLocaleDateString('vi-VN') : 'Chưa định';
 
@@ -392,7 +634,7 @@
             <div class="flex items-center gap-2">
               <span class="text-[11px] text-slate-600 dark:text-slate-400 hidden sm:inline font-medium">${assignee ? assignee.name : 'Chưa gán'}</span>
               <img 
-                src="${assignee ? assignee.avatar : 'https://api.dicebear.com/7.x/avataaars/svg?seed=TaskFlow'}" 
+                src="${assignee ? (assignee.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(assignee.name)) : 'https://api.dicebear.com/7.x/avataaars/svg?seed=TaskFlow'}" 
                 alt="${assignee ? assignee.name : 'Assignee'}" 
                 title="${assignee ? assignee.name : 'Chưa gán'}"
                 class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 object-cover"
@@ -408,14 +650,45 @@
 
   /**
    * ==========================================================================
-   * 6. KHỞI CHẠY TỔNG THỂ KHI TRANG TẢI XONG
+   * 10. RE-RENDER TOÀN BỘ GIAO DIỆN PHẢN ỨNG DỰA TRÊN STATE HIỆN TẠI
+   * ==========================================================================
+   */
+  function renderDashboardData() {
+    const { projects, tasks } = getFilteredDashboardData();
+
+    // Render KPI Metrics
+    renderKpiMetrics(projects, tasks, DashboardState.allTimeLogs);
+
+    // Render Danh sách dự án
+    renderProjectsProgressList(projects, tasks, DashboardState.allMembers);
+
+    // Render Biểu đồ tuần
+    renderWeeklyProductivityChart(DashboardState.allTimeLogs, tasks);
+
+    // Render Nhiệm vụ khẩn cấp
+    renderUrgentTasks(tasks, projects, DashboardState.allMembers);
+  }
+
+  /**
+   * ==========================================================================
+   * 11. KHỞI CHẠY TỔNG THỂ KHI TRANG TẢI XONG
    * ==========================================================================
    */
   function initDashboard() {
     // 1. Kích hoạt hiệu ứng Typewriter lặp 3 giây
     initTypewriterEffect();
 
-    // 2. Truy xuất dữ liệu từ LocalStorage qua TaskFlowStorage
+    // 2. Xác định người dùng hiện tại
+    const currentUser = getCurrentUser();
+    DashboardState.currentUser = currentUser;
+    DashboardState.isAdmin = (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+
+    // 3. Tự động kiểm tra và cấp dự án Khởi Đầu (Onboarding) nếu là người dùng mới
+    if (window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+      window.TaskFlowStorage.ensureUserOnboarding(currentUser);
+    }
+
+    // 4. Đọc dữ liệu từ Storage
     const KEYS = window.TaskFlowStorage ? window.TaskFlowStorage.KEYS : {
       PROJECTS: 'taskflow_projects',
       TASKS: 'taskflow_tasks',
@@ -423,21 +696,49 @@
       TIME_LOGS: 'taskflow_time_logs'
     };
 
-    const projects = getStorageData(KEYS.PROJECTS, []);
-    const tasks = getStorageData(KEYS.TASKS, []);
-    const members = getStorageData(KEYS.MEMBERS, []);
-    const timeLogs = getStorageData(KEYS.TIME_LOGS, []);
+    DashboardState.allProjects = getStorageData(KEYS.PROJECTS, []);
+    DashboardState.allTasks = getStorageData(KEYS.TASKS, []);
+    DashboardState.allMembers = getStorageData(KEYS.MEMBERS, []);
+    DashboardState.allTimeLogs = getStorageData(KEYS.TIME_LOGS, []);
 
-    // 3. Render các thành phần giao diện chính
-    renderKpiMetrics(projects, tasks, timeLogs);
-    renderProjectsProgressList(projects, tasks, members);
-    renderWeeklyProductivityChart(timeLogs, tasks);
-    renderUrgentTasks(tasks, projects, members);
+    // 5. Xác định tập Dự án được phép truy cập (RBAC Scoping)
+    if (DashboardState.isAdmin) {
+      // Admin có quyền truy cập toàn bộ dự án
+      DashboardState.userAccessibleProjects = DashboardState.allProjects;
+    } else {
+      // Member chỉ thấy:
+      // a) Dự án do họ sở hữu (ownerId === currentUser.id)
+      // b) Dự án họ là thành viên (members.includes(currentUser.id))
+      // c) Dự án Onboarding cá nhân nếu có
+      DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => {
+        if (!p) return false;
+        if (p.ownerId === currentUser.id) return true;
+        if (Array.isArray(p.members) && p.members.includes(currentUser.id)) return true;
+        return false;
+      });
 
-    // 4. Lắng nghe sự kiện thay đổi Theme để refresh biểu đồ nếu cần
+      // Nếu người dùng mới chưa có dự án nào (kể cả sau ensure), tạo onboarding ngay
+      if (DashboardState.userAccessibleProjects.length === 0 && window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+        window.TaskFlowStorage.ensureUserOnboarding(currentUser);
+        DashboardState.allProjects = getStorageData(KEYS.PROJECTS, []);
+        DashboardState.allTasks = getStorageData(KEYS.TASKS, []);
+        DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => p.ownerId === currentUser.id);
+      }
+    }
+
+    // 6. Hiển thị thông tin cá nhân hóa trên Hero
+    renderUserHero(currentUser, DashboardState.userAccessibleProjects);
+
+    // 7. Thiết lập Control Bar & Bộ lọc
+    setupControlBar(DashboardState.userAccessibleProjects, DashboardState.allTasks);
+
+    // 8. Render toàn bộ dữ liệu phản ứng
+    renderDashboardData();
+
+    // 9. Lắng nghe sự kiện thay đổi Theme để refresh biểu đồ nếu cần
     window.addEventListener('themeChanged', () => {
-      // Re-render chart để cập nhật màu tương thích
-      renderWeeklyProductivityChart(timeLogs, tasks);
+      const { tasks } = getFilteredDashboardData();
+      renderWeeklyProductivityChart(DashboardState.allTimeLogs, tasks);
     });
   }
 

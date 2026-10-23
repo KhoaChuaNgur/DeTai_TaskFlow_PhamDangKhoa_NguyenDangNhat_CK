@@ -17,6 +17,7 @@ const AppLayout = {
     this.renderHeader(pageTitle, pageDesc);
     this.bindEvents();
     this.updateUserProfile();
+    this.setupPageTransitions();
   },
 
   renderSidebar() {
@@ -117,8 +118,59 @@ const AppLayout = {
     }
   },
 
+  setupPageTransitions() {
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+      mainEl.classList.add('animate__animated', 'animate__fadeIn', 'animate__faster');
+    }
+
+    // Xử lý khi trang được khôi phục từ bfcache (Back/Forward Cache)
+    window.addEventListener('pageshow', () => {
+      const activeMain = document.querySelector('main');
+      if (activeMain) {
+        activeMain.classList.remove('animate__fadeOut');
+        activeMain.classList.add('animate__animated', 'animate__fadeIn', 'animate__faster');
+      }
+    });
+
+    // Chặn click các liên kết nội bộ để tạo hiệu ứng chuyển cảnh mượt mà
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href) return;
+      if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
+        return;
+      }
+      if (link.target === '_blank' || link.hasAttribute('download')) return;
+
+      const currentPath = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const cleanHref = href.split('?')[0].split('#')[0].toLowerCase();
+
+      // Nếu đang ở chính trang đó mà không có tham số query mới
+      if (cleanHref === currentPath && !href.includes('?')) {
+        return;
+      }
+
+      const internalPages = ['index.html', 'projects.html', 'board.html', 'timeline.html', 'reports.html', 'login.html'];
+      const isInternal = internalPages.some(p => cleanHref === p || cleanHref.endsWith('/' + p));
+      if (!isInternal) return;
+
+      e.preventDefault();
+      const targetMain = document.querySelector('main') || document.body;
+      targetMain.classList.remove('animate__fadeIn');
+      targetMain.classList.add('animate__animated', 'animate__fadeOut', 'animate__faster');
+
+      setTimeout(() => {
+        window.location.href = href;
+      }, 150);
+    });
+  },
+
   bindEvents() {
     this.updateUserProfile();
+    this.setupPageTransitions();
 
     // Lắng nghe đếm ngược nhịp tim phiên ngân hàng từ auth.js
     window.addEventListener("sessionTick", (e) => {

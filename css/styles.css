@@ -739,6 +739,30 @@ html.dark .glass-nav,
   border-color: var(--border-card-hover);
 }
 
+/* Khóa thẻ việc đối với thành viên không có quyền (RBAC Drag & Drop Lock) */
+.task-card.is-locked-task {
+  cursor: not-allowed !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+.task-card.is-locked-task * {
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+.task-card.is-locked-task:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-elevation-low) !important;
+  border-color: var(--border-card) !important;
+}
+
+.task-card.is-locked-task:active {
+  cursor: not-allowed !important;
+}
+
 .task-card:active {
   cursor: grabbing;
 }
@@ -1944,6 +1968,28 @@ body.light-theme .gantt-popover {
   font-size: 12px;
   line-height: 1.6;
 }
+/* ==============================================================================
+   6. SMOOTH PAGE TRANSITIONS & ANIMATE.CSS ENHANCEMENTS (UX/UI Polish)
+   ============================================================================== */
+:root {
+  --animate-duration: 0.22s;
+}
+
+main.animate__animated {
+  -webkit-animation-duration: 0.22s;
+  animation-duration: 0.22s;
+}
+
+.animate__faster {
+  -webkit-animation-duration: 0.16s !important;
+  animation-duration: 0.16s !important;
+}
+
+/* Khóa kéo thả khi không có quyền */
+.is-locked-task {
+  cursor: not-allowed !important;
+}
+
 .dark .comment-bubble {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);

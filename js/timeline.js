@@ -943,10 +943,24 @@
    */
   const TimelineApp = {
     init() {
-      // Nạp dữ liệu vào state
-      TimelineState.projects = TimelineData.getProjects();
+      const authService = window.Auth || window.TaskFlowAuth;
+      const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+      
+      const allProjects = TimelineData.getProjects();
+      TimelineState.projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id)));
+      
+      const allowedIds = new Set(TimelineState.projects.map(p => p.id));
+      TimelineState.tasks = TimelineData.getTasks().filter(t => allowedIds.has(t.projectId));
       TimelineState.members = TimelineData.getMembers();
-      TimelineState.tasks = TimelineData.getTasks();
+
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('projectId');
+        if (pId && TimelineState.projects.some(p => p.id === pId)) {
+          TimelineState.selectedProjectId = pId;
+        }
+      } catch (e) {}
 
       // Nạp danh sách dự án vào dropdown lọc
       this.populateProjectFilter();
@@ -980,9 +994,16 @@
      * Tải lại dữ liệu khi có thay đổi LocalStorage
      */
     reload() {
-      TimelineState.projects = TimelineData.getProjects();
+      const authService = window.Auth || window.TaskFlowAuth;
+      const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
+      
+      const allProjects = TimelineData.getProjects();
+      TimelineState.projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id)));
+      
+      const allowedIds = new Set(TimelineState.projects.map(p => p.id));
+      TimelineState.tasks = TimelineData.getTasks().filter(t => allowedIds.has(t.projectId));
       TimelineState.members = TimelineData.getMembers();
-      TimelineState.tasks = TimelineData.getTasks();
       GanttRenderer.render();
     }
   };
