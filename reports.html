@@ -100,10 +100,10 @@
 
           <!-- Nhóm nút hành động: Trạng thái Cloud Sync, Refresh & Xuất CSV -->
           <div class="flex items-center gap-2.5 self-end sm:self-auto">
-            <span class="badge-sheets-synced hidden sm:inline-flex" title="Hệ thống tự động đồng bộ hai chiều LocalStorage và Google Sheets">
+            <a href="https://docs.google.com/spreadsheets/d/1ZiCYUjQJhCBJ6AjWksIN0c050MLFMj16JFlQuOMANjs/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" class="badge-sheets-synced hidden sm:inline-flex hover:scale-105 transition-transform" title="Bấm để mở trực tiếp Google Sheets">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Sheets Synced</span>
-            </span>
+              <span>Sheets Synced ↗</span>
+            </a>
 
             <button id="btnRefreshReports" title="Làm mới dữ liệu từ Storage" class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 transition-all cursor-pointer">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +173,7 @@
               <span id="kpiTodayHours" class="text-2xl font-bold text-slate-900 dark:text-white font-mono-numbers">0.0</span>
               <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">giờ</span>
             </div>
-            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Được log trong ngày hôm nay</p>
+            <p id="kpiTodayHoursSubtitle" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Được log trong ngày hôm nay</p>
           </div>
 
           <!-- KPI 4: Task Tiêu Tốn Nhiều Giờ Nhất -->
@@ -237,7 +237,7 @@
              ==================================================================== -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          <!-- 5.1 CỘT TRÁI: LIVE STOPWATCH CONSOLE (5 CỘT) -->
+          <!-- 5.1 CỘT TRÁI: LIVE STOPWATCH CONSOLE (ĐỒNG BỘ TỰ ĐỘNG KANBAN) (5 CỘT) -->
           <div class="lg:col-span-5 flex flex-col">
             <div id="stopwatchCard" class="flex-1 p-6 rounded-2xl bg-white/80 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xl flex flex-col justify-between transition-all duration-300">
               
@@ -245,49 +245,70 @@
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Đồng Hồ Bấm Giờ Trực Tiếp</h3>
+                    <span id="stopwatchPulseDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Đồng Hồ Bấm Giờ Tự Động (Kanban Sync)</h3>
                   </div>
                   <!-- Badge trạng thái động -->
-                  <span id="stopwatchStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10 transition-colors">
-                    Đang dừng
+                  <span id="stopwatchStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>⚡ Đang đồng bộ Kanban</span>
                   </span>
                 </div>
 
                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                  Chuẩn xác 60fps. Chọn trước công việc muốn tính giờ để theo dõi tập trung theo phong cách Trello Card Tracking.
+                  Tự động tính giờ ngầm khi kéo thẻ sang <b>"Đang Làm"</b> trên Kanban và tự động dừng khi kéo sang <b>"Đã Hoàn Thành"</b>.
                 </p>
 
-                <!-- TASK SELECTOR GẮN LIỀN VỚI STOPWATCH (TRELLO CARD-CENTRIC TRACKING) -->
-                <div class="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 mb-2">
-                  <label for="stopwatchTaskSelect" class="block text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-                    <span>🎯 Chọn công việc bấm giờ:</span>
-                    <span id="stopwatchTaskProjectBadge" class="text-[10px] font-medium text-slate-400 truncate max-w-[130px]"></span>
-                  </label>
+                <!-- KHU VỰC THÔNG TIN CÔNG VIỆC ĐANG TÍNH GIỜ (ACTIVE KANBAN TASK HUB) -->
+                <div id="stopwatchStep1Box" class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 mb-2 transition-all">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="stopwatchTaskSelect" class="block text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold">1</span>
+                      <span id="stopwatchTaskSelectLabel">Công việc đang theo dõi:</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] text-slate-400 font-medium hidden sm:inline">Tự do xem toàn bộ công việc</span>
+                      <a href="board.html" class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5" title="Mở Bảng Kanban để kéo thả thẻ">
+                        <span>Bảng Kanban</span>
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Dropdown chọn công việc (Mở hoàn toàn, không khóa để xem toàn bộ việc) -->
                   <select id="stopwatchTaskSelect" class="w-full text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
-                    <option value="" selected>-- Chọn công việc (hoặc chọn tại Form) --</option>
+                    <option value="" selected>-- Chọn công việc đang làm để theo dõi --</option>
                   </select>
                 </div>
 
-                <!-- Thẻ thông báo Task đang chạy thời gian thực -->
-                <div id="stopwatchActiveTaskBanner" class="hidden py-1.5 px-3 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-                  <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <span class="truncate font-semibold" id="stopwatchActiveTaskTitle">Đang theo dõi: [Chưa chọn task]</span>
+                <!-- Thẻ thông báo Task đang chạy thời gian thực từ Kanban -->
+                <div id="stopwatchActiveTaskBanner" class="py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 shadow-sm">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping flex-shrink-0"></span>
+                    <div class="min-w-0">
+                      <p class="truncate font-bold text-xs" id="stopwatchActiveTaskTitle">Đang tự động tính giờ: [Chưa chọn task]</p>
+                      <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5" id="stopwatchActiveTaskMeta">Đồng bộ từ cột "Đang Làm" trên Kanban Board</p>
+                    </div>
+                  </div>
+                  <span id="stopwatchTaskProjectBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex-shrink-0">In-Progress</span>
                 </div>
               </div>
 
               <!-- Màn hình hiển thị số Digital Neon Monospace -->
               <div class="my-5 p-6 rounded-2xl bg-slate-900 text-white border border-slate-800 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-all pointer-events-none"></div>
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl group-hover:bg-emerald-500/30 transition-all pointer-events-none"></div>
                 
-                <span class="text-[10px] font-bold text-indigo-400 tracking-widest uppercase mb-1">Thời Gian Làm Việc</span>
+                <span class="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mb-1 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>Thời Gian Đang Tính Ngầm</span>
+                </span>
                 
                 <!-- Mặt đồng hồ hiển thị HH:MM:SS -->
                 <div class="flex items-baseline">
                   <span id="stopwatchDisplay" class="stopwatch-digital-clock text-4xl sm:text-5xl font-bold tracking-tight text-white drop-shadow-md">
                     00:00:00
                   </span>
-                  <span id="stopwatchMs" class="text-base sm:text-lg text-indigo-400 font-mono-numbers font-medium ml-1">
+                  <span id="stopwatchMs" class="text-base sm:text-lg text-emerald-400 font-mono-numbers font-medium ml-1">
                     .00
                   </span>
                 </div>
@@ -302,7 +323,24 @@
 
               <!-- Các nút điều khiển Stopwatch Fitts's Law -->
               <div class="space-y-3">
-                <div class="grid grid-cols-3 gap-2">
+                <div class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between mb-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold">2</span>
+                    <span>Thao tác điều khiển & Chốt giờ:</span>
+                  </div>
+                  <span class="text-[10px] text-slate-400 font-normal">Tự động đồng bộ 2 chiều</span>
+                </div>
+
+                <!-- Nút 1 LỚN NHẤT: Chốt Giờ & Hoàn Thành (Done) trên Kanban -->
+                <button id="btnStopwatchCompleteDone" type="button" class="btn-stopwatch-action w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/25 text-xs py-3 font-bold border border-emerald-400/30">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Chốt Giờ & Đánh Dấu Hoàn Thành (Done Trên Kanban)</span>
+                </button>
+
+                <!-- 4 nút điều khiển thời gian -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <!-- Nút Start -->
                   <button id="btnStopwatchStart" type="button" class="btn-stopwatch-action bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20 text-xs">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -319,6 +357,14 @@
                     <span>Tạm dừng</span>
                   </button>
 
+                  <!-- Nút Dừng thời gian màu đỏ -->
+                  <button id="btnStopwatchStop" type="button" disabled class="btn-stopwatch-action bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/25 text-xs opacity-50 cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <rect x="5" y="5" width="10" height="10" rx="1.5"/>
+                    </svg>
+                    <span>Dừng</span>
+                  </button>
+
                   <!-- Nút Reset -->
                   <button id="btnStopwatchReset" type="button" class="btn-stopwatch-action bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 text-xs">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,20 +375,23 @@
                 </div>
 
                 <!-- Nút dừng và điền thẳng vào Form -->
-                <button id="btnStopwatchStopFill" type="button" class="btn-stopwatch-action w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-500/20 text-xs py-3">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <button id="btnStopwatchStopFill" type="button" class="btn-stopwatch-action w-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-white/10 text-xs py-2.5">
+                  <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <span>Dừng & Điền Số Giờ Vào Form Báo Cáo</span>
+                  <span>Chốt Giờ & Điền Vào Form Báo Cáo Chi Tiết</span>
                 </button>
               </div>
 
               <!-- Gợi ý công thái học -->
-              <div class="mt-4 pt-3 border-t border-slate-200/80 dark:border-white/5 flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
-                <svg class="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                </svg>
-                <span>Hệ thống tự động lưu mốc giờ kể cả khi bạn chuyển qua tab khác.</span>
+              <div class="mt-4 pt-3 border-t border-slate-200/80 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                <div class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Đồng bộ 2 chiều tự động với Bảng Kanban qua LocalStorage.</span>
+                </div>
+                <a href="board.html" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline hidden sm:inline">Sang Kanban ↗</a>
               </div>
 
             </div>
@@ -387,10 +436,10 @@
                 <div>
                   <label for="logTaskId" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
                     <span>Công Việc Thực Hiện <span class="text-rose-500">*</span></span>
-                    <span class="text-[10px] font-normal text-indigo-500 dark:text-indigo-400">Đã đồng bộ với Stopwatch</span>
+                    <span id="formTaskLockStatus" class="text-[10px] font-normal text-indigo-500 dark:text-indigo-400">Đã đồng bộ với Stopwatch</span>
                   </label>
-                  <select id="logTaskId" required class="select-project-filter w-full text-xs md:text-sm font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
-                    <option value="" disabled selected>-- Chọn công việc đang thực hiện --</option>
+                  <select id="logTaskId" required class="w-full text-xs md:text-sm font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
+                    <option value="">-- Chọn công việc đang thực hiện --</option>
                   </select>
                 </div>
 
@@ -400,7 +449,9 @@
                   <div>
                     <label for="logHoursSpent" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
                       <span>Số Giờ Đã Làm <span class="text-rose-500">*</span></span>
-                      <span class="text-[10px] font-normal text-indigo-500 dark:text-indigo-400">Độ chính xác 0.01h (36s)</span>
+                      <button type="button" id="btnSyncHoursFromStopwatch" class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer" title="Lấy số giờ hiện tại từ đồng hồ bấm giờ">
+                        <span>⏱ Lấy từ Đồng hồ</span>
+                      </button>
                     </label>
                     <div class="relative">
                       <input type="number" id="logHoursSpent" step="0.01" min="0.01" max="24" required placeholder="VD: 1.50" class="w-full text-xs md:text-sm font-mono-numbers font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 pl-9 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" />
@@ -432,6 +483,14 @@
                     <span class="text-[10px] font-normal text-slate-400">Nếu không có thì ghi "Không có"</span>
                   </label>
                   <input type="text" id="logBlockers" placeholder="Không có" value="Không có" class="w-full text-xs md:text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" />
+                </div>
+
+                <!-- Tùy chọn đồng bộ: Hoàn thành task trên Kanban khi nộp báo cáo -->
+                <div class="flex items-center gap-2 pt-1 pb-1">
+                  <input type="checkbox" id="logMarkTaskDone" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 cursor-pointer" />
+                  <label for="logMarkTaskDone" class="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                    Đồng thời chuyển công việc sang <b>"Đã Hoàn Thành" (Done)</b> trên Bảng Kanban
+                  </label>
                 </div>
 
                 <!-- Nút Submit Form với Loading State -->
@@ -511,6 +570,7 @@
                   <th class="py-3.5 px-4 w-24 text-center">Số Giờ</th>
                   <th class="py-3.5 px-4 min-w-[240px]">Kết Quả Công Việc</th>
                   <th class="py-3.5 px-4 w-36">Trở Ngại (Blockers)</th>
+                  <th class="py-3.5 px-4 min-w-[220px]">Trao Đổi & Bình Luận</th>
                   <th class="py-3.5 px-4 w-36 text-center">Đồng Bộ</th>
                   <th class="py-3.5 px-4 w-20 text-center">Thao Tác</th>
                 </tr>
@@ -541,12 +601,121 @@
   </div>
 
   <!-- ========================================================================
-       7. TOAST NOTIFICATION CONTAINER (Góc màn hình)
+       7. MODAL: TRAO ĐỔI & BÌNH LUẬN CÔNG VIỆC (ACTIVITY & COMMENTS FEED MODAL)
+       ======================================================================== -->
+  <div id="taskDiscussionModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop Blur -->
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" id="taskDiscussionBackdrop"></div>
+
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+      <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-slate-200 dark:border-white/10 animate-fade-in-up">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4.5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 text-base">
+              💬
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <span>Trao Đổi & Bình Luận Công Việc</span>
+                <span id="modalDiscussionCountBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 font-bold">0</span>
+              </h3>
+              <p id="modalDiscussionTaskSubtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-sm font-medium">
+                <!-- Tên task & dự án nạp động -->
+              </p>
+            </div>
+          </div>
+          
+          <button 
+            type="button" 
+            id="btnCloseDiscussionModal" 
+            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            title="Đóng hộp thoại (Esc)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body (Hoàn toàn khớp giao diện Hình 2 của Kanban Modal) -->
+        <div class="p-6 space-y-4">
+          
+          <!-- Hộp nhập bình luận mới -->
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 shadow-2xs">
+            <img 
+              id="discussionModalAuthorAvatar" 
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=KhoaPham" 
+              alt="Author" 
+              class="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10 flex-shrink-0 mt-0.5 ring-2 ring-indigo-500/20 shadow-xs"
+            />
+            <div class="flex-1 space-y-2.5">
+              <textarea 
+                id="discussionModalInputText" 
+                rows="2" 
+                placeholder="Viết phản hồi, góp ý tiến độ hoặc trao đổi với nhóm..." 
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all custom-scroll resize-none"
+              ></textarea>
+              <div class="flex items-center justify-between">
+                <!-- Dropdown chọn người gửi bình luận (Khoa hoặc Nhật) -->
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] text-slate-400">Gửi bởi:</span>
+                  <select id="discussionModalUserSelect" class="text-[11px] font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 focus:outline-none cursor-pointer">
+                    <!-- Nạp từ ReportsState.members -->
+                  </select>
+                </div>
+
+                <button 
+                  type="button" 
+                  id="btnSubmitDiscussionModal" 
+                  class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs transition-all shadow-md shadow-indigo-500/20 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                  <span>Gửi bình luận</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danh sách bình luận (Activity Feed) -->
+          <div class="pt-2">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2 flex items-center justify-between">
+              <span>Lịch sử trao đổi & bình luận</span>
+              <span class="text-[10px] font-normal italic">Cập nhật thời gian thực</span>
+            </div>
+            
+            <div id="discussionModalCommentsList" class="space-y-3 max-h-64 overflow-y-auto custom-scroll pr-1.5">
+              <!-- Nạp động qua JS khớp 100% style của Hình 2 -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-3 border-t border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Đồng bộ 2 chiều với Bảng Kanban & LocalStorage</span>
+          </div>
+          <button 
+            type="button" 
+            id="btnCloseDiscussionModalFooter" 
+            class="px-3 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 font-semibold text-xs transition-colors cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       8. TOAST NOTIFICATION CONTAINER (Góc màn hình)
        ======================================================================== -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
   <!-- ========================================================================
-       8. CÁC MODULE JAVASCRIPT ĐỘC LẬP THEO QUY CHUẨN KIẾN TRÚC
+       9. CÁC MODULE JAVASCRIPT ĐỘC LẬP THEO QUY CHUẨN KIẾN TRÚC
        ======================================================================== -->
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>

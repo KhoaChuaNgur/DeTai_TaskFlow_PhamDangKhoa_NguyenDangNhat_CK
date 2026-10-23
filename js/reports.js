@@ -133,6 +133,26 @@
     /**
      * Lưu trữ mảng timeLogs vào LocalStorage và đồng bộ TASKFLOW_DATA
      */
+        saveTasks(tasks) {
+      try {
+        const tasksToSave = tasks || ReportsState.tasks;
+        if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
+          window.TaskFlowStorage.set('taskflow_tasks', tasksToSave);
+        } else {
+          window.localStorage.setItem('taskflow_tasks', JSON.stringify(tasksToSave));
+          let bundle = {};
+          try {
+            const raw = window.localStorage.getItem('TASKFLOW_DATA');
+            bundle = raw ? JSON.parse(raw) : {};
+          } catch (e) { bundle = {}; }
+          bundle.tasks = tasksToSave;
+          window.localStorage.setItem('TASKFLOW_DATA', JSON.stringify(bundle));
+        }
+      } catch (err) {
+        console.error('[Reports.DataEngine.saveTasks] Lỗi khi lưu tasks:', err);
+      }
+    },
+
     saveTimeLogs() {
       try {
         if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
@@ -1068,12 +1088,21 @@
         });
       }
 
-      // Event delegation cho nút xóa log trên bảng
+      // Event delegation cho nút xóa log và mở trao đổi bình luận trên bảng
       this.dom.tbody.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('[data-action="delete-log"]');
         if (deleteBtn) {
           const logId = deleteBtn.getAttribute('data-log-id');
           this.handleDeleteLog(logId);
+          return;
+        }
+
+        const discussBtn = e.target.closest('[data-action="open-discussion"]');
+        if (discussBtn) {
+          const taskId = discussBtn.getAttribute('data-task-id');
+          if (taskId && typeof DiscussionController !== 'undefined') {
+            DiscussionController.openModal(taskId);
+          }
         }
       });
     },
@@ -1137,6 +1166,10 @@
           }
         }
 
+        const task = ReportsState.tasks.find(t => t.id === log.taskId);
+        const comments = (task && Array.isArray(task.comments)) ? task.comments : [];
+        const latestComment = comments.length > 0 ? comments[comments.length - 1] : null;
+
         const hasBlocker = log.blockers && log.blockers.toLowerCase() !== 'không có' && log.blockers.trim() !== '';
         const blockerBadge = hasBlocker
           ? `<span class="badge-blocker-alert" title="${this.escapeHtml(log.blockers)}">⚠️ ${this.escapeHtml(log.blockers)}</span>`
@@ -1191,7 +1224,30 @@
               ${blockerBadge}
             </td>
 
-            <!-- Cột 7: Trạng Thái Đồng Bộ -->
+            <!-- Cột 7: Trao Đổi & Bình Luận (Activity & Discussion) -->
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2">
+                <button 
+                  type="button"
+                  data-action="open-discussion"
+                  data-task-id="${this.escapeHtml(log.taskId)}"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${comments.length > 0 ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'} border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-2xs group"
+                  title="Xem hoặc để lại bình luận cho công việc này"
+                >
+                  <span class="text-xs group-hover:scale-110 transition-transform">💬</span>
+                  <span class="font-bold">${comments.length}</span>
+                  <span class="text-[11px] text-slate-400 group-hover:text-inherit">bình luận</span>
+                </button>
+                ${latestComment ? `
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[130px] italic" title="${this.escapeHtml(latestComment.authorName + ': ' + (latestComment.content || latestComment.text))}">
+                    <span class="font-medium text-slate-700 dark:text-slate-300">${this.escapeHtml((latestComment.authorName || latestComment.author || '').split(' ').pop())}:</span>
+                    "${this.escapeHtml(latestComment.content || latestComment.text || '')}"
+                  </div>
+                ` : ''}
+              </div>
+            </td>
+
+            <!-- Cột 8: Trạng Thái Đồng Bộ -->
             <td class="py-3 px-4 text-center whitespace-nowrap">
               <span class="badge-sheets-synced" title="Dữ liệu đã được nạp vào Google Sheets">
                 <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -1534,6 +1590,24 @@
     KPIController.init();
     AnalyticsController.init();
     ExportEngine.init();
+    DiscussionController.init();
+
+    // Tự động nhận diện tham số ?taskId=... khi chuyển từ Timeline hoặc Kanban
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetTaskId = urlParams.get('taskId');
+    if (targetTaskId) {
+      setTimeout(() => {
+        if (StopwatchController.dom.taskSelect) {
+          StopwatchController.dom.taskSelect.value = targetTaskId;
+          StopwatchController.handleTaskChange(targetTaskId);
+        }
+        if (FormController.dom.taskSelect) {
+          FormController.dom.taskSelect.value = targetTaskId;
+          FormController.handleTaskChange(targetTaskId);
+        }
+        Toast.show(`Đã chọn công việc từ Lộ Trình Timeline: ${targetTaskId}`, 'info');
+      }, 250);
+    }
 
     window.addEventListener('storage', (e) => {
       if (['TASKFLOW_DATA', 'taskflow_time_logs', 'taskflow_tasks', 'taskflow_projects'].includes(e.key)) {
@@ -1565,6 +1639,7 @@
     KPIController,
     AnalyticsController,
     ExportEngine,
+    DiscussionController,
     Toast
   };
 

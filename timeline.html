@@ -1,312 +1,429 @@
-<!DOCTYPE html>
-<html lang="vi" class="dark" data-theme="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaskFlow - Timeline & Interactive Gantt Chart</title>
-  <meta name="description" content="Trực quan hóa lộ trình và tiến độ công việc theo dòng thời gian thực với Biểu đồ Gantt CSS Grid thuần 60fps & Font Roboto" />
-
-  <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện -->
-  <script>
-    (function () {
-      try {
-        const savedTheme = localStorage.getItem('taskflow_theme');
-        const isDark = savedTheme ? savedTheme === 'dark' : true;
-        document.documentElement.classList.toggle('dark', isDark);
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      } catch (e) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
-
-  <!-- Google Font: Roboto (Quy chuẩn Typography toàn diện cho Trang 4) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Roboto', 'sans-serif'],
-            roboto: ['Roboto', 'sans-serif']
-          },
-          colors: {
-            main: 'var(--bg-main)',
-            surface: 'var(--bg-surface)',
-            primary: '#4F46E5',
-            secondary: '#2563EB'
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Custom Styles: Glassmorphism, CSS Grid Gantt, Custom Scrollbar & Modern SaaS Palette (Section 13) -->
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-
-<body class="page-timeline bg-[#F8FAFC] dark:bg-[#090D16] text-slate-800 dark:text-slate-100 min-h-screen font-['Roboto',sans-serif] antialiased overflow-hidden selection:bg-indigo-500 selection:text-white transition-colors duration-200">
-
-  <!-- ========================================================================
-       1. AMBIENT BACKGROUND GLOW ORBS (colorweb.md Section 4)
-       ======================================================================== -->
-  <div class="ambient-container" aria-hidden="true">
-    <div class="ambient-orb-primary"></div>
-    <div class="ambient-orb-secondary"></div>
-    <div class="ambient-orb-accent"></div>
-  </div>
-
-  <!-- ========================================================================
-       2. BỐ CỤC KHUNG ỨNG DỤNG (APP SHELL CONTAINER)
-       Chỉ sử dụng 2 thẻ giữ chỗ duy nhất để AppLayout.init() nạp động
-       ======================================================================== -->
-  <div class="flex h-screen overflow-hidden">
-    <!-- Vị trí nạp động Sidebar chung -->
-    <aside id="app-sidebar"></aside>
-
-    <!-- Khối Nội dung Chính và Header -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-      <!-- Vị trí nạp động Header chung -->
-      <header id="app-header"></header>
-
-      <!-- Vùng cuộn nội dung Timeline Workspace -->
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 custom-scroll bg-transparent font-['Roboto',sans-serif]">
-
-        <!-- ====================================================================
-             3. THANH ĐIỀU KHIỂN & BỘ LỌC GANTT (MODERN SAAS CONTROL CENTER)
-             ==================================================================== -->
-        <section class="glass-card gantt-surface-white p-5 sm:p-6 border border-[#E2E8F0] dark:border-white/10 shadow-sm dark:shadow-xl space-y-4 rounded-2xl">
-          
-          <!-- Hàng 1: Bộ Lọc Dự Án & Các Nút Điều Hướng Thời Gian -->
-          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-            
-            <!-- Nhóm lọc theo Dự án & Chế độ xem dải ngày -->
-            <div class="flex flex-wrap items-center gap-3">
-              <!-- Dropdown Lọc Dự án -->
-              <div class="relative min-w-[220px]">
-                <select 
-                  id="filterTimelineProject" 
-                  class="select-project-filter w-full font-medium text-slate-800 dark:text-slate-100"
-                  aria-label="Lọc biểu đồ theo dự án"
-                >
-                  <option value="all">📂 Tất Cả Dự Án</option>
-                  <!-- Các dự án nạp động từ LocalStorage -->
-                </select>
-              </div>
-
-              <!-- Nút chọn khung nhìn (Scale Switcher - Modern SaaS Neutral Style) -->
-              <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-white/10" role="group" aria-label="Chế độ xem thời gian">
-                <button 
-                  type="button" 
-                  id="btnRangeAll" 
-                  data-range="all"
-                  class="timeline-range-btn is-active"
-                >
-                  Toàn Bộ Lộ Trình
-                </button>
-                <button 
-                  type="button" 
-                  id="btnRange14d" 
-                  data-range="14d"
-                  class="timeline-range-btn"
-                >
-                  14 Ngày (Sprint)
-                </button>
-                <button 
-                  type="button" 
-                  id="btnRange30d" 
-                  data-range="30d"
-                  class="timeline-range-btn"
-                >
-                  30 Ngày (Tháng)
-                </button>
-              </div>
-            </div>
-
-            <!-- Nhóm Điều Hướng Ngày & Nút Hôm Nay (#EF4444 Indicator) -->
-            <div class="flex items-center gap-2.5 justify-between sm:justify-end">
-              <button 
-                type="button" 
-                id="btnPrevRange" 
-                class="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold transition-all text-sm flex items-center justify-center shadow-xs"
-                title="Lùi lại dải thời gian trước"
-                aria-label="Lùi lại"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              <!-- Nhãn dải ngày đang hiển thị -->
-              <div id="timelineRangeLabel" class="px-3.5 py-1.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm whitespace-nowrap shadow-xs">
-                Đang tải lộ trình...
-              </div>
-
-              <button 
-                type="button" 
-                id="btnNextRange" 
-                class="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold transition-all text-sm flex items-center justify-center shadow-xs"
-                title="Tiến tới dải thời gian sau"
-                aria-label="Tiến tới"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <!-- Nút Nhảy về Hôm nay (Màu Đỏ Cam #EF4444 đồng bộ mốc Today) -->
-              <button 
-                type="button" 
-                id="btnJumpToday" 
-                class="px-3.5 py-2 rounded-xl bg-[#EF4444] hover:bg-red-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-red-500/25 transition-all flex items-center gap-1.5"
-                title="Cuộn tới vị trí mốc Hôm Nay"
-              >
-                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                <span>Hôm Nay</span>
-              </button>
-            </div>
-
-          </div>
-
-          <!-- Hàng 2: Dải Chỉ Số KPI Nhanh & Bảng Chú Giải Hệ Màu Quy Chuẩn SaaS -->
-          <div class="pt-3 border-t border-[#E2E8F0] dark:border-white/5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
-            
-            <!-- Mini KPI Counters -->
-            <div class="flex flex-wrap items-center gap-3 font-medium">
-              <span class="text-slate-500 dark:text-slate-400 font-medium">Chỉ số hiển thị:</span>
-              <div class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/5 text-slate-700 dark:text-slate-300">
-                Tổng: <strong id="timelineStatTotal" class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">0</strong>
-              </div>
-              <div class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                Hoàn thành: <strong id="timelineStatDone" class="font-bold ml-1">0</strong>
-              </div>
-              <div class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-500/20 text-blue-700 dark:text-blue-300">
-                Đang làm: <strong id="timelineStatDoing" class="font-bold ml-1">0</strong>
-              </div>
-              <div id="timelineStatOverdueWrapper" class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-1">
-                <span>Chậm tiến độ:</span>
-                <strong id="timelineStatOverdue" class="font-bold">0</strong>
-              </div>
-            </div>
-
-            <!-- Bảng Chú Giải Hệ Màu Quy Chuẩn SaaS (Modern SaaS Color Legend) -->
-            <div class="flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-400 font-medium">
-              <span class="font-bold text-slate-500 dark:text-slate-400">Hệ màu trạng thái:</span>
-              
-              <!-- Hoàn thành: #10B981 -->
-              <div class="flex items-center gap-1.5" title="Xanh lá nhạt dịu #10B981 (Emerald 500), giảm opacity">
-                <span class="w-3 h-3 rounded-md bg-[#10B981] opacity-85 shadow-xs"></span>
-                <span>Hoàn thành</span>
-              </div>
-
-              <!-- Đang thực hiện: #4F46E5 / #2563EB -->
-              <div class="flex items-center gap-1.5" title="Chàm/Xanh dương đậm #4F46E5 / #2563EB (Tập trung tối đa)">
-                <span class="w-3 h-3 rounded-md bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-xs"></span>
-                <span>Đang chạy</span>
-              </div>
-
-              <!-- Chậm tiến độ: #F43F5E -->
-              <div class="flex items-center gap-1.5" title="Đỏ cam #F43F5E (Rose 500) viền nhấp nháy">
-                <span class="w-3 h-3 rounded-md bg-[#F43F5E] ring-1.5 ring-rose-400 animate-pulse"></span>
-                <span class="font-semibold text-rose-600 dark:text-rose-400">Chậm tiến độ</span>
-              </div>
-
-              <!-- Chưa bắt đầu: Ghost outline #94A3B8 -->
-              <div class="flex items-center gap-1.5" title="Xám trung tính #94A3B8 (Ghost outline nét đứt)">
-                <span class="w-3 h-3 rounded-md border-1.5 border-dashed border-[#94A3B8] bg-slate-100 dark:bg-slate-800"></span>
-                <span>Chưa làm</span>
-              </div>
-
-              <!-- Mốc quan trọng: Hình thoi tím/vàng -->
-              <div class="flex items-center gap-1.5" title="Mốc quan trọng (Milestone Diamond #8B5CF6 / #F59E0B)">
-                <span class="w-2.5 h-2.5 rotate-45 rounded-[2px] bg-[#8B5CF6] border border-white dark:border-slate-800 shadow-xs"></span>
-                <span>Mốc (Milestone)</span>
-              </div>
-
-              <!-- Mốc Hôm Nay: #EF4444 -->
-              <div class="flex items-center gap-1.5" title="Đường kẻ mốc Hôm Nay #EF4444">
-                <span class="w-1.5 h-3 rounded-full bg-[#EF4444]"></span>
-                <span class="text-red-500 font-bold">Hôm nay</span>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- ====================================================================
-             4. KHUNG CANVAS BIỂU ĐỒ GANTT (PURE WHITE SURFACE & ULTRA-LIGHT GRID)
-             ==================================================================== -->
-        <section class="gantt-wrapper gantt-surface-white custom-scroll relative overflow-x-auto overflow-y-auto border border-[#E2E8F0] dark:border-white/10 rounded-2xl" id="ganttScrollContainer" style="min-height: 480px; max-height: calc(100vh - 17rem);">
-          
-          <!-- Loading State Spinner -->
-          <div id="ganttLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs flex flex-col items-center justify-center z-30 transition-opacity duration-300">
-            <span class="spinner-border-sm w-8 h-8 text-[#4F46E5] border-3"></span>
-            <span class="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-300">Đang dựng biểu đồ Gantt...</span>
-          </div>
-
-          <!-- Empty State (Khi không có công việc hoặc lọc rỗng) -->
-          <div id="ganttEmptyState" class="hidden flex-col items-center justify-center py-20 px-4 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-500/20 flex items-center justify-center text-indigo-500 mb-4 shadow-lg shadow-indigo-500/10">
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Không tìm thấy công việc nào</h3>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-1">
-              Dự án này chưa có công việc nào có mốc thời gian, hoặc bộ lọc hiện tại không khớp dữ liệu.
-            </p>
-            <a 
-              href="board.html" 
-              class="mt-4 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:from-indigo-700 hover:to-blue-700 transition-all flex items-center gap-1.5"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Thêm Công Việc Mới trên Bảng Kanban</span>
-            </a>
-          </div>
-
-          <!-- Lưới Biểu Đồ Gantt CSS Grid Động -->
-          <div id="ganttGrid" class="gantt-grid"></div>
-
-        </section>
-
-      </main>
-    </div>
-  </div>
-
-  <!-- ========================================================================
-       5. INTERACTIVE POPOVER TOOLTIP KÍNH MỜ (FLOAT DETAIL CARD)
-       ======================================================================== -->
-  <div id="ganttPopover" class="gantt-popover font-['Roboto',sans-serif]" role="tooltip" aria-hidden="true"></div>
-
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
-
-  <!-- ========================================================================
-       6. CÁC MODULE JAVASCRIPT ĐỘC LẬP & KHỞI CHẠY APP SHELL
-       ======================================================================== -->
-  <script src="js/storage.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/layout.js"></script>
-  <script src="js/timeline.js"></script>
-
-  <script>
-    // Khởi chạy App Shell đồng bộ tiêu đề & menu
-    document.addEventListener("DOMContentLoaded", function () {
-      if (window.AppLayout && typeof AppLayout.init === "function") {
-        AppLayout.init(
-          "Timeline / Gantt Chart", 
-          "Biểu đồ trực quan hóa tiến độ công việc theo dòng thời gian thực"
-        );
-      }
-    });
-  </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="vi" class="dark" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow - Timeline & Interactive Gantt Chart</title>
+  <meta name="description" content="Trực quan hóa lộ trình và tiến độ công việc theo dòng thời gian thực với Biểu đồ Gantt CSS Grid thuần 60fps & Font Roboto" />
+
+  <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('taskflow_theme');
+        const isDark = savedTheme ? savedTheme === 'dark' : true;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Google Font: Roboto (Quy chuẩn Typography toàn diện cho Trang 4) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Roboto', 'sans-serif'],
+            roboto: ['Roboto', 'sans-serif']
+          },
+          colors: {
+            main: 'var(--bg-main)',
+            surface: 'var(--bg-surface)',
+            primary: '#4F46E5',
+            secondary: '#2563EB'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom Styles: Glassmorphism, CSS Grid Gantt, Custom Scrollbar & Modern SaaS Palette (Section 13) -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="page-timeline bg-[#F8FAFC] dark:bg-[#090D16] text-slate-800 dark:text-slate-100 min-h-screen font-['Roboto',sans-serif] antialiased overflow-hidden selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+
+  <!-- ========================================================================
+       1. AMBIENT BACKGROUND GLOW ORBS (colorweb.md Section 4)
+       ======================================================================== -->
+  <div class="ambient-container" aria-hidden="true">
+    <div class="ambient-orb-primary"></div>
+    <div class="ambient-orb-secondary"></div>
+    <div class="ambient-orb-accent"></div>
+  </div>
+
+  <!-- ========================================================================
+       2. BỐ CỤC KHUNG ỨNG DỤNG (APP SHELL CONTAINER)
+       Chỉ sử dụng 2 thẻ giữ chỗ duy nhất để AppLayout.init() nạp động
+       ======================================================================== -->
+  <div class="flex h-screen overflow-hidden">
+    <!-- Vị trí nạp động Sidebar chung -->
+    <aside id="app-sidebar"></aside>
+
+    <!-- Khối Nội dung Chính và Header -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <!-- Vị trí nạp động Header chung -->
+      <header id="app-header"></header>
+
+      <!-- Vùng cuộn nội dung Timeline Workspace -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 custom-scroll bg-transparent font-['Roboto',sans-serif]">
+
+        <!-- ====================================================================
+             3. THANH ĐIỀU KHIỂN & BỘ LỌC GANTT (MODERN SAAS CONTROL CENTER)
+             ==================================================================== -->
+        <section class="glass-card gantt-surface-white p-5 sm:p-6 border border-[#E2E8F0] dark:border-white/10 shadow-sm dark:shadow-xl space-y-4 rounded-2xl">
+          
+          <!-- Hàng 1: Bộ Lọc Dự Án & Các Nút Điều Hướng Thời Gian -->
+          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            
+            <!-- Nhóm lọc theo Dự án & Chế độ xem dải ngày -->
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Dropdown Lọc Dự án -->
+              <div class="relative min-w-[220px]">
+                <select 
+                  id="filterTimelineProject" 
+                  class="select-project-filter w-full font-medium text-slate-800 dark:text-slate-100"
+                  aria-label="Lọc biểu đồ theo dự án"
+                >
+                  <option value="all">📂 Tất Cả Dự Án</option>
+                  <!-- Các dự án nạp động từ LocalStorage -->
+                </select>
+              </div>
+
+              <!-- Nút chọn khung nhìn (Scale Switcher - Modern SaaS Neutral Style) -->
+              <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-white/10" role="group" aria-label="Chế độ xem thời gian">
+                <button 
+                  type="button" 
+                  id="btnRangeAll" 
+                  data-range="all"
+                  class="timeline-range-btn is-active"
+                  title="Xem toàn bộ lộ trình từ công việc đầu tiên đến hạn chót cuối cùng"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                  <span>Toàn Bộ</span>
+                </button>
+                <button 
+                  type="button" 
+                  id="btnRange7d" 
+                  data-range="7d"
+                  class="timeline-range-btn"
+                  title="Khung nhìn 7 ngày (1 tuần làm việc chi tiết)"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>7 Ngày (Tuần)</span>
+                </button>
+                <button 
+                  type="button" 
+                  id="btnRange14d" 
+                  data-range="14d"
+                  class="timeline-range-btn"
+                  title="Khung nhìn 14 ngày (Chu kỳ 1 Sprint chuẩn Scrum)"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  <span>14 Ngày (Sprint)</span>
+                </button>
+                <button 
+                  type="button" 
+                  id="btnRange30d" 
+                  data-range="30d"
+                  class="timeline-range-btn"
+                  title="Khung nhìn 30 ngày (Tổng quan chu kỳ tháng)"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  <span>30 Ngày (Tháng)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Nhóm Điều Hướng Ngày & Nút Hôm Nay (#EF4444 Indicator) -->
+            <div class="flex items-center gap-2.5 justify-between sm:justify-end">
+              <button 
+                type="button" 
+                id="btnPrevRange" 
+                class="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold transition-all text-sm flex items-center justify-center shadow-xs"
+                title="Lùi lại dải thời gian trước"
+                aria-label="Lùi lại"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <!-- Nhãn dải ngày đang hiển thị -->
+              <div id="timelineRangeLabel" class="px-3.5 py-1.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm whitespace-nowrap shadow-xs">
+                Đang tải lộ trình...
+              </div>
+
+              <button 
+                type="button" 
+                id="btnNextRange" 
+                class="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold transition-all text-sm flex items-center justify-center shadow-xs"
+                title="Tiến tới dải thời gian sau"
+                aria-label="Tiến tới"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <!-- Nút Nhảy về Hôm nay (Màu Đỏ Cam #EF4444 đồng bộ mốc Today) -->
+              <button 
+                type="button" 
+                id="btnJumpToday" 
+                class="px-3.5 py-2 rounded-xl bg-[#EF4444] hover:bg-red-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-red-500/25 transition-all flex items-center gap-1.5"
+                title="Cuộn tới vị trí mốc Hôm Nay"
+              >
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>Hôm Nay</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Hàng 2: Dải Chỉ Số KPI Nhanh & Bảng Chú Giải Hệ Màu Quy Chuẩn SaaS -->
+          <div class="pt-3 border-t border-[#E2E8F0] dark:border-white/5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
+            
+            <!-- Mini KPI Counters -->
+            <div class="flex flex-wrap items-center gap-3 font-medium">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Chỉ số hiển thị:</span>
+              <div class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/5 text-slate-700 dark:text-slate-300">
+                Tổng: <strong id="timelineStatTotal" class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">0</strong>
+              </div>
+              <div class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                Hoàn thành: <strong id="timelineStatDone" class="font-bold ml-1">0</strong>
+              </div>
+              <div class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-500/20 text-blue-700 dark:text-blue-300">
+                Đang làm: <strong id="timelineStatDoing" class="font-bold ml-1">0</strong>
+              </div>
+              <div id="timelineStatOverdueWrapper" class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-1">
+                <span>Chậm tiến độ:</span>
+                <strong id="timelineStatOverdue" class="font-bold">0</strong>
+              </div>
+            </div>
+
+            <!-- Bảng Chú Giải Hệ Màu Quy Chuẩn SaaS (Modern SaaS Color Legend) -->
+            <div class="flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-400 font-medium">
+              <span class="font-bold text-slate-500 dark:text-slate-400">Hệ màu trạng thái:</span>
+              
+              <!-- Hoàn thành: #10B981 -->
+              <div class="flex items-center gap-1.5" title="Xanh lá nhạt dịu #10B981 (Emerald 500), giảm opacity">
+                <span class="w-3 h-3 rounded-md bg-[#10B981] opacity-85 shadow-xs"></span>
+                <span>Hoàn thành</span>
+              </div>
+
+              <!-- Đang thực hiện: #4F46E5 / #2563EB -->
+              <div class="flex items-center gap-1.5" title="Chàm/Xanh dương đậm #4F46E5 / #2563EB (Tập trung tối đa)">
+                <span class="w-3 h-3 rounded-md bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-xs"></span>
+                <span>Đang chạy</span>
+              </div>
+
+              <!-- Chậm tiến độ: #F43F5E -->
+              <div class="flex items-center gap-1.5" title="Đỏ cam #F43F5E (Rose 500) viền nhấp nháy">
+                <span class="w-3 h-3 rounded-md bg-[#F43F5E] ring-1.5 ring-rose-400 animate-pulse"></span>
+                <span class="font-semibold text-rose-600 dark:text-rose-400">Chậm tiến độ</span>
+              </div>
+
+              <!-- Chưa bắt đầu: Ghost outline #94A3B8 -->
+              <div class="flex items-center gap-1.5" title="Xám trung tính #94A3B8 (Ghost outline nét đứt)">
+                <span class="w-3 h-3 rounded-md border-1.5 border-dashed border-[#94A3B8] bg-slate-100 dark:bg-slate-800"></span>
+                <span>Chưa làm</span>
+              </div>
+
+              <!-- Mốc quan trọng: Hình thoi tím/vàng -->
+              <div class="flex items-center gap-1.5" title="Mốc quan trọng (Milestone Diamond #8B5CF6 / #F59E0B)">
+                <span class="w-2.5 h-2.5 rotate-45 rounded-[2px] bg-[#8B5CF6] border border-white dark:border-slate-800 shadow-xs"></span>
+                <span>Mốc (Milestone)</span>
+              </div>
+
+              <!-- Mốc Hôm Nay: #EF4444 -->
+              <div class="flex items-center gap-1.5" title="Đường kẻ mốc Hôm Nay #EF4444">
+                <span class="w-1.5 h-3 rounded-full bg-[#EF4444]"></span>
+                <span class="text-red-500 font-bold">Hôm nay</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ====================================================================
+             4. KHUNG CANVAS BIỂU ĐỒ GANTT (PURE WHITE SURFACE & ULTRA-LIGHT GRID)
+             ==================================================================== -->
+        <section class="gantt-wrapper gantt-surface-white custom-scroll relative overflow-x-auto overflow-y-auto border border-[#E2E8F0] dark:border-white/10 rounded-2xl" id="ganttScrollContainer" style="min-height: 480px; max-height: calc(100vh - 17rem);">
+          
+          <!-- Loading State Spinner -->
+          <div id="ganttLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs flex flex-col items-center justify-center z-30 transition-opacity duration-300">
+            <span class="spinner-border-sm w-8 h-8 text-[#4F46E5] border-3"></span>
+            <span class="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-300">Đang dựng biểu đồ Gantt...</span>
+          </div>
+
+          <!-- Empty State (Khi không có công việc hoặc lọc rỗng) -->
+          <div id="ganttEmptyState" class="hidden flex-col items-center justify-center py-20 px-4 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-500/20 flex items-center justify-center text-indigo-500 mb-4 shadow-lg shadow-indigo-500/10">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Không tìm thấy công việc nào</h3>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-1">
+              Dự án này chưa có công việc nào có mốc thời gian, hoặc bộ lọc hiện tại không khớp dữ liệu.
+            </p>
+            <a 
+              href="board.html" 
+              class="mt-4 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:from-indigo-700 hover:to-blue-700 transition-all flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Thêm Công Việc Mới trên Bảng Kanban</span>
+            </a>
+          </div>
+
+          <!-- Lưới Biểu Đồ Gantt CSS Grid Động -->
+          <div id="ganttGrid" class="gantt-grid"></div>
+
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       5. INTERACTIVE POPOVER TOOLTIP KÍNH MỜ (FLOAT DETAIL CARD)
+       ======================================================================== -->
+  <div id="ganttPopover" class="gantt-popover font-['Roboto',sans-serif]" role="tooltip" aria-hidden="true"></div>
+
+  <!-- ========================================================================
+       5. MODAL: CHI TIẾT CÔNG VIỆC TRÊN LỘ TRÌNH (TASK QUICK VIEW MODAL)
+       Liên kết trực tiếp 2 chiều với Trang 3 (Kanban) và Trang 5 (Báo cáo)
+       ======================================================================== -->
+  <div id="timelineTaskModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" id="timelineTaskBackdrop"></div>
+
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+      <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200 dark:border-white/10 animate-fade-in-up">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4.5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-indigo-500/20">
+              📋
+            </div>
+            <div>
+              <span id="modalTaskProjectBadge" class="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                Dự án
+              </span>
+              <h3 id="modalTaskTitle" class="text-sm font-bold text-slate-900 dark:text-white mt-1 leading-snug">
+                Tên công việc
+              </h3>
+            </div>
+          </div>
+          <button type="button" id="btnCloseTimelineModal" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer" title="Đóng (Esc)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+          <!-- Hàng 1: Trạng thái Kanban & Mức độ ưu tiên -->
+          <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 text-xs">
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Trạng thái Kanban (Trang 3)</span>
+              <div id="modalTaskStatusBadge"></div>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Mức độ ưu tiên</span>
+              <div id="modalTaskPriorityBadge"></div>
+            </div>
+          </div>
+
+          <!-- Hàng 2: Thời gian & Tiến độ giờ (Trang 5) -->
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 space-y-2.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-slate-400">Lộ trình thực hiện:</span>
+              <strong id="modalTaskDates" class="text-slate-800 dark:text-slate-200 font-mono-numbers"></strong>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-slate-400">Tiến độ giờ làm (Trang 5):</span>
+              <span id="modalTaskHours" class="font-bold text-slate-800 dark:text-slate-200 font-mono-numbers"></span>
+            </div>
+            <!-- Progress Bar Tone-on-tone -->
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+              <div id="modalTaskProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Hàng 3: Người phụ trách -->
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 text-xs">
+            <span class="text-slate-500 dark:text-slate-400">Người thực hiện:</span>
+            <div class="flex items-center gap-2">
+              <img id="modalTaskAssigneeAvatar" src="" class="w-6 h-6 rounded-full bg-slate-200 dark:bg-white/10 object-cover" />
+              <span id="modalTaskAssigneeName" class="font-bold text-slate-800 dark:text-slate-200"></span>
+            </div>
+          </div>
+
+          <!-- Nhóm 2 nút hành động liên kết liên trang (Core Links) -->
+          <div class="pt-2 space-y-2.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+              Điều hướng liên kết hệ thống:
+            </span>
+            <div class="grid grid-cols-2 gap-3">
+              <a 
+                id="modalBtnGoKanban" 
+                href="board.html" 
+                class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                <span>Mở Bảng Kanban ↗</span>
+              </a>
+
+              <a 
+                id="modalBtnGoReports" 
+                href="reports.html" 
+                class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Bấm Giờ & Báo Cáo ↗</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- ========================================================================
+       6. CÁC MODULE JAVASCRIPT ĐỘC LẬP & KHỞI CHẠY APP SHELL
+       ======================================================================== -->
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/timeline.js"></script>
+
+  <script>
+    // Khởi chạy App Shell đồng bộ tiêu đề & menu
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.AppLayout && typeof AppLayout.init === "function") {
+        AppLayout.init(
+          "Timeline / Gantt Chart", 
+          "Biểu đồ trực quan hóa tiến độ công việc theo dòng thời gian thực"
+        );
+      }
+    });
+  </script>
+</body>
+</html>

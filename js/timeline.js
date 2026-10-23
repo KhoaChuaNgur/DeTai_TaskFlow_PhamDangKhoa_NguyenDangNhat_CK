@@ -259,12 +259,16 @@
       const today = new Date();
       let startDate, endDate;
 
-      if (rangeMode === '14d') {
-        // Khung nhìn 14 ngày (Sprint): Lùi 4 ngày từ baseDate, tiến 9 ngày
+      if (rangeMode === '7d') {
+        // Khung nhìn 7 ngày (1 tuần làm việc): 2 ngày trước baseDate, 4 ngày sau
+        startDate = DateUtils.addDays(baseDate, -2);
+        endDate = DateUtils.addDays(baseDate, 4);
+      } else if (rangeMode === '14d') {
+        // Khung nhìn 14 ngày (Sprint chuẩn Agile): 4 ngày trước baseDate, 9 ngày sau
         startDate = DateUtils.addDays(baseDate, -4);
         endDate = DateUtils.addDays(baseDate, 9);
       } else if (rangeMode === '30d') {
-        // Khung nhìn 30 ngày (Tháng): Lùi 7 ngày từ baseDate, tiến 22 ngày
+        // Khung nhìn 30 ngày (Tháng): 7 ngày trước baseDate, 22 ngày sau
         startDate = DateUtils.addDays(baseDate, -7);
         endDate = DateUtils.addDays(baseDate, 22);
       } else {
@@ -465,7 +469,7 @@
       // Cấu hình số cột cho CSS Grid
       const totalColumns = days.length;
       gridEl.style.setProperty('--gantt-columns', totalColumns);
-      gridEl.style.gridTemplateColumns = `260px repeat(${totalColumns}, minmax(44px, 1fr))`;
+      gridEl.style.gridTemplateColumns = `360px repeat(${totalColumns}, minmax(44px, 1fr))`;
 
       // 3. Render HTML Biểu đồ
       gridEl.innerHTML = '';
@@ -495,7 +499,7 @@
           </svg>
           <span>Công Việc / Lộ Trình</span>
         </div>
-        <span class="text-[10px] text-slate-400 font-normal">Hạn chót</span>
+        <span class="text-[10px] text-slate-400 font-normal">Trạng thái & Hạn chót</span>
       `;
       container.appendChild(cornerHeader);
 
@@ -547,41 +551,97 @@
         };
 
         const isOverdue = GanttEngine.isTaskOverdue(task);
+        const taskStartDate = DateUtils.parseDateOnly(task.startDateTime);
+        const taskDueDate = DateUtils.parseDateOnly(task.dueDateTime);
 
-        // 1. Cột Task Meta bên trái (Sticky left)
+        const startDateVN = DateUtils.formatVNShort(taskStartDate);
+        const dueDateVN = DateUtils.formatVNShort(taskDueDate);
+
+        // Huy hiệu trạng thái liên kết 100% với Bảng Kanban (Trang 3)
+        let statusBadgeHtml = '';
+        if (task.status === 'done') {
+          statusBadgeHtml = '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex-shrink-0">✓ Xong</span>';
+        } else if (task.status === 'doing') {
+          statusBadgeHtml = '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 animate-pulse flex-shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Đang làm</span>';
+        } else {
+          statusBadgeHtml = '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20 flex-shrink-0">Chờ làm</span>';
+        }
+
+        // 1. Cột Task Meta bên trái (Sticky left - Solid Surface chống nhìn xuyên thấu)
         const metaCell = document.createElement('div');
-        metaCell.className = 'gantt-task-meta border-b border-r border-slate-200 dark:border-white/10 hover:bg-indigo-50/40 dark:hover:bg-white/5 transition-colors cursor-pointer';
+        metaCell.className = 'gantt-task-meta border-b border-r border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer group';
         metaCell.setAttribute('data-task-id', task.id);
 
-        const startDateVN = DateUtils.formatVNShort(DateUtils.parseDateOnly(task.startDateTime));
-        const dueDateVN = DateUtils.formatVNShort(DateUtils.parseDateOnly(task.dueDateTime));
-
         metaCell.innerHTML = `
-          <!-- Chấm màu đại diện dự án -->
-          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${project.color}; box-shadow: 0 0 6px ${project.color}80;" title="${project.name}"></span>
-          
-          <!-- Avatar người phụ trách -->
-          <img 
-            src="${task.assignee.avatar}" 
-            alt="${task.assignee.name}" 
-            class="w-6 h-6 rounded-full border border-white/20 flex-shrink-0 bg-slate-800"
-            title="Phụ trách: ${task.assignee.name}"
-            onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=Fallback'"
-          />
+          <!-- Cột màu & Avatar -->
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${project.color}; box-shadow: 0 0 8px ${project.color}80;" title="Dự án: ${project.name}"></span>
+            <img 
+              src="${task.assignee.avatar}" 
+              alt="${task.assignee.name}" 
+              class="w-7 h-7 rounded-full border border-white/20 dark:border-white/10 flex-shrink-0 bg-slate-200 dark:bg-slate-800 object-cover"
+              title="Phụ trách: ${task.assignee.name}"
+              onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=Fallback'"
+            />
+          </div>
 
-          <!-- Tên Task & Khoảng ngày -->
+          <!-- Nội dung chi tiết task -->
           <div class="flex-1 min-w-0 pr-1">
-            <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title="${task.title}">
-              ${task.title}
-            </p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <span>${startDateVN} - ${dueDateVN}</span>
-              ${isOverdue ? '<span class="text-rose-500 font-bold ml-1">● Quá hạn</span>' : ''}
-            </p>
+            <!-- Hàng 1: Tiêu đề task & Badge trạng thái Kanban -->
+            <div class="flex items-center justify-between gap-1 mb-0.5">
+              <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" title="${task.title}">
+                ${task.title}
+              </h4>
+              ${statusBadgeHtml}
+            </div>
+
+            <!-- Hàng 2: Hạn chót & Giờ làm việc thực tế từ Trang 5 -->
+            <div class="flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400">
+              <span class="flex items-center gap-1 font-mono-numbers">
+                <span>${startDateVN} - ${dueDateVN}</span>
+                ${isOverdue ? '<span class="text-rose-500 font-bold ml-1">● Quá hạn</span>' : ''}
+              </span>
+              <span class="font-semibold text-slate-600 dark:text-slate-300 font-mono-numbers" title="Số giờ đã ghi nhận từ Báo cáo (Trang 5)">
+                ⏱ ${task.spentHours || 0}h / ${task.estimatedHours || 8}h
+              </span>
+            </div>
+
+            <!-- Hàng 3: Thanh công cụ liên kết 1-chạm với Trang 3 (Kanban) & Trang 5 (Reports) -->
+            <div class="mt-1 pt-1 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1.5">
+                <a 
+                  href="board.html#${task.id}" 
+                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold transition-colors"
+                  title="Mở và điều khiển trên Bảng Kanban (Trang 3)"
+                  onclick="event.stopPropagation();"
+                >
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                  <span>Kanban ↗</span>
+                </a>
+                <a 
+                  href="reports.html?taskId=${task.id}" 
+                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold transition-colors"
+                  title="Bấm giờ & Nộp báo cáo cho công việc này tại Trang 5"
+                  onclick="event.stopPropagation();"
+                >
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span>Báo cáo ↗</span>
+                </a>
+              </div>
+              <button 
+                type="button" 
+                class="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer"
+                title="Xem chi tiết"
+                onclick="event.stopPropagation(); TaskModalController.open('${task.id}');"
+              >
+                Chi tiết ›
+              </button>
+            </div>
           </div>
         `;
 
-        // Sự kiện click trên metaCell để mở Tooltip/Popover
+        // Click trên metaCell mở Modal chi tiết
+        metaCell.addEventListener('click', () => TaskModalController.open(task.id));
         metaCell.addEventListener('mouseenter', (e) => GanttPopover.show(task, project, e.currentTarget));
         metaCell.addEventListener('mouseleave', () => GanttPopover.hide());
 
@@ -608,97 +668,100 @@
           trackArea.appendChild(colBg);
         });
 
-        // 3. Tính toán vị trí thanh Gantt Bar
-        const taskStartDate = DateUtils.parseDateOnly(task.startDateTime);
-        const taskDueDate = DateUtils.parseDateOnly(task.dueDateTime);
-
-        // Tính khoảng offset so với ngày bắt đầu của lưới
+        // 3. Tính toán vị trí thanh Gantt Bar chuẩn xác khoa học
         let startDiff = DateUtils.diffDays(firstDate, taskStartDate);
         let dueDiff = DateUtils.diffDays(firstDate, taskDueDate);
 
-        // Clamp vị trí thanh bar trong phạm vi hiển thị của lưới
-        const clampedStart = Math.max(0, Math.min(startDiff, days.length - 1));
-        const clampedDue = Math.max(0, Math.min(dueDiff, days.length - 1));
+        const isBeforeRange = dueDiff < 0;
+        const isAfterRange = startDiff >= days.length;
 
-        // Số cột mà thanh bar chiếm
-        let durationCols = Math.max(1, clampedDue - clampedStart + 1);
-        const colStart = clampedStart + 1; // CSS Grid 1-based index
+        // Chỉ vẽ thanh bar khi task có giao cắt với dải ngày hiển thị
+        if (!isBeforeRange && !isAfterRange) {
+          const clampedStart = Math.max(0, startDiff);
+          const clampedDue = Math.min(days.length - 1, dueDiff);
+          const durationCols = Math.max(1, clampedDue - clampedStart + 1);
+          const colStart = clampedStart + 1; // CSS Grid 1-based index
 
-        // Tính toán tỷ lệ % hoàn thành cho kỹ thuật đồng sắc độ (Tone-on-tone)
-        let progressPercent = 0;
-        if (task.status === 'done') {
-          progressPercent = 100;
-        } else if (task.status === 'doing') {
-          const estimated = Number(task.estimatedHours) || 8;
-          const spent = Number(task.spentHours) || 3.5;
-          progressPercent = Math.min(95, Math.max(25, Math.round((spent / estimated) * 100)));
-        } else {
-          progressPercent = 0;
-        }
+          const startsBefore = startDiff < 0;
+          const endsAfter = dueDiff >= days.length;
 
-        // Kiểm tra mốc quan trọng (Milestone: Critical priority hoặc có tag Milestone)
-        const isMilestone = task.priority === 'critical' || (Array.isArray(task.tags) && task.tags.includes('Milestone'));
+          // Tính toán tỷ lệ % hoàn thành
+          let progressPercent = 0;
+          if (task.status === 'done') {
+            progressPercent = 100;
+          } else if (task.status === 'doing') {
+            const estimated = Number(task.estimatedHours) || 8;
+            const spent = Number(task.spentHours) || 3.5;
+            progressPercent = Math.min(95, Math.max(25, Math.round((spent / estimated) * 100)));
+          } else {
+            progressPercent = 0;
+          }
 
-        // Tạo thanh Gantt Bar chuẩn SaaS
-        const barEl = document.createElement('div');
-        let barClass = 'gantt-bar';
+          const isMilestone = task.priority === 'critical' || (Array.isArray(task.tags) && task.tags.includes('Milestone'));
 
-        if (isOverdue) {
-          barClass += ' gantt-bar-overdue';
-        } else if (task.status === 'done') {
-          barClass += ' gantt-bar-done';
-        } else if (task.status === 'doing') {
-          barClass += ' gantt-bar-doing';
-        } else {
-          barClass += ' gantt-bar-todo';
-        }
+          const barEl = document.createElement('div');
+          let barClass = 'gantt-bar';
 
-        barEl.className = barClass;
-        barEl.style.gridColumn = `${colStart} / span ${durationCols}`;
-        barEl.setAttribute('data-task-id', task.id);
+          if (isOverdue) {
+            barClass += ' gantt-bar-overdue';
+          } else if (task.status === 'done') {
+            barClass += ' gantt-bar-done';
+          } else if (task.status === 'doing') {
+            barClass += ' gantt-bar-doing';
+          } else {
+            barClass += ' gantt-bar-todo';
+          }
 
-        // Biểu tượng trạng thái
-        let statusIcon = '';
-        if (task.status === 'done') {
-          statusIcon = '<svg class="w-3.5 h-3.5 text-white flex-shrink-0 drop-shadow-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>';
-        } else if (task.status === 'doing') {
-          statusIcon = '<span class="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0 drop-shadow-xs"></span>';
-        } else {
-          statusIcon = '<svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
-        }
+          barEl.className = barClass;
+          barEl.style.gridColumn = `${colStart} / span ${durationCols}`;
+          barEl.setAttribute('data-task-id', task.id);
 
-        // Cấu trúc Tone-on-tone: Lớp fill tiến độ + Lớp nội dung chữ tương phản cao
-        barEl.innerHTML = `
-          <!-- Thanh tiến độ (% đã làm xong) đồng sắc độ -->
-          <div class="gantt-bar-fill" style="width: ${progressPercent}%;"></div>
+          let statusIcon = '';
+          if (task.status === 'done') {
+            statusIcon = '<svg class="w-3.5 h-3.5 text-white flex-shrink-0 drop-shadow-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>';
+          } else if (task.status === 'doing') {
+            statusIcon = '<span class="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0 drop-shadow-xs"></span>';
+          } else {
+            statusIcon = '<svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+          }
 
-          <!-- Lớp chữ & icon nổi bật -->
-          <div class="gantt-bar-content font-['Roboto',sans-serif]">
-            <div class="flex items-center gap-1.5 min-w-0 pr-1">
-              ${isMilestone ? '<span class="gantt-milestone-diamond" title="Mốc quan trọng (Milestone)"></span>' : statusIcon}
-              <span class="truncate text-xs font-semibold leading-none drop-shadow-xs">${task.title}</span>
+          barEl.innerHTML = `
+            ${startsBefore ? '<span class="text-[9px] opacity-75 mr-0.5">◀</span>' : ''}
+            <div class="gantt-bar-fill" style="width: ${progressPercent}%;"></div>
+            <div class="gantt-bar-content font-['Roboto',sans-serif]">
+              <div class="flex items-center gap-1.5 min-w-0 pr-1">
+                ${isMilestone ? '<span class="gantt-milestone-diamond" title="Mốc quan trọng (Milestone)"></span>' : statusIcon}
+                <span class="truncate text-xs font-semibold leading-none drop-shadow-xs">${task.title}</span>
+              </div>
+              ${task.status !== 'todo' ? `<span class="text-[10px] font-extrabold opacity-95 ml-2 flex-shrink-0 drop-shadow-xs">${progressPercent}%</span>` : '<span class="text-[10px] font-medium opacity-75 ml-2 flex-shrink-0">Chờ</span>'}
             </div>
-            ${task.status !== 'todo' ? `<span class="text-[10px] font-extrabold opacity-95 ml-2 flex-shrink-0 drop-shadow-xs">${progressPercent}%</span>` : '<span class="text-[10px] font-medium opacity-75 ml-2 flex-shrink-0">Chờ</span>'}
-          </div>
-        `;
+            ${endsAfter ? '<span class="text-[9px] opacity-75 ml-0.5">▶</span>' : ''}
+          `;
 
-        // Sự kiện Hover hiển thị Popover chi tiết
-        barEl.addEventListener('mouseenter', (e) => {
-          GanttPopover.show(task, project, e.currentTarget);
-          metaCell.classList.add('bg-indigo-50/70', 'dark:bg-indigo-950/40');
-        });
+          barEl.addEventListener('mouseenter', (e) => {
+            GanttPopover.show(task, project, e.currentTarget);
+            metaCell.classList.add('bg-indigo-50/70', 'dark:bg-slate-800');
+          });
 
-        barEl.addEventListener('mouseleave', () => {
-          GanttPopover.hide();
-          metaCell.classList.remove('bg-indigo-50/70', 'dark:bg-indigo-950/40');
-        });
+          barEl.addEventListener('mouseleave', () => {
+            GanttPopover.hide();
+            metaCell.classList.remove('bg-indigo-50/70', 'dark:bg-slate-800');
+          });
 
-        // Click trên thanh bar chuyển hướng hoặc mở popup
-        barEl.addEventListener('click', () => {
-          window.location.href = `board.html#${task.id}`;
-        });
+          barEl.addEventListener('click', () => {
+            TaskModalController.open(task.id);
+          });
 
-        trackArea.appendChild(barEl);
+          trackArea.appendChild(barEl);
+        } else {
+          // Task nằm ngoài khung nhìn (Hiển thị chỉ báo tinh tế trên track)
+          const outBadge = document.createElement('div');
+          outBadge.className = 'text-[10px] text-slate-400 italic px-3 py-1 flex items-center gap-1 opacity-70';
+          outBadge.innerHTML = isBeforeRange 
+            ? `<span>◀ Hoàn tất trước ngày ${DateUtils.formatVNShort(firstDate)}</span>` 
+            : `<span>Bắt đầu sau ngày ${DateUtils.formatVNShort(lastDate)} ▶</span>`;
+          trackArea.appendChild(outBadge);
+        }
 
         // 4. Nếu có cột Today, vẽ thêm đường Today Line chỉ báo thời gian thực
         if (todayIndex >= 0) {
@@ -713,9 +776,6 @@
       });
     },
 
-    /**
-     * Tự động cuộn tới cột ngày hôm nay
-     */
     scrollToToday() {
       const scrollContainer = document.getElementById('ganttScrollContainer');
       const todayCell = document.querySelector('.gantt-cell-header.is-today');
@@ -864,6 +924,131 @@
   /**
    * 8. QUẢN LÝ SỰ KIỆN TƯƠNG TÁC (EVENT LISTENERS)
    */
+  /**
+   * ==========================================================================
+   * 7.5. TASK DETAIL MODAL CONTROLLER (TASK QUICK VIEW MODAL)
+   * Liên kết trực tiếp 2 chiều với Trang 3 (Kanban) và Trang 5 (Báo cáo)
+   * ==========================================================================
+   */
+  const TaskModalController = {
+    init() {
+      this.dom = {
+        modal: document.getElementById('timelineTaskModal'),
+        backdrop: document.getElementById('timelineTaskBackdrop'),
+        btnClose: document.getElementById('btnCloseTimelineModal'),
+        projectBadge: document.getElementById('modalTaskProjectBadge'),
+        title: document.getElementById('modalTaskTitle'),
+        statusBadge: document.getElementById('modalTaskStatusBadge'),
+        priorityBadge: document.getElementById('modalTaskPriorityBadge'),
+        dates: document.getElementById('modalTaskDates'),
+        hours: document.getElementById('modalTaskHours'),
+        progressBar: document.getElementById('modalTaskProgressBar'),
+        assigneeAvatar: document.getElementById('modalTaskAssigneeAvatar'),
+        assigneeName: document.getElementById('modalTaskAssigneeName'),
+        btnGoKanban: document.getElementById('modalBtnGoKanban'),
+        btnGoReports: document.getElementById('modalBtnGoReports')
+      };
+
+      if (!this.dom.modal) return;
+
+      this.bindEvents();
+    },
+
+    bindEvents() {
+      if (this.dom.btnClose) {
+        this.dom.btnClose.addEventListener('click', () => this.close());
+      }
+      if (this.dom.backdrop) {
+        this.dom.backdrop.addEventListener('click', () => this.close());
+      }
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.dom.modal && !this.dom.modal.classList.contains('hidden')) {
+          this.close();
+        }
+      });
+    },
+
+    open(taskId) {
+      if (!this.dom.modal) return;
+      const task = TimelineState.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const project = TimelineState.projects.find(p => p.id === task.projectId) || {
+        name: 'Dự án TaskFlow',
+        color: '#6366F1'
+      };
+
+      const isOverdue = GanttEngine.isTaskOverdue(task);
+      const startStr = DateUtils.formatVNShort(DateUtils.parseDateOnly(task.startDateTime));
+      const dueStr = DateUtils.formatVNShort(DateUtils.parseDateOnly(task.dueDateTime));
+
+      if (this.dom.title) this.dom.title.textContent = task.title;
+      if (this.dom.projectBadge) {
+        this.dom.projectBadge.textContent = project.name;
+        this.dom.projectBadge.style.color = project.color;
+        this.dom.projectBadge.style.backgroundColor = `${project.color}18`;
+      }
+
+      if (this.dom.statusBadge) {
+        if (task.status === 'done') {
+          this.dom.statusBadge.innerHTML = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">✓ Đã hoàn thành</span>';
+        } else if (task.status === 'doing') {
+          this.dom.statusBadge.innerHTML = '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 animate-pulse"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Đang làm (In-Progress)</span>';
+        } else {
+          this.dom.statusBadge.innerHTML = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30">Chờ làm (To-do)</span>';
+        }
+      }
+
+      if (this.dom.priorityBadge) {
+        const priLabels = {
+          critical: 'Khẩn Cấp',
+          high: 'Ưu Tiên Cao',
+          medium: 'Trung Bình',
+          low: 'Thấp'
+        };
+        this.dom.priorityBadge.innerHTML = `<span class="inline-block px-2 py-0.5 rounded font-bold text-[11px] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">${priLabels[task.priority] || 'Trung Bình'}</span>`;
+      }
+
+      if (this.dom.dates) {
+        this.dom.dates.innerHTML = `${startStr} ➔ ${dueStr} ${isOverdue ? '<span class="text-rose-500 ml-1">● Quá hạn</span>' : ''}`;
+      }
+
+      const spent = Number(task.spentHours) || 0;
+      const estimated = Number(task.estimatedHours) || 8;
+      const pct = Math.min(100, Math.round((spent / Math.max(1, estimated)) * 100));
+
+      if (this.dom.hours) {
+        this.dom.hours.textContent = `${spent}h đã log / ${estimated}h dự kiến (${pct}%)`;
+      }
+      if (this.dom.progressBar) {
+        this.dom.progressBar.style.width = `${task.status === 'done' ? 100 : pct}%`;
+      }
+
+      if (this.dom.assigneeAvatar) {
+        this.dom.assigneeAvatar.src = task.assignee.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User';
+      }
+      if (this.dom.assigneeName) {
+        this.dom.assigneeName.textContent = task.assignee.name || 'Thành viên';
+      }
+
+      if (this.dom.btnGoKanban) {
+        this.dom.btnGoKanban.href = `board.html#${task.id}`;
+      }
+      if (this.dom.btnGoReports) {
+        this.dom.btnGoReports.href = `reports.html?taskId=${task.id}`;
+      }
+
+      this.dom.modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    },
+
+    close() {
+      if (!this.dom.modal) return;
+      this.dom.modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+  };
+
   const TimelineEvents = {
     bind() {
       // 1. Dropdown lọc Dự Án
@@ -875,7 +1060,7 @@
         });
       }
 
-      // 2. Bộ chuyển Time Range: All / 14d / 30d
+      // 2. Bộ chuyển Time Range: Toàn bộ / 7 ngày / 14 ngày (Sprint) / 30 ngày (Tháng)
       const rangeBtns = document.querySelectorAll('.timeline-range-btn');
       rangeBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -888,11 +1073,15 @@
         });
       });
 
-      // 3. Nút Điều Hướng Ngày: Prev / Next
+      // 3. Nút Điều Hướng Ngày: Prev / Next theo bước nhảy chu kỳ chuẩn
       const btnPrev = document.getElementById('btnPrevRange');
       if (btnPrev) {
         btnPrev.addEventListener('click', () => {
-          const shiftDays = TimelineState.rangeMode === '14d' ? -7 : -14;
+          let shiftDays = -14;
+          if (TimelineState.rangeMode === '7d') shiftDays = -7;
+          else if (TimelineState.rangeMode === '14d') shiftDays = -14;
+          else if (TimelineState.rangeMode === '30d') shiftDays = -30;
+
           TimelineState.baseDate = DateUtils.addDays(TimelineState.baseDate, shiftDays);
           GanttRenderer.render();
         });
@@ -901,19 +1090,32 @@
       const btnNext = document.getElementById('btnNextRange');
       if (btnNext) {
         btnNext.addEventListener('click', () => {
-          const shiftDays = TimelineState.rangeMode === '14d' ? 7 : 14;
+          let shiftDays = 14;
+          if (TimelineState.rangeMode === '7d') shiftDays = 7;
+          else if (TimelineState.rangeMode === '14d') shiftDays = 14;
+          else if (TimelineState.rangeMode === '30d') shiftDays = 30;
+
           TimelineState.baseDate = DateUtils.addDays(TimelineState.baseDate, shiftDays);
           GanttRenderer.render();
         });
       }
 
-      // 4. Nút Nhảy về Hôm Nay (Jump to Today)
+      // 4. Nút Nhảy về Hôm Nay (Jump to Today) với hiệu ứng sóng viền phát sáng
       const btnJumpToday = document.getElementById('btnJumpToday');
       if (btnJumpToday) {
         btnJumpToday.addEventListener('click', () => {
           TimelineState.baseDate = new Date();
           GanttRenderer.render();
           GanttRenderer.scrollToToday();
+
+          // Kích hoạt hiệu ứng phát sáng mốc hôm nay
+          setTimeout(() => {
+            const todayCell = document.querySelector('.gantt-cell-header.is-today');
+            if (todayCell) {
+              todayCell.classList.add('ring-2', 'ring-red-500', 'animate-pulse');
+              setTimeout(() => todayCell.classList.remove('ring-2', 'ring-red-500', 'animate-pulse'), 2500);
+            }
+          }, 200);
         });
       }
 
@@ -953,6 +1155,7 @@
 
       // Khởi tạo Popover Tooltip
       GanttPopover.init();
+      TaskModalController.init();
 
       // Gắn các sự kiện điều khiển
       TimelineEvents.bind();
@@ -995,6 +1198,11 @@
   }
 
   // Đóng gói an toàn vào window.TaskFlowTimeline
-  window.TaskFlowTimeline = TimelineApp;
+  window.TaskFlowTimeline = {
+    App: TimelineApp,
+    Modal: TaskModalController,
+    State: TimelineState
+  };
+  window.TaskModalController = TaskModalController;
 
 })(window, document);
