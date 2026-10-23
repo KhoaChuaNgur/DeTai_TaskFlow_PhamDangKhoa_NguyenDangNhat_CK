@@ -17,6 +17,9 @@ Tài liệu này lưu trữ **100% nguyên văn các câu lệnh (User Prompts)*
 3. [Turn 3: Hoàn thiện tính năng vi mô, hiệu ứng Glow, Highlight, Count-up & Loading state](#turn-3-hoan-thien-tinh-nang-vi-mo-hieu-ung-glow-highlight-count-up--loading-state)
 4. [Turn 4: Giải thích ý nghĩa và vai trò thực tế của Trang 3 trong hệ thống](#turn-4-giai-thich-y-nghia-va-vai-tro-thuc-te-cua-trang-3-trong-he-thong)
 5. [Turn 5: Phân tích chuyên sâu triết lý Agile, State Machine & Kịch bản bảo vệ đồ án](#turn-5-phan-tich-chuyen-sau-triet-ly-agile-state-machine--kich-ban-bao-ve-do-an)
+6. [Turn 6: Phân tích kiến trúc & Hiện thực hóa mã nguồn Trang 4: Timeline & Interactive Gantt Chart](#turn-6-phan-tich-kien-truc--hien-thuc-hoa-ma-nguon-trang-4-timeline--interactive-gantt-chart)
+7. [Turn 7: Giải thích ý nghĩa thực tế, triết lý quản trị & Kịch bản vấn đáp bảo vệ Trang 4](#turn-7-giai-thich-y-nghia-thuc-te-triet-ly-quan-tri--kich-ban-van-dap-bao-ve-trang-4)
+8. [Turn 8: Tối ưu Typography Font Roboto & Quy chuẩn Hệ màu sắc Modern SaaS cho Trang 4](#turn-8-toi-uu-typography-font-roboto--quy-chuan-he-mau-sac-modern-saas-cho-trang-4)
 
 ---
 
@@ -222,11 +225,154 @@ Dựa theo cấu trúc trên, bạn hãy tạo trang 3. Yêu cầu:  Ô tìm ki�
 
 ---
 
-## TỔNG KẾT TÀI SẢN MÃ NGUỒN ĐÃ TẠO LẬP BỞI THÀNH VIÊN B (TRANG 3)
+### Turn 6: Phân tích kiến trúc & Hiện thực hóa mã nguồn Trang 4: Timeline & Interactive Gantt Chart
+
+#### 1. Nguyên văn các câu lệnh của người dùng (User Prompts):
+**Lượt hỏi 1 (Phân tích nội dung cần có ở Trang 4):**
+```markdown
+Dựa theo nội dung sau mình gửi, hãy phân tích cho mình những nội dung cần có ở trang 4: TIMELINE & INTERACTIVE GANTT CHART : Bạn là Lead Frontend Architect & Creative Performance Engineer trong dự án "TaskFlow - Quản lý Dự án & Tiến độ Công việc" (Project Task Management) [Học phần Thiết kế Web - Nhóm 2 người].
+
+BỐI CẢNH & PHẠM VI DỰ ÁN:
+- Thành viên A đã hoàn thiện xuất sắc và "đóng băng" (freeze) các trang:
+  + `login.html`: Xác thực đăng nhập kính mờ và phân quyền RBAC (Admin / Member).
+  + `index.html`: Dashboard tổng quan, KPI metrics và tiến độ động.
+  + `projects.html`: Quản lý dự án với 3D Card Flip, Autocomplete search và Datetime-local picker.
+  + `js/storage.js`: Storage engine hạt nhân (khóa `TASKFLOW_DATA`).
+  + `js/auth.js`: Bảo mật tuyến đường Auth Guard và cơ chế phiên ngân hàng (5 phút + gia hạn 2 phút).
+  + `js/layout.js`: Module App Shell tự động render Sidebar, Header và quản lý Dark/Light mode.
+  + `js/sheets-sync.js`: Module Webhook kết nối Google Sheets đã cấu hình sẵn URL chính thức.
+
+- Tôi (Thành viên B) sẽ đảm nhiệm hoàn thiện toàn bộ phân hệ nghiệp vụ còn lại:
+  1. Trang 3: Bảng việc Kanban kéo thả (`board.html` + `js/kanban.js`)
+  2. Trang 4: Timeline / Biểu đồ Gantt trực quan (`timeline.html` + `js/timeline.js`)
+  3. Trang 5: Báo cáo & Time-tracker tự động (`reports.html` + `js/reports.js`)
+
+======================================================================
+NGUYÊN TẮC BẢO VỆ DỰ ÁN BẤT KHẢ XÂM PHẠM (SAFETY & ISOLATION RULES):
+======================================================================
+1. TUYỆT ĐỐI KHÔNG GHI ĐÈ, SỬA ĐỔI HOẶC XÓA các file sau:
+   - `login.html`, `index.html`, `projects.html`
+   - `js/dashboard.js`, `js/projects.js`
+   Mọi thao tác code CHỈ ĐƯỢC TẠO MỚI hoặc cập nhật vào:
+   - `board.html`, `js/kanban.js`
+   - `timeline.html`, `js/timeline.js`
+   - `reports.html`, `js/reports.js`
+   - Bổ sung style nếu cần vào `css/styles.css` (chỉ thêm class mới, không sửa/xóa class cũ).
+
+2. ĐỒNG BỘ APP SHELL QUA `js/layout.js` (MANDATORY):
+   Trong `board.html`, `timeline.html`, `reports.html`, TUYỆT ĐỐI KHÔNG VIẾT CỨNG MÃ HTML CỦA SIDEBAR/HEADER.
+   Chỉ sử dụng đúng 2 thẻ giữ chỗ:
+     <aside id="app-sidebar"></aside>
+     <header id="app-header"></header>
+   Và ở cuối trang, nhúng các module theo đúng thứ tự:
+     <script src="js/storage.js"></script>
+     <script src="js/auth.js"></script>
+     <script src="js/layout.js"></script>
+     <!-- Script riêng của từng trang -->
+   Khởi tạo qua hàm: AppLayout.init("Tên Trang", "Mô tả ngắn");
+
+3. ĐỒNG BỘ DỮ LIỆU CHUẨN XÁC VỚI LOCALSTORAGE (`TASKFLOW_DATA`):
+   Tuân thủ 100% schema đã thống nhất với team, không tự ý đổi tên thuộc tính...
+
+Hãy xác nhận bạn đã nắm vững toàn bộ quy tắc cách ly các trang cũ, hiểu đúng cấu trúc dữ liệu và sẵn sàng tạo mã nguồn hoàn chỉnh cho file nào đầu tiên.
+```
+
+**Lượt hỏi 2 (Lệnh thực thi tạo mã nguồn):**
+```markdown
+bạn hãy tạo nhé
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Phân tích Kiến trúc 4 Khối Cốt Lõi của Trang 4**:
+  1. *Khối Điều khiển & Lọc (Timeline Control Center)*: Dropdown lọc theo từng dự án hoặc xem toàn bộ; các nút chuyển khung nhìn thời gian linh hoạt: 14 ngày (Sprint), 30 ngày (Tháng) và Toàn bộ lộ trình; nút điều hướng Prev/Next; nút "Hôm nay" (Jump to Today) tự động cuộn mượt; dải Mini KPI đếm tức thì (Tổng, Đang làm, Hoàn thành, Quá hạn) và bảng chú giải màu sắc (Color Legend).
+  2. *Trục Thời Gian Toán Học (Dynamic Time Axis Engine)*: Động cơ xử lý ngày tháng thuần Vanilla JS (`DateUtils`), tính toán mảng dải ngày `computeDaysRange` tự động tìm `minDate` và `maxDate` cùng khoảng đệm an toàn, phân biệt ngày làm việc và ngày cuối tuần (`.gantt-col-weekend`), đánh dấu ngày hiện tại (`.gantt-col-today`).
+  3. *Khung Canvas Biểu Đồ Gantt Thuần CSS Grid (100% Pure CSS Grid)*: Thiết lập hệ thống lưới 2 chiều động `grid-template-columns: 260px repeat(N, minmax(44px, 1fr))`, thanh Gantt Bar định vị bằng `grid-column: startCol / span durationCols`. Tích hợp vạch thời gian thực *Today Line* xuyên suốt biểu đồ và hiệu ứng phát sáng đỏ nhấp nháy (`timeline-bar-overdue`) cho các task quá hạn.
+  4. *Tương Tác Vi Mô Nâng Cao (Micro-Interactions)*: Popover Tooltip kính mờ (`.gantt-popover`) hiển thị đầy đủ ngữ cảnh dự án, người phụ trách, tiến độ giờ, cảnh báo quá hạn và nút liên kết nhanh sang Bảng Kanban. Cơ chế tự động cuộn `scrollToToday` định vị tức thì về ngày hôm nay.
+- **Tạo mới [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html)**:
+  - Khung HTML5 Semantic đạt chuẩn WCAG AAA, nạp Anti-flicker script trong `<head>`, 3 cầu ánh sáng Ambient Orbs theo `colorweb.md`.
+  - Khung App Shell chuẩn mực: chỉ sử dụng 2 thẻ giữ chỗ `<aside id="app-sidebar"></aside>` và `<header id="app-header"></header>`.
+  - Nạp đúng thứ tự 4 script: `storage.js` $\rightarrow$ `auth.js` $\rightarrow$ `layout.js` $\rightarrow$ `timeline.js`.
+  - Khởi tạo qua `AppLayout.init("Timeline / Gantt Chart", "Biểu đồ trực quan hóa tiến độ công việc theo dòng thời gian thực")`.
+- **Tạo mới [`js/timeline.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/timeline.js)**:
+  - Module ES6 tự đóng gói an toàn (IIFE), tích hợp Auth Guard có khối `try...catch` bảo vệ.
+  - Cơ chế Dual-Storage Engine đọc dữ liệu từ cả `TaskFlowStorage` và `TASKFLOW_DATA`.
+  - Xử lý toán học ngày tháng thuần không nạp thư viện ngoài, chuẩn hóa dữ liệu ngày giờ linh hoạt.
+  - Bộ lắng nghe sự kiện đa kênh: lọc dự án, chuyển scale, điều hướng ngày, nhảy về hôm nay, đóng tooltip khi scroll và tự động đồng bộ chéo giữa các tab qua sự kiện `storage`.
+- **Bổ sung CSS Tokens vào [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) (Mục 13)**:
+  - `@keyframes timelineOverduePulse` & `.timeline-bar-overdue`: Viền đỏ phát sáng nhấp nháy báo động task trễ hạn.
+  - `.gantt-today-line` & `.gantt-today-badge`: Đường chỉ báo thời gian thực xuyên suốt và huy hiệu "HÔM NAY".
+  - `.gantt-col-weekend`, `.gantt-col-today`: Màu nền phân biệt ngày cuối tuần và ngày hiện tại.
+  - `.gantt-bar-todo`, `.gantt-bar-doing`, `.gantt-bar-done`: Gradient màu sắc nhận diện trạng thái công việc.
+  - `.timeline-range-btn`, `.timeline-range-btn.is-active`: Nhóm nút bấm chuyển đổi khung nhìn thời gian.
+  - `.gantt-popover`: Thẻ chi tiết nổi kính mờ chuẩn Glassmorphism kèm hiệu ứng hiển thị trượt nhẹ.
+
+---
+
+### Turn 7: Giải thích ý nghĩa thực tế, triết lý quản trị & Kịch bản vấn đáp bảo vệ Trang 4
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompt):
+```markdown
+giải thích ý nghĩa trang 4
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả phân tích của AI Assistant:
+- **Định vị & Đối trọng Triết lý Quản trị (Kanban vs. Gantt)**:
+  - Xác lập Trang 4 là *"Hệ thống định vị & Bản đồ chiến lược dài hạn" (Strategic Navigation & Scheduling Horizon)* trong hệ sinh thái TaskFlow.
+  - Phân tích hiện tượng "Mù thời gian" (Temporal Blindness) của Kanban: Kanban chỉ trả lời *"Task đang ở bước nào?"* mà không thể trả lời *"Task kéo dài bao lâu, có bị đè lịch lên nhau không, và khi nào toàn bộ dự án về đích?"*.
+  - Chứng minh sự tương hỗ kinh điển: Kanban là góc nhìn vi mô theo trạng thái quy trình (State-centric), còn Gantt là góc nhìn vĩ mô theo dòng thời gian thực (Time-centric).
+- **Phân tích 6 Ý Nghĩa Quản Trị Thực Tiễn**:
+  1. *Trực quan hóa lộ trình & Tầm nhìn dài hạn*: Cung cấp góc nhìn bao quát từ trên cao (Bird's Eye View) cho Ban lãnh đạo và các bên liên quan (Stakeholders).
+  2. *Nhận diện xung đột nguồn lực & Chồng chéo công việc (Resource Collision)*: Phát hiện kịp thời trường hợp một nhân sự bị gán quá nhiều task trong cùng một khoảng thời gian để ngăn ngừa kiệt sức (Burnout).
+  3. *Quản trị rủi ro trễ hạn theo thời gian thực*: Sử dụng vạch đỏ *Today Line* làm mốc quy chiếu; kích hoạt nhịp đập cảnh báo đỏ cho các công việc vượt quá hạn chót.
+  4. *Định hình nhịp độ làm việc (Cadence & Pacing)*: Phân định rõ ràng ngày làm việc và ngày nghỉ cuối tuần, giúp đội ngũ xác định rõ các cột mốc cần hoàn thành trong tuần.
+  5. *Giảm tải nhận thức (Cognitive Load Reduction)*: Cho phép lọc lộ trình của riêng từng dự án để tập trung cao độ.
+  6. *Cầu nối Kế hoạch (Planning) & Chấm công thực tế (Execution)*: Chuẩn bị dữ liệu kế hoạch để đối chiếu với dữ liệu bấm giờ thực tế từ Trang 5 (Reports & Time-tracker).
+- **Giá trị Kỹ thuật & Công thái học Frontend**:
+  - Tối ưu hóa hiệu năng 60fps bằng 100% CSS Grid thuần, không làm phình dung lượng bundle.
+  - Bố cục bám dính 2 chiều (*Bidirectional Sticky*): ghim cột task bên trái và ghim dải ngày ở đỉnh.
+  - Trải nghiệm tra cứu nhanh qua Popover kính mờ tự bám cạnh màn hình và cơ chế tự cuộn về ngày hôm nay (`scrollToToday`).
+- **Kịch bản Vấn đáp Bảo vệ Đồ án (Defense Q&A)**:
+  - Xây dựng câu trả lời mẫu đắt giá nhất giúp sinh viên tự tin thuyết phục hội đồng chấm điểm khi được hỏi về lý do cần có cả Kanban và Gantt trong cùng một hệ thống.
+
+---
+
+### Turn 8: Tối ưu Typography Font Roboto & Quy chuẩn Hệ màu sắc Modern SaaS cho Trang 4
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompt):
+```markdown
+Yêu cầu toàn bộ chữ trong trang 4 phải dùng font: Roboto, và dùng gram màu như phân tích sau: Đối với trang Timeline / Gantt Chart trong ứng dụng quản lý công việc (Taskflow), giao diện chứa lượng lớn thông tin về lưới thời gian, khối công việc, phụ thuộc (dependencies) và tiến độ. Nguyên tắc quan trọng nhất là giảm tải thị giác (visual clutter): màu nền và lưới phải rất nhẹ để các thanh bar và trạng thái nổi bật rõ ràng.1. Bảng màu khuyến nghị theo phong cách Modern SaaS (Tailwind / Inter Style)...
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Chuẩn hóa Typography với Google Font: Roboto**:
+  - Nhúng Google Font `Roboto` (đủ các trọng số `wght@300;400;500;700;900`) trực tiếp vào thẻ `<head>` của [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html).
+  - Cấu hình Tailwind mở rộng: `fontFamily: { sans: ['Roboto', 'sans-serif'], roboto: ['Roboto', 'sans-serif'] }`.
+  - Khóa font toàn bộ trang qua class `page-timeline` và CSS Rule `font-family: 'Roboto', sans-serif !important;` trong [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) (Mục 13.1).
+- **Hiện thực hóa Hệ Màu Sắc Modern SaaS (Neutral Slate + Indigo/Blue)**:
+  - *Canvas (Nền ứng dụng)*: Sắc xám dịu mắt `#F8FAFC` (Slate 50) giảm tối đa chói mắt trên màn hình rộng.
+  - *Surface (Nền Gantt & Card)*: Pure White `#FFFFFF` (Light) và Slate `#0F172A` (Dark).
+  - *Ultra-light Grid Lines*: Đường kẻ chia ngày `#E2E8F0` (Slate 200) độ dày 1px mảnh nhẹ, mượt mà.
+  - *Today Line*: Đường kẻ thẳng đứng mốc Hôm Nay `#EF4444` (Red 500) kèm huy hiệu "HÔM NAY" định vị tức thì.
+  - *Weekends*: Phân tách ngày Thứ 7 & Chủ Nhật bằng màu `#F1F5F9` (Slate 100).
+- **Hệ màu Quy Chuẩn cho Thanh Tiến Độ Gantt Bars & Kỹ thuật Đồng Sắc Độ (Tone-on-tone)**:
+  - *Đang thực hiện (In Progress)*: Nền thanh nhạt `#E0E7FF` (Indigo 100), thanh tiến độ lồng bên trong `#4F46E5` / `#2563EB` (Indigo/Blue 600) hiển thị tỷ lệ % hoàn thành trực quan.
+  - *Hoàn thành (Done)*: Nền xanh lá nhạt `#D1FAE5`, thanh lấp đầy `#10B981` (Emerald 500) với opacity 0.85 dịu mắt.
+  - *Chậm tiến độ (Delayed/Overdue)*: Nền `#FFE4E6`, thanh tiến độ `#F43F5E` (Rose 500) kèm viền nhấp nháy báo động.
+  - *Chưa bắt đầu (To-do)*: Nền mờ `#F1F5F9`, viền đứt nét ngoài Ghost outline `#94A3B8` (Slate 400).
+  - *Mốc quan trọng (Milestone)*: Hình thoi Diamond sắc tím `#8B5CF6` hoặc vàng hổ phách `#F59E0B`.
+- **Cập nhật Bảng Chú giải (Legend) & Bố cục Giao diện**:
+  - Đồng bộ bảng chú giải màu sắc trên đỉnh Trang 4 với 6 trạng thái màu chuẩn mực.
+  - Đảm bảo độ tương phản chữ (WCAG AAA Contrast) với chữ trắng đổ bóng trên nền đậm và chữ xám đậm trên nền nhạt.
+
+---
+
+## TỔNG KẾT TÀI SẢN MÃ NGUỒN ĐÃ TẠO LẬP BỞI THÀNH VIÊN B (TRANG 3 & TRANG 4)
 
 | Tên Tệp | Đường Dẫn | Trạng Thái | Mô Tả Nghiệp Vụ |
 | :--- | :--- | :--- | :--- |
-| **`board.html`** | [`board.html`](file:///d:/_BAOCAO_CK_TKWEB/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/board.html) | Hoàn thành 100% | Giao diện Bảng Kanban 3 cột, App Shell động, bộ lọc Glow/Shadow, Modal tạo việc, Toast container |
-| **`js/kanban.js`** | [`js/kanban.js`](file:///d:/_BAOCAO_CK_TKWEB/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/kanban.js) | Hoàn thành 100% | Động cơ Drag & Drop 60fps, Touch 1-chạm, Count-up KPI, Highlight từ khóa, Loading state, Sync `TASKFLOW_DATA` |
-| **`css/styles.css`** | [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) | Cập nhật mục 12 | Thêm các class hiệu ứng tìm kiếm phát sáng, custom dropdowns, flash highlight KPI, loading spinner |
-| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Khởi tạo mới | Nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B |
+| **`board.html`** | [`board.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/board.html) | Hoàn thành 100% | Giao diện Bảng Kanban 3 cột, App Shell động, bộ lọc Glow/Shadow, Modal tạo việc, Toast container |
+| **`js/kanban.js`** | [`js/kanban.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/kanban.js) | Hoàn thành 100% | Động cơ Drag & Drop 60fps, Touch 1-chạm, Count-up KPI, Highlight từ khóa, Loading state, Sync `TASKFLOW_DATA` |
+| **`timeline.html`** | [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html) | Hoàn thành 100% | Giao diện Timeline Gantt Chart, Font Roboto, bảng màu Modern SaaS, khung canvas cuộn 2 chiều |
+| **`js/timeline.js`** | [`js/timeline.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/timeline.js) | Hoàn thành 100% | Động cơ CSS Grid thuần, kỹ thuật Tone-on-tone progress fill, Milestone Diamond, Today Line #EF4444 |
+| **`css/styles.css`** | [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) | Cập nhật mục 12 & 13 | Hệ quy chuẩn màu Modern SaaS, font Roboto, ghost outline, milestone diamond, today line #EF4444 |
+| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Cập nhật Turn 8 | Nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B (Trang 3 & Trang 4) |
