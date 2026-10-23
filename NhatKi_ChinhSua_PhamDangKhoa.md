@@ -530,3 +530,169 @@ Khi người dùng nhập từ khóa vào ô tìm kiếm `#projectSearchInput`, 
   - Nút đóng/bỏ qua đổi thành `"Hủy bỏ (Giữ nguyên trạng thái)"`. Nếu người dùng hủy hoặc đóng modal, thẻ vẫn giữ nguyên trạng thái cũ.
   - Chỉ khi người dùng điền URL hợp lệ và bấm `"Lưu Bằng Chứng"`, hệ thống mới chính thức cập nhật `task.status = 'done'`, tính lại tiến độ dự án, ghi vào Nhật ký kiểm toán (Audit Trail) và hiển thị thông báo chúc mừng kèm animation `animate-spring-drop`.
   - Bổ sung chốt chặn tương tự bên trong Modal 2 cột (`taskForm submit`) để ngăn chặn việc đổi dropdown sang "Đã hoàn thành" mà bỏ trống link bàn giao.
+
+
+---
+
+## 🏆 10. HOÀN TẤT CHUẨN HÓA PHÂN QUYỀN RBAC THEO MÔ HÌNH TRELLO & CÁ NHÂN HÓA DỮ LIỆU TOÀN DIỆN
+
+**Ngày thực hiện:** 23/10/2026  
+**Chuyên gia phụ trách:** Phạm Đăng Khoa (Lead Frontend Architect & System Specialist)  
+**Mục tiêu hoàn thành:**
+1. **Tách biệt Quyền Hệ Thống vs Quyền Dự Án:** Quyền Admin trở về đúng nghĩa vụ hạ tầng/bảo trì nền tảng; Quyền quản trị dự án thuộc về **Chủ dự án (Project Owner)** theo chuẩn Trello.
+2. **Cá nhân hóa 100% dữ liệu trên tất cả các trang:** Người dùng chỉ nhìn thấy các dự án họ làm chủ hoặc tham gia. Không để rò rỉ bất kỳ dự án riêng tư của người khác.
+
+---
+
+### 🔍 CHI TIẾT CÁC THAY ĐỔI ĐÃ TRIỂN KHAI VÀO MÃ NGUỒN:
+
+#### 1. Lớp Hạt Nhân Lưu Trữ & Cô Lập Dữ Liệu (`js/storage.js`):
+- **Cân bằng dữ liệu mẫu ban đầu:**
+  + Dự án 1 (`proj-101`): `ownerId: 'mem-01'` (Phạm Đăng Khoa) làm chủ, mời `mem-02` (Nguyễn Đăng Nhật) tham gia.
+  + Dự án 2 (`proj-102`): `ownerId: 'mem-02'` (Nguyễn Đăng Nhật) làm chủ, mời `mem-01` (Phạm Đăng Khoa) tham gia.
+- **Bổ sung API hỗ trợ lọc cá nhân hóa:**
+  + `TaskFlowStorage.getUserProjects(userId)`: Truy xuất danh sách dự án thuộc quyền sở hữu hoặc được mời tham gia của user.
+  + `TaskFlowStorage.getUserTasks(userId, filterMode)`: Lấy các công việc nằm trong phạm vi các dự án hợp lệ của user.
+
+#### 2. Trang Quản Lý Không Gian Dự Án (`projects.html` & `js/projects.js`):
+- **Bổ sung các tab lọc sở hữu chuẩn Trello:**
+  + `all`: *"Tất cả của tôi"* (Dự án làm chủ + tham gia).
+  + `owned`: *"👑 Tôi làm chủ"* (Chỉ hiển thị dự án do chính user tạo ra).
+  + `shared`: *"👥 Tôi tham gia"* (Dự án do người khác tạo và mời mình vào cộng tác).
+  + `active`: *"⚡ Đang chạy"* và `overdue`: *"⚠️ Quá hạn"*.
+- **Phân quyền thẻ dự án:**
+  + Chỉ hiển thị nút **Chỉnh sửa** và **Xóa dự án** đối với dự án mà tài khoản hiện tại là Chủ dự án (`project.ownerId === currentUserId`).
+  + Với dự án tham gia: Ẩn nút sửa/xóa, chỉ hiển thị nút xem thông tin và mở Bảng Kanban làm việc.
+
+#### 3. Bảng Việc Kanban Điều Phối Theo Dự Án (`board.html` & `js/kanban.js`):
+- **`getUserAccessibleProjects()`:** Menu Dropdown chỉ nạp các dự án tài khoản có tham gia, loại bỏ hoàn toàn ngoại lệ admin xem trộm dự án của người khác.
+- **`canUserMoveTask(task, project)` chuẩn 100% Trello:**
+  + **Chủ dự án (`project.ownerId === user.id`):** Đóng vai trò Scrum Master/Board Owner -> Có toàn quyền điều phối kéo thả **mọi thẻ việc** trong dự án của mình.
+  + **Thành viên được phân công (`task.assigneeId === user.id`):** Chỉ được kéo thả và cập nhật thẻ việc của chính mình.
+  + **Thành viên khác:** Thẻ tự động khóa cứng (`is-locked-task`, huy hiệu `🔒 Chỉ xem`), không kéo được ảnh hay chữ.
+- **Quyền phê duyệt & Xóa task:** Nút "Phê duyệt nghiệm thu", "Yêu cầu sửa lại" và "Xóa công việc" thuộc quyền độc quyền của Chủ dự án.
+
+#### 4. Bảng Điều Hành & Timeline Cá Nhân Hóa (`js/dashboard.js` & `js/timeline.js`):
+- **`dashboard.js`:**
+  + Loại bỏ nhánh admin gán `allProjects`. Dữ liệu dự án và nhiệm vụ nạp vào Dashboard được giới hạn chặt chẽ theo `userAccessibleProjects`.
+  + Tự động kích hoạt Onboarding cho người dùng mới khi chưa có dự án nào.
+  + Tổng số giờ làm việc (Timesheet) chỉ tính trên các bản ghi mà tài khoản đó đã cống hiến.
+- **`timeline.js`:**
+  + Biểu đồ Gantt chỉ dựng lộ trình cho các dự án và công việc nằm trong phạm vi quyền hạn của tài khoản.
+
+---
+
+### 🧪 KẾT QUẢ KIỂM THỬ ĐỘC LẬP:
+- Đã chạy bộ kiểm thử Unit Test 4 kịch bản trên Node.js:
+  1. Khoa kéo task của mình trong Board của Khoa (Owner): `true` (Hợp lệ).
+  2. Khoa kéo task của Nhật trong Board của Khoa (Owner): `true` (Hợp lệ).
+  3. Khoa kéo task của Nhật trong Board của Nhật (Member): `false` (Đã chặn đứng thành công).
+  4. Nhật kéo task của Khoa trong Board của Khoa (Member): `false` (Đã chặn đứng thành công).
+  5. Tài khoản mới đăng ký: Không thấy dự án của người khác, chỉ thấy dự án khởi đầu Onboarding của riêng mình.
+
+---
+
+## 🚀 ĐỢT NÂNG CẤP HOÀN THIỆN: GỠ BỎ RÀO CẢN ADMIN KHI TẠO TASK, MỜI ĐỒNG ĐỘI QUA GMAIL & BẢO VỆ DANH TÍNH CÁ NHÂN
+
+**Thời gian:** 23/10/2026  
+**Người thực hiện:** Phạm Đăng Khoa  
+**Các tệp tin tác động:** `board.html`, `js/kanban.js`, `projects.html`, `js/projects.js`, `js/storage.js`.
+
+### 1. Vấn đề phát hiện:
+1. **Thông báo lỗi Admin phi lý khi tạo Task:** Khi người dùng (như Nguyễn Đăng Nhật hoặc bất kỳ ai) bấm "+ Thêm Task Mới" trong dự án của mình, hệ thống hiển thị thông báo Toast cảnh báo *"🔒 Chỉ Quản trị viên (Admin) mới có quyền khởi tạo công việc mới!..."*, tước đoạt quyền thêm task của Chủ dự án.
+2. **Nút Thêm Task bị dư thừa ký tự `+`:** Thẻ nút trong `board.html` hiển thị đồng thời cả icon SVG `+` lẫn text `+ Thêm Task Mới` thành `+ + Thêm Task Mới`.
+3. **Lộ danh tính người lạ (Privacy Leak) & Tự động tick chọn thành viên:** Khi tạo dự án hoặc công việc, hệ thống tự động quét toàn bộ cơ sở dữ liệu và tick chọn tất cả người dùng (kể cả tài khoản thử nghiệm như `Khoa Chưa Ngủ`), hiển thị tràn lan trên thanh lọc thành viên của Kanban.
+4. **Thiếu cơ chế tìm kiếm & mời đồng đội qua Gmail:** Người dùng mới khi tạo dự án không có cách nào thêm người quen bằng Gmail của họ, và không có bộ nhớ ghi nhớ các cộng tác viên đã từng làm việc cùng.
+
+---
+
+### 2. Các giải pháp kỹ thuật đã triển khai:
+
+#### A. Bảng Việc Kanban (`board.html` & `js/kanban.js`):
+- **Gỡ bỏ rào cản Admin trong `openCreateTaskModal`:**
+  + Loại bỏ hoàn toàn khối `if (user.role !== 'admin')`.
+  + Bất kỳ người dùng nào đã đăng nhập và sở hữu/tham gia ít nhất 1 dự án đều có quyền mở Modal và tạo Task mới trực tiếp vào không gian làm việc của họ.
+- **Tinh chỉnh giao diện nút bấm (`board.html`):**
+  + Đổi `<span>+ Thêm Task Mới</span>` thành `<span>Thêm Task Mới</span>`, kết hợp hài hòa với icon SVG phía trước, không còn tình trạng `+ +`.
+- **Cá nhân hóa Thanh lọc thành viên (`populateMemberFilterBar`):**
+  + Chỉ hiển thị các thành viên thực sự có tên trong dự án đang chọn (`curProj.members` + `curProj.ownerId`).
+  + Tuyệt đối không hiển thị người ngoài hay các tài khoản lạ trong hệ thống.
+- **Phân bổ nhân sự chính xác (`populateModalDropdowns` & `renderSubtaskMemberChips`):**
+  + Ô chọn Người phụ trách chính (`taskInputAssignee`) và chip chọn người làm việc con (`newSubtaskMembersSelector`) chỉ hiển thị danh sách nhân sự của dự án hiện tại.
+- **Khắc phục lỗi Modal Tạo mới bị khóa quyền (`updateFormPermissions` & `openCreateTaskModal`):**
+  + Khi mở Modal tạo Task mới (`task === null`), hệ thống nhận diện cờ `isCreating = true` để trao toàn quyền cấu hình (Dự án, Độ ưu tiên, Người phụ trách, Ngày bắt đầu, Hạn chót) cho người khởi tạo, ẩn hoàn toàn các huy hiệu `🔒 Chỉ Chủ dự án`.
+  + Tự động đồng bộ đúng Dự án hiện hành vào ô chọn và Breadcrumb tiêu đề modal, đồng thời lắng nghe sự kiện đổi dự án để nạp lại nhân sự tương ứng.
+- **Phân quyền Chủ dự án cho Phê duyệt & Xóa task:**
+  + `updateApprovalSidebar`, `btnDeleteInModal`, và kiểm tra chống sửa trộm thông tin (`Anti-tamper protection`) được chuẩn hóa theo quyền Chủ dự án (`project.ownerId === user.id`).
+
+#### B. Quản Lý Dự Án & Tìm Kiếm Thành Viên (`projects.html`, `js/projects.js`, `js/storage.js`):
+- **Cơ chế Bảo mật & Tìm kiếm qua Gmail (`js/storage.js`):**
+  + Bổ sung API `TaskFlowStorage.findUserByEmail(email)`: Cho phép tra cứu người dùng hệ thống thông qua địa chỉ Gmail.
+  + Bổ sung API `TaskFlowStorage.getRecentCollaborators(userId)` & `addRecentCollaborator(userId, collaborator)`: Lưu trữ danh bạ cộng tác viên vào LocalStorage (`taskflow_collaborators_<userId>`).
+- **Giao diện Mời thành viên chuẩn SaaS (`projects.html`):**
+  + Bổ sung ô nhập email `#inputInviteMemberEmail` và nút `#btnAddMemberByEmail` (`+ Mời Gmail`).
+  + Bổ sung khối gợi ý cộng tác viên gần đây `#recentCollaboratorsContainer` hiển thị các chip bấm nhanh.
+  + Thay thế danh sách checkbox dàn trải bằng danh sách thành viên trực quan, có huy hiệu `👑 Chủ sở hữu` và nút xóa thành viên `✕` (không thể xóa chính chủ sở hữu).
+- **Logic khởi tạo dự án (`js/projects.js`):**
+  + Khi bấm "Tạo dự án mới", danh sách thành viên mặc định **CHỈ DUY NHẤT** là Chủ dự án (`[currentUserId]`), không tự động tick chọn bất kỳ tài khoản lạ nào.
+  + Nhập Gmail và bấm Mời: Hệ thống kiểm tra hợp lệ, thêm vào danh sách dự án, đồng thời tự động lưu vào danh bạ cộng tác viên để gợi ý cho các dự án tương lai.
+  + Hỗ trợ phím tắt **Enter** khi nhập Gmail.
+
+---
+
+### 3. Kết quả kiểm thử:
+- Đã chạy kiểm thử tự động `verify_all_fixes.js` với 7 kịch bản:
+  1. Nút `board.html` hiển thị chuẩn `Thêm Task Mới`.
+  2. `openCreateTaskModal` không còn bất kỳ dòng code hay thông báo Admin nào chặn người dùng.
+  3. Thanh lọc thành viên Kanban chỉ chứa nhân sự thuộc dự án.
+  4. Quyền kéo thả Kanban chuẩn xác giữa Chủ dự án và Người được giao việc.
+  5. Giao diện Gmail invite & Recent Collaborators hiển thị mượt mà.
+  6. Logic tìm kiếm Gmail và ghi nhớ cộng tác viên hoạt động 100% không lỗi.
+  7. Tất cả các file JS vượt qua kiểm tra cú pháp `node -c` với 0 cảnh báo.
+
+---
+
+## 🔒 NÂNG CẤP BẢO VỆ CHẶN ĐỨNG THÀNH VIÊN SỬA TASK NGƯỜI KHÁC & PHÂN TÁCH MINH BẠCH VAI TRÒ CHỦ DỰ ÁN VS THÀNH VIÊN
+
+**Thời gian:** 24/10/2026  
+**Người thực hiện:** Phạm Đăng Khoa  
+**Các tệp tin tác động:** `projects.html`, `js/projects.js`, `js/kanban.js`.
+
+### 1. Phân tích nguyên nhân sự cố:
+* **Nguyên nhân 1 (So khớp Assignee lỏng lẻo bằng text name):**
+  Trong `canUserMoveTask` và `updateFormPermissions`, việc so khớp có nhánh `task.assignee.name === user.name`. Khi user đăng ký tài khoản mới `khoachuangu@gmail.com` với họ tên *"Phạm Đăng Khoa"*, chuỗi tên này trùng với tên mẫu trong database nên hệ thống bị đánh lừa nhận diện tài khoản mới là Assignee hợp lệ.
+* **Nguyên nhân 2 (Thiếu khóa cứng trường quản trị đối với Assignee):**
+  Người được giao việc (Assignee) nếu không phải Chủ dự án thì **chỉ được cập nhật checklist và nộp link kết quả**, tuyệt đối không được đổi Dự án, Mức độ ưu tiên, Người phụ trách chính, Ngày bắt đầu hay Hạn chót. Trước đó biến `isPrivileged = isCreating || isOwner` khiến trường hợp tạo mới hoặc quyền hạn lỏng lẻo cho phép can thiệp vào các trường này.
+* **Nguyên nhân 3 (Thành viên tham gia được tạo task vào dự án người khác):**
+  `openCreateTaskModal` trước đây nạp toàn bộ các dự án tham gia (`getUserAccessibleProjects`), cho phép một thành viên được mời tự ý tạo task chính vào dự án của chủ sở hữu.
+* **Nguyên nhân 4 (Giao diện tạo dự án chưa phân tách rõ ràng):**
+  Modal tạo dự án chỉ có 1 danh sách chung, không tách biệt ranh giới giữa người tạo (`👑 Chủ sở hữu`) và người được mời (`👥 Thành viên`).
+
+---
+
+### 2. Các giải pháp kỹ thuật đã triển khai:
+
+1. **Phân tách ranh giới Chủ dự án vs Thành viên tại Modal tạo dự án (`projects.html` & `js/projects.js`):**
+   - **Khối 👑 Chủ Sở Hữu Dự Án (Owner):** Cố định người tạo hiện hành với badge vàng `Chủ sở hữu (Toàn quyền quản trị & phân bổ task)`.
+   - **Khối 👥 Thành Viên Được Mời (Members):** Chỉ chứa các cộng tác viên được mời qua Gmail với badge xanh `Thành viên (Chỉ xem & nhận việc)`.
+   - **Thẻ dự án ngoài danh sách (`projects.html`):** Hiển thị nhãn nhận diện tức thì: `👑 Bạn làm chủ` hoặc `👥 Bạn tham gia (Chủ: [Tên])`.
+
+2. **Chặn đứng thành viên tạo task vào dự án người khác (`js/kanban.js`):**
+   - Khi bấm "Thêm Task Mới", hệ thống kiểm tra nếu đang lọc theo một dự án mà user không làm chủ: Chặn ngay và thông báo rõ:
+     *"🔒 Bạn là thành viên tham gia dự án này. Chỉ Chủ dự án mới có quyền khởi tạo và phân bổ công việc mới!"*
+   - Dropdown chọn dự án trong modal tạo task **chỉ hiển thị các dự án do chính user làm chủ (`ownedProjects`)**.
+
+3. **Khóa cứng 5 trường quản trị đối với người không phải Chủ dự án (`js/kanban.js`):**
+   - Xóa bỏ hoàn toàn phép so sánh lỏng lẻo bằng text name; chỉ so khớp chuẩn xác qua `ID` hoặc `Email`.
+   - 5 trường: `Dự Án Thuộc Về`, `Mức Độ Ưu Tiên`, `Người Phụ Trách Chính`, `Ngày Bắt Đầu`, `Hạn Chót` được **khóa cứng 100%** đối với bất kỳ ai không phải là Chủ dự án (`isPrivileged = isOwner`).
+   - Nếu là thành viên khác (không phải chủ, không phải người được giao việc): Đưa thẳng vào **Chế độ Chỉ Đọc (View-only)** 100%, ẩn nút Lưu và khóa toàn bộ ô nhập.
+
+---
+
+### 3. Kết quả kiểm thử tự động:
+- Bộ kiểm thử `test_owner_vs_member_rules.js` đạt 100% với 5 tiêu chí:
+  ✓ UI Modal phân loại Chủ dự án vs Thành viên.  
+  ✓ Project Cards gắn nhãn vai trò chính xác.  
+  ✓ Thành viên bị chặn tạo task vào dự án người khác.  
+  ✓ Khử bỏ so sánh name, bảo mật bằng ID/Email.  
+  ✓ 5 trường quản trị khóa cứng chỉ dành cho Chủ dự án.

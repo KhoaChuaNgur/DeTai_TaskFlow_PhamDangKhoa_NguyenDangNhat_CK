@@ -352,12 +352,7 @@
       const matchUser = !currentUserId || log.userId === currentUserId || log.memberId === currentUserId;
       const matchProj = !log.projectId || projectIds.has(log.projectId);
 
-      if (DashboardState.isAdmin && DashboardState.viewMode === 'all') {
-        const hours = Number(log.hoursSpent) || Number(log.hours) || Number(log.duration) || 0;
-        return acc + hours;
-      }
-
-      if (matchUser || matchProj) {
+      if (matchUser && matchProj) {
         const hours = Number(log.hoursSpent) || Number(log.hours) || Number(log.duration) || 0;
         return acc + hours;
       }
@@ -701,29 +696,21 @@
     DashboardState.allMembers = getStorageData(KEYS.MEMBERS, []);
     DashboardState.allTimeLogs = getStorageData(KEYS.TIME_LOGS, []);
 
-    // 5. Xác định tập Dự án được phép truy cập (RBAC Scoping)
-    if (DashboardState.isAdmin) {
-      // Admin có quyền truy cập toàn bộ dự án
-      DashboardState.userAccessibleProjects = DashboardState.allProjects;
-    } else {
-      // Member chỉ thấy:
-      // a) Dự án do họ sở hữu (ownerId === currentUser.id)
-      // b) Dự án họ là thành viên (members.includes(currentUser.id))
-      // c) Dự án Onboarding cá nhân nếu có
-      DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => {
-        if (!p) return false;
-        if (p.ownerId === currentUser.id) return true;
-        if (Array.isArray(p.members) && p.members.includes(currentUser.id)) return true;
-        return false;
-      });
+    // 5. Xác định tập Dự án được phép truy cập (Cá nhân hóa 100% chuẩn Trello)
+    // Mọi người dùng chỉ thấy các dự án họ làm chủ hoặc được mời tham gia
+    DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => {
+      if (!p) return false;
+      if (p.ownerId === currentUser.id) return true;
+      if (Array.isArray(p.members) && p.members.includes(currentUser.id)) return true;
+      return false;
+    });
 
-      // Nếu người dùng mới chưa có dự án nào (kể cả sau ensure), tạo onboarding ngay
-      if (DashboardState.userAccessibleProjects.length === 0 && window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
-        window.TaskFlowStorage.ensureUserOnboarding(currentUser);
-        DashboardState.allProjects = getStorageData(KEYS.PROJECTS, []);
-        DashboardState.allTasks = getStorageData(KEYS.TASKS, []);
-        DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => p.ownerId === currentUser.id);
-      }
+    // Nếu người dùng mới chưa có dự án nào (kể cả sau ensure), tạo onboarding ngay
+    if (DashboardState.userAccessibleProjects.length === 0 && window.TaskFlowStorage && typeof window.TaskFlowStorage.ensureUserOnboarding === 'function') {
+      window.TaskFlowStorage.ensureUserOnboarding(currentUser);
+      DashboardState.allProjects = getStorageData(KEYS.PROJECTS, []);
+      DashboardState.allTasks = getStorageData(KEYS.TASKS, []);
+      DashboardState.userAccessibleProjects = DashboardState.allProjects.filter(p => p.ownerId === currentUser.id);
     }
 
     // 6. Hiển thị thông tin cá nhân hóa trên Hero

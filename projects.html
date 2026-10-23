@@ -136,7 +136,7 @@
           <div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200/60 dark:border-white/5 overflow-x-auto custom-scroll pb-1">
             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1">Bộ lọc:</span>
             <button type="button" data-filter="all" class="filter-chip active px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-500/20 cursor-pointer">
-              Tất Cả (<span id="countFilterAll">0</span>)
+              Tất Cả Của Tôi (<span id="countFilterAll">0</span>)
             </button>
             <button type="button" data-filter="active" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
               ⚡ Đang Chạy (<span id="countFilterActive">0</span>)
@@ -144,8 +144,11 @@
             <button type="button" data-filter="overdue" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
               ⚠️ Quá Hạn (<span id="countFilterOverdue">0</span>)
             </button>
-            <button type="button" data-filter="my-projects" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
-              👤 Tôi Tham Gia (<span id="countFilterMine">0</span>)
+            <button type="button" data-filter="owned" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
+              👑 Tôi Làm Chủ (<span id="countFilterOwned">0</span>)
+            </button>
+            <button type="button" data-filter="shared" class="filter-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer">
+              👥 Tôi Tham Gia (<span id="countFilterShared">0</span>)
             </button>
           </div>
         </section>
@@ -364,20 +367,60 @@
           </div>
         </div>
 
-        <!-- Phân bổ thành viên đội ngũ -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Phân bổ nhân sự (<span id="selectedMemberCountBadge" class="text-indigo-500 font-bold">1</span> đã chọn)
-            </label>
-            <div class="flex items-center gap-2 text-[11px]">
-              <button type="button" id="btnSelectAllMembers" class="text-indigo-500 hover:underline cursor-pointer">Chọn tất cả</button>
-              <span class="text-slate-400">•</span>
-              <button type="button" id="btnClearMembers" class="text-slate-400 hover:text-rose-500 hover:underline cursor-pointer">Bỏ chọn</button>
+        <!-- Phân quyền đội ngũ dự án: Chủ sở hữu vs Thành viên tham gia -->
+        <div class="space-y-3">
+          <!-- 1. Chủ Dự Án (Project Owner - Toàn quyền quản trị) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span>👑 Chủ Sở Hữu Dự Án</span>
+              </label>
+              <span class="text-[10px] text-amber-500 font-semibold lowercase">toàn quyền quản trị & phân bổ task</span>
+            </div>
+            <div id="projectOwnerBox" class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
+              <!-- Nạp động thông tin chủ dự án -->
             </div>
           </div>
-          <div id="membersCheckboxContainer" class="space-y-1.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 max-h-36 overflow-y-auto custom-scroll">
-            <!-- Nạp động danh sách checkbox thành viên -->
+
+          <!-- 2. Thành viên tham gia (Collaborators - Chỉ xem & làm việc được giao) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                👥 Thành Viên Được Mời (<span id="selectedMemberCountBadge" class="text-indigo-500 font-bold">0</span>)
+              </label>
+              <span class="text-[10px] text-slate-400">chỉ xem & thực hiện task được giao</span>
+            </div>
+
+            <!-- Ô tìm kiếm và mời qua Gmail -->
+            <div class="flex items-center gap-2 mb-2">
+              <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✉️</span>
+                <input 
+                  type="email" 
+                  id="inputInviteMemberEmail" 
+                  placeholder="Nhập Gmail đồng đội để tìm kiếm & mời vào dự án..." 
+                  class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <button 
+                type="button" 
+                id="btnAddMemberByEmail" 
+                class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-xs border border-indigo-200 dark:border-indigo-500/30 transition-all cursor-pointer whitespace-nowrap"
+              >
+                + Mời Gmail
+              </button>
+            </div>
+
+            <!-- Gợi ý cộng tác viên gần đây -->
+            <div id="recentCollaboratorsContainer" class="hidden mb-2">
+              <span class="text-[10px] text-slate-400 block mb-1">💡 Đã từng làm việc cùng (Gợi ý nhanh):</span>
+              <div id="recentCollaboratorsList" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <!-- Danh sách thành viên được mời -->
+            <div id="membersCheckboxContainer" class="space-y-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 max-h-32 overflow-y-auto custom-scroll">
+              <!-- Nạp động danh sách thành viên -->
+            </div>
           </div>
         </div>
 

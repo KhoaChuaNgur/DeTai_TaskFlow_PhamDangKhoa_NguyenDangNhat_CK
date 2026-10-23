@@ -302,33 +302,37 @@
     const rawProjects = DataEngine.getProjects();
     const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
     const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
-    const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
 
-    const projects = isAdmin ? rawProjects : rawProjects.filter(p => p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId)));
+    // CÁ NHÂN HÓA 100%: Chỉ tính trên các dự án người dùng làm chủ hoặc tham gia
+    const projects = rawProjects.filter(p => p && (p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId))));
 
     let countAll = projects.length;
+    let countOwned = 0;
+    let countShared = 0;
     let countActive = 0;
     let countOverdue = 0;
-    let countMine = 0;
 
     projects.forEach((p) => {
       const deadline = formatDeadlineInfo(p.deadline);
       const isDone = (p.progress || 0) >= 100;
 
+      if (p.ownerId === currentUserId) countOwned++;
+      if (p.ownerId !== currentUserId && Array.isArray(p.members) && p.members.includes(currentUserId)) countShared++;
       if (!isDone && !deadline.isOverdue) countActive++;
       if (deadline.isOverdue && !isDone) countOverdue++;
-      if (Array.isArray(p.members) && p.members.includes(currentUserId)) countMine++;
     });
 
     const elAll = document.getElementById('countFilterAll');
+    const elOwned = document.getElementById('countFilterOwned');
+    const elShared = document.getElementById('countFilterShared');
     const elActive = document.getElementById('countFilterActive');
     const elOverdue = document.getElementById('countFilterOverdue');
-    const elMine = document.getElementById('countFilterMine');
 
     if (elAll) elAll.textContent = countAll;
+    if (elOwned) elOwned.textContent = countOwned;
+    if (elShared) elShared.textContent = countShared;
     if (elActive) elActive.textContent = countActive;
     if (elOverdue) elOverdue.textContent = countOverdue;
-    if (elMine) elMine.textContent = countMine;
   }
 
   function initFilterChips() {
@@ -348,10 +352,11 @@
         const badgeText = document.getElementById('badgeActiveFilterText');
         if (badgeText) {
           const labels = {
-            all: 'Tất cả',
+            all: 'Tất cả của tôi',
+            owned: '👑 Tôi làm chủ',
+            shared: '👥 Tôi tham gia',
             active: '⚡ Đang chạy',
-            overdue: '⚠️ Quá hạn',
-            'my-projects': '👤 Tôi tham gia'
+            overdue: '⚠️ Quá hạn'
           };
           badgeText.textContent = labels[currentFilterState] || 'Tất cả';
         }
@@ -365,17 +370,18 @@
     const rawProjects = DataEngine.getProjects();
     const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
     const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
-    const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
 
-    const projects = isAdmin ? rawProjects : rawProjects.filter(p => p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId)));
+    // CÁ NHÂN HÓA 100%: Mọi người dùng chỉ thấy các dự án thuộc quyền sở hữu/tham gia của mình
+    const projects = rawProjects.filter(p => p && (p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId))));
 
     return projects.filter((p) => {
       const deadline = formatDeadlineInfo(p.deadline);
       const isDone = (p.progress || 0) >= 100;
 
+      if (currentFilterState === 'owned') return p.ownerId === currentUserId;
+      if (currentFilterState === 'shared') return p.ownerId !== currentUserId && Array.isArray(p.members) && p.members.includes(currentUserId);
       if (currentFilterState === 'active') return !isDone && !deadline.isOverdue;
       if (currentFilterState === 'overdue') return deadline.isOverdue && !isDone;
-      if (currentFilterState === 'my-projects') return Array.isArray(p.members) && p.members.includes(currentUserId);
       return true; // 'all'
     });
   }
@@ -408,8 +414,12 @@
     const totalCounter = document.getElementById('projectTotalCounter');
     if (!container) return;
 
-    const allProjects = DataEngine.getProjects();
-    const projects = filteredProjects !== null ? filteredProjects : allProjects;
+    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+    const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+
+    const rawProjects = DataEngine.getProjects();
+    const myProjects = rawProjects.filter(p => p && (p.ownerId === currentUserId || (Array.isArray(p.members) && p.members.includes(currentUserId))));
+    const projects = filteredProjects !== null ? filteredProjects : myProjects;
     const tasks = DataEngine.getTasks();
     const members = DataEngine.getMembers();
 
@@ -418,7 +428,7 @@
     if (totalCounter) {
       totalCounter.innerHTML = `
         <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-        <span>${projects.length} / ${allProjects.length} dự án</span>
+        <span>${projects.length} / ${myProjects.length} dự án của tôi</span>
       `;
     }
 
@@ -454,10 +464,6 @@
       return;
     }
 
-    const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
-    const currentUserId = currentUser ? currentUser.id : null;
-    const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
-
     const cardsHtml = projects.map((project) => {
       const projTasks = tasks.filter((t) => t.projectId === project.id);
       const doneTasks = projTasks.filter((t) => t.status === 'done');
@@ -470,7 +476,12 @@
 
       const deadlineInfo = formatDeadlineInfo(project.deadline);
       const isOwner = project.ownerId === currentUserId;
-      const canManage = isAdmin || isOwner;
+      const canManage = isOwner; // CHỈ CHỦ DỰ ÁN MỚI CÓ QUYỀN SỬA HOẶC XÓA DỰ ÁN
+      const ownerObj = members.find(m => m.id === project.ownerId);
+      const ownerName = ownerObj ? ownerObj.name : 'Chủ dự án';
+      const roleBadgeHtml = isOwner
+        ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">👑 Bạn làm chủ</span>'
+        : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 truncate max-w-[140px]" title="Chủ dự án: ${ownerName}">👥 Bạn tham gia (Chủ: ${ownerName})</span>`;
 
       const assignedMembers = (project.members || [])
         .map((id) => members.find((m) => m.id === id))
@@ -515,12 +526,15 @@
               
               <!-- Header Card Front: Tag danh mục & Nút thao tác -->
               <div class="flex items-center justify-between gap-2 mb-3">
-                <span 
-                  class="px-2.5 py-0.5 text-[11px] font-bold rounded-md uppercase tracking-wider font-mono"
-                  style="background-color: ${projectColor}18; color: ${projectColor}; border: 1px solid ${projectColor}35;"
-                >
-                  ${project.code || 'PRJ'}
-                </span>
+                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <span 
+                    class="px-2.5 py-0.5 text-[11px] font-bold rounded-md uppercase tracking-wider font-mono"
+                    style="background-color: ${projectColor}18; color: ${projectColor}; border: 1px solid ${projectColor}35;"
+                  >
+                    ${project.code || 'PRJ'}
+                  </span>
+                  ${roleBadgeHtml}
+                </div>
 
                 <div class="flex items-center gap-1">
                   <!-- Nút chủ động lật xem chi tiết 3D -->
@@ -1017,8 +1031,10 @@
     const inputDesc = document.getElementById('projectDescInput');
     const btnAutoCode = document.getElementById('btnAutoGenerateCode');
 
-    const btnSelectAll = document.getElementById('btnSelectAllMembers');
-    const btnClearMembers = document.getElementById('btnClearMembers');
+    const inputInviteMemberEmail = document.getElementById('inputInviteMemberEmail');
+    const btnAddMemberByEmail = document.getElementById('btnAddMemberByEmail');
+    const recentCollaboratorsContainer = document.getElementById('recentCollaboratorsContainer');
+    const recentCollaboratorsList = document.getElementById('recentCollaboratorsList');
     const memberCountBadge = document.getElementById('selectedMemberCountBadge');
 
     if (!modalBackdrop || !form) return;
@@ -1142,55 +1158,223 @@
       });
     });
 
-    // 5. Quản lý danh sách thành viên phân bổ
-    function updateSelectedMembersBadge() {
-      const selected = document.querySelectorAll('input[name="projectMembers"]:checked');
-      if (memberCountBadge) memberCountBadge.textContent = selected.length;
-    }
+    // 5. CÁ NHÂN HÓA THÀNH VIÊN DỰ ÁN & TÌM KIẾM THEO GMAIL
+    let currentModalMemberIds = new Set();
+    let currentModalOwnerId = null;
 
-    function populateMembersCheckboxes(selectedIds = []) {
+    function renderModalMembers() {
       if (!membersContainer) return;
-      const members = DataEngine.getMembers();
+      const allMembers = DataEngine.getMembers();
+      const membersMap = new Map(allMembers.map(m => [m.id, m]));
 
-      membersContainer.innerHTML = members.map((m) => {
-        const isChecked = selectedIds.includes(m.id) ? 'checked' : '';
+      const memberList = Array.from(currentModalMemberIds).map(id => {
+        return membersMap.get(id) || {
+          id: id,
+          name: 'Thành viên (' + id + ')',
+          email: id + '@taskflow.dev',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(id),
+          role: 'Thành viên'
+        };
+      });
+
+      // 1. Hiển thị thông tin Chủ sở hữu dự án (Owner)
+      const ownerBox = document.getElementById('projectOwnerBox');
+      const ownerUser = membersMap.get(currentModalOwnerId) || {
+        id: currentModalOwnerId,
+        name: 'Chủ dự án',
+        email: 'owner@taskflow.dev',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(currentModalOwnerId || 'Owner')
+      };
+
+      if (ownerBox) {
+        ownerBox.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img src="${ownerUser.avatar}" alt="${ownerUser.name}" class="w-7 h-7 rounded-full object-cover bg-amber-500/20 ring-1 ring-amber-500/40 shrink-0"/>
+            <div class="truncate">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-slate-900 dark:text-white truncate">${ownerUser.name}</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">Chủ sở hữu</span>
+              </div>
+              <span class="text-[10px] text-slate-400 block truncate">${ownerUser.email || 'Chủ dự án'}</span>
+            </div>
+          </div>
+          <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">👑 Quản trị viên</span>
+        `;
+      }
+
+      // 2. Hiển thị danh sách các Thành viên được mời (Collaborators)
+      const collaboratorIds = Array.from(currentModalMemberIds).filter(id => id !== currentModalOwnerId);
+
+      if (collaboratorIds.length === 0) {
+        membersContainer.innerHTML = `
+          <div class="py-3 text-center text-xs text-slate-400">
+            Chưa có thành viên nào được mời. Hãy nhập Gmail phía trên để mời đồng đội tham gia!
+          </div>
+        `;
+        if (memberCountBadge) memberCountBadge.textContent = '0';
+        return;
+      }
+
+      membersContainer.innerHTML = collaboratorIds.map(id => {
+        const m = membersMap.get(id) || {
+          id: id,
+          name: 'Thành viên (' + id + ')',
+          email: id + '@taskflow.dev',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(id),
+          role: 'Thành viên'
+        };
         return `
-          <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-200/50 dark:hover:bg-white/5 cursor-pointer text-xs transition-colors">
-            <input type="checkbox" name="projectMembers" value="${m.id}" ${isChecked} class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 cursor-pointer"/>
-            <img src="${m.avatar}" alt="${m.name}" class="w-6 h-6 rounded-full object-cover bg-slate-200 dark:bg-slate-800"/>
-            <span class="font-bold text-slate-800 dark:text-slate-200">${m.name}</span>
-            <span class="text-[10px] text-slate-400 font-medium uppercase">(${m.title || m.role})</span>
-          </label>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-white/5 border border-slate-200/60 dark:border-white/10 shadow-sm text-xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img src="${m.avatar}" alt="${m.name}" class="w-7 h-7 rounded-full object-cover bg-slate-200 dark:bg-slate-700 ring-1 ring-white/20 shrink-0"/>
+              <div class="truncate">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-slate-900 dark:text-white truncate">${m.name}</span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">Thành viên</span>
+                </div>
+                <span class="text-[10px] text-slate-400 block truncate">${m.email || 'Thành viên'}</span>
+              </div>
+            </div>
+            <button type="button" class="btn-remove-project-member p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer shrink-0" data-member-id="${m.id}" title="Xóa khỏi dự án">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
         `;
       }).join('');
 
-      updateSelectedMembersBadge();
+      if (memberCountBadge) memberCountBadge.textContent = collaboratorIds.length;
 
-      membersContainer.querySelectorAll('input[name="projectMembers"]').forEach((cb) => {
-        cb.addEventListener('change', () => {
-          isModalDirty = true;
-          updateSelectedMembersBadge();
+      membersContainer.querySelectorAll('.btn-remove-project-member').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const mid = btn.getAttribute('data-member-id');
+          if (mid && mid !== currentModalOwnerId) {
+            currentModalMemberIds.delete(mid);
+            isModalDirty = true;
+            renderModalMembers();
+            renderRecentCollaborators();
+          }
         });
       });
     }
 
-    if (btnSelectAll) {
-      btnSelectAll.addEventListener('click', () => {
-        document.querySelectorAll('input[name="projectMembers"]').forEach((cb) => (cb.checked = true));
-        isModalDirty = true;
-        updateSelectedMembersBadge();
+    function renderRecentCollaborators() {
+      if (!recentCollaboratorsContainer || !recentCollaboratorsList) return;
+      const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+      const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+
+      let recents = [];
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.getRecentCollaborators === 'function') {
+        recents = window.TaskFlowStorage.getRecentCollaborators(currentUserId);
+      }
+
+      // Lọc bỏ những người đã có sẵn trong danh sách thành viên dự án
+      const availableRecents = recents.filter(c => !currentModalMemberIds.has(c.id));
+
+      if (availableRecents.length === 0) {
+        recentCollaboratorsContainer.classList.add('hidden');
+        return;
+      }
+
+      recentCollaboratorsContainer.classList.remove('hidden');
+      recentCollaboratorsList.innerHTML = availableRecents.slice(0, 5).map(c => `
+        <button type="button" class="btn-quick-add-collab inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-white/5 dark:hover:bg-indigo-500/20 text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 text-[11px] border border-slate-200 dark:border-white/10 transition-all cursor-pointer" data-id="${c.id}" data-name="${c.name}" data-email="${c.email}" data-avatar="${c.avatar}">
+          <img src="${c.avatar}" class="w-3.5 h-3.5 rounded-full object-cover"/>
+          <span>+ ${c.name}</span>
+        </button>
+      `).join('');
+
+      recentCollaboratorsList.querySelectorAll('.btn-quick-add-collab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const name = btn.getAttribute('data-name');
+          const email = btn.getAttribute('data-email');
+          const avatar = btn.getAttribute('data-avatar');
+
+          const allMembers = DataEngine.getMembers();
+          if (!allMembers.some(m => m.id === id)) {
+            allMembers.push({ id, name, email, avatar, role: 'Thành viên' });
+            DataEngine.saveMembers(allMembers);
+          }
+
+          currentModalMemberIds.add(id);
+          isModalDirty = true;
+          renderModalMembers();
+          renderRecentCollaborators();
+          if (typeof showToast === 'function') showToast(`Đã thêm ${name} vào dự án!`, 'success');
+        });
       });
     }
 
-    if (btnClearMembers) {
-      btnClearMembers.addEventListener('click', () => {
-        document.querySelectorAll('input[name="projectMembers"]').forEach((cb) => (cb.checked = false));
-        isModalDirty = true;
-        updateSelectedMembersBadge();
+    function handleInviteMemberByEmail() {
+      if (!inputInviteMemberEmail) return;
+      const email = (inputInviteMemberEmail.value || '').trim();
+      if (!email) {
+        if (typeof showToast === 'function') showToast('Vui lòng nhập địa chỉ Gmail đồng đội!', 'warning');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        if (typeof showToast === 'function') showToast('Địa chỉ email không đúng định dạng!', 'error');
+        return;
+      }
+
+      let targetUser = null;
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.findUserByEmail === 'function') {
+        targetUser = window.TaskFlowStorage.findUserByEmail(email);
+      }
+
+      if (!targetUser) {
+        if (typeof showToast === 'function') {
+          showToast(`Không tìm thấy tài khoản nào khớp với email "${email}". Vui lòng kiểm tra lại Gmail chính xác!`, 'warning');
+        }
+        return;
+      }
+
+      if (currentModalMemberIds.has(targetUser.id)) {
+        if (typeof showToast === 'function') showToast(`Thành viên "${targetUser.name}" đã có trong dự án!`, 'info');
+        return;
+      }
+
+      currentModalMemberIds.add(targetUser.id);
+
+      const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+      const currentUserId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+      if (window.TaskFlowStorage && typeof window.TaskFlowStorage.addRecentCollaborator === 'function') {
+        window.TaskFlowStorage.addRecentCollaborator(currentUserId, targetUser);
+      }
+
+      inputInviteMemberEmail.value = '';
+      isModalDirty = true;
+      renderModalMembers();
+      renderRecentCollaborators();
+      if (typeof showToast === 'function') showToast(`Đã thêm thành công ${targetUser.name} (${targetUser.email})!`, 'success');
+    }
+
+    if (btnAddMemberByEmail) {
+      btnAddMemberByEmail.addEventListener('click', handleInviteMemberByEmail);
+    }
+    if (inputInviteMemberEmail) {
+      inputInviteMemberEmail.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleInviteMemberByEmail();
+        }
       });
     }
 
-    // 6. Mở modal Tạo Mới
+    // Expose helpers for handleEditProject
+    window.__TaskFlowProjectModal = {
+      setMembers(ownerId, memberIds) {
+        currentModalOwnerId = ownerId;
+        currentModalMemberIds = new Set(memberIds);
+        renderModalMembers();
+        renderRecentCollaborators();
+      }
+    };
+
+    // 6. Mở modal Tạo Mới (CHỈ CÓ DUY NHẤT CHỦ DỰ ÁN, KHÔNG AUTO-CHECK AI KHÁC)
     if (btnOpen) {
       btnOpen.addEventListener('click', () => {
         document.getElementById('modalTitle').textContent = 'Khởi Tạo Không Gian Dự Án Mới';
@@ -1212,7 +1396,13 @@
         colorButtons.forEach((b) => b.classList.remove('ring-2', 'ring-offset-2', 'ring-indigo-500', 'ring-offset-slate-900'));
         if (colorButtons[0]) colorButtons[0].classList.add('ring-2', 'ring-offset-2', 'ring-indigo-500', 'ring-offset-slate-900');
 
-        populateMembersCheckboxes(['mem-01']);
+        const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
+        const ownerId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+        currentModalOwnerId = ownerId;
+        currentModalMemberIds = new Set([ownerId]);
+        renderModalMembers();
+        renderRecentCollaborators();
+
         updateLivePreview();
         modalBackdrop.classList.remove('hidden');
         if (inputName) setTimeout(() => inputName.focus(), 100);
@@ -1259,13 +1449,26 @@
         code = 'PRJ-' + Math.floor(100 + Math.random() * 900);
       }
 
-      const selectedMembers = Array.from(
-        document.querySelectorAll('input[name="projectMembers"]:checked')
-      ).map((cb) => cb.value);
-
-      const projects = DataEngine.getProjects();
       const currentUser = authService && typeof authService.getCurrentUser === 'function' ? authService.getCurrentUser() : null;
       const ownerId = currentUser ? currentUser.id || 'mem-01' : 'mem-01';
+
+      const selectedMembers = Array.from(currentModalMemberIds);
+      if (ownerId && !selectedMembers.includes(ownerId)) {
+        selectedMembers.unshift(ownerId);
+      }
+
+      // Tự động lưu cộng tác viên vào danh bạ gợi ý tương lai
+      const allMembers = DataEngine.getMembers();
+      const membersMap = new Map(allMembers.map(m => [m.id, m]));
+      selectedMembers.forEach(mid => {
+        if (mid !== ownerId && membersMap.has(mid)) {
+          if (window.TaskFlowStorage && typeof window.TaskFlowStorage.addRecentCollaborator === 'function') {
+            window.TaskFlowStorage.addRecentCollaborator(ownerId, membersMap.get(mid));
+          }
+        }
+      });
+
+      const projects = DataEngine.getProjects();
 
       if (editId) {
         const index = projects.findIndex((p) => p.id === editId);
@@ -1324,8 +1527,8 @@
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
 
-    if (!isAdmin && project.ownerId !== currentUserId) {
-      if (typeof showToast === 'function') showToast('Bạn chỉ có quyền chỉnh sửa dự án do chính mình làm chủ!', 'error');
+    if (project.ownerId !== currentUserId) {
+      if (typeof showToast === 'function') showToast('🔒 Bạn chỉ có quyền chỉnh sửa dự án do chính mình làm chủ!', 'error');
       return;
     }
 
@@ -1358,25 +1561,9 @@
       }
     });
 
-    const membersContainer = document.getElementById('membersCheckboxContainer');
-    if (membersContainer) {
-      const members = DataEngine.getMembers();
-      const selectedIds = project.members || [];
-
-      membersContainer.innerHTML = members.map((m) => {
-        const isChecked = selectedIds.includes(m.id) ? 'checked' : '';
-        return `
-          <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-200/50 dark:hover:bg-white/5 cursor-pointer text-xs">
-            <input type="checkbox" name="projectMembers" value="${m.id}" ${isChecked} class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 cursor-pointer"/>
-            <img src="${m.avatar}" alt="${m.name}" class="w-6 h-6 rounded-full object-cover bg-slate-200 dark:bg-slate-800"/>
-            <span class="font-bold text-slate-800 dark:text-slate-200">${m.name}</span>
-            <span class="text-[10px] text-slate-400 font-medium uppercase">(${m.title || m.role})</span>
-          </label>
-        `;
-      }).join('');
-
-      const memberCountBadge = document.getElementById('selectedMemberCountBadge');
-      if (memberCountBadge) memberCountBadge.textContent = selectedIds.length;
+    if (window.__TaskFlowProjectModal && typeof window.__TaskFlowProjectModal.setMembers === 'function') {
+      const selectedIds = Array.isArray(project.members) && project.members.length > 0 ? project.members : [project.ownerId || currentUserId];
+      window.__TaskFlowProjectModal.setMembers(project.ownerId || currentUserId, selectedIds);
     }
 
     // Kích hoạt cập nhật Live Preview
@@ -1496,8 +1683,8 @@
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
 
-    if (!isAdmin && project.ownerId !== currentUserId) {
-      if (typeof showToast === 'function') showToast('Bạn chỉ có quyền xóa dự án do chính mình làm chủ!', 'error');
+    if (project.ownerId !== currentUserId) {
+      if (typeof showToast === 'function') showToast('🔒 Bạn chỉ có quyền xóa dự án do chính mình làm chủ!', 'error');
       return;
     }
 

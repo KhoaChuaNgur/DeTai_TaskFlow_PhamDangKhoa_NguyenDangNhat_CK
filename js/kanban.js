@@ -501,8 +501,8 @@
     getUserAccessibleProjects() {
       const allProjects = KanbanData.getProjects();
       const currentUser = this.getCurrentUser();
-      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
-      if (isAdmin) return allProjects;
+      if (!currentUser || !currentUser.id) return [];
+      // CÁ NHÂN HÓA 100%: Mọi người dùng chỉ thấy các dự án thuộc quyền sở hữu hoặc tham gia
       return allProjects.filter(p => p && (p.ownerId === currentUser.id || (Array.isArray(p.members) && p.members.includes(currentUser.id))));
     },
 
@@ -519,27 +519,22 @@
       const user = this.getCurrentUser();
       if (!user) return false;
 
-      // 1. Quản trị viên (Admin) -> Toàn quyền di chuyển mọi task
-      const userRole = (user.role || '').toLowerCase();
-      const userEmail = (user.email || '').toLowerCase();
-      const isAdmin = userRole === 'admin' || userEmail === 'admin@taskflow.dev';
-      if (isAdmin) return true;
-
       if (!project) {
         const projects = KanbanData.getProjects();
         project = projects.find(p => p.id === task.projectId);
       }
 
-      // 2. Chủ dự án có toàn quyền trong dự án mình làm chủ
+      // 1. CHỦ DỰ ÁN (Project Owner / Board Admin) có toàn quyền điều phối mọi thẻ việc trong dự án của mình
       if (project && project.ownerId === user.id) return true;
 
-      // 3. Người được gán trực tiếp công việc này (Lead Assignee)
+      // 2. THÀNH VIÊN ĐƯỢC GIAO VIỆC (Lead Assignee) chỉ được di chuyển thẻ việc của chính mình
       if (task.assigneeId && task.assigneeId === user.id) return true;
-      if (task.assignee && (task.assignee.id === user.id || (task.assignee.name && user.name && task.assignee.name.toLowerCase() === user.name.toLowerCase()))) {
+      const userEmail = (user.email || '').toLowerCase().trim();
+      if (task.assignee && (task.assignee.id === user.id || (task.assignee.email && task.assignee.email.toLowerCase().trim() === userEmail))) {
         return true;
       }
 
-      // Thành viên bình thường (Member) tuyệt đối KHÔNG ĐƯỢC di chuyển task của người khác!
+      // 3. Thành viên tham gia dự án của người khác KHÔNG ĐƯỢC di chuyển thẻ của thành viên khác
       return false;
     },
 
@@ -551,18 +546,18 @@
       const user = this.getCurrentUser();
       if (!user) return false;
 
-      const isAdmin = user.role === 'admin' || user.email === 'admin@taskflow.dev';
-      if (isAdmin) return true;
-
       if (!project) {
         const projects = KanbanData.getProjects();
         project = projects.find(p => p.id === task.projectId);
       }
 
+      // Chủ dự án có toàn quyền chỉnh sửa các task trong dự án của mình
       if (project && project.ownerId === user.id) return true;
 
+      // Người được giao việc có quyền cập nhật tiến độ công việc của mình
       if (task.assigneeId === user.id) return true;
-      if (task.assignee && (task.assignee.id === user.id || task.assignee.name === user.name)) return true;
+      const userEmail = (user.email || '').toLowerCase().trim();
+      if (task.assignee && (task.assignee.id === user.id || (task.assignee.email && task.assignee.email.toLowerCase().trim() === userEmail))) return true;
 
       return false;
     },
@@ -603,10 +598,7 @@
       const filterSelect = document.getElementById('filterProject');
       if (!filterSelect) return;
 
-      const allProjects = KanbanData.getProjects();
-      const currentUser = this.getCurrentUser();
-      const isAdmin = currentUser && (currentUser.role || '').toLowerCase() === 'admin';
-      const projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser.id || (Array.isArray(p.members) && p.members.includes(currentUser.id)));
+      const projects = this.getUserAccessibleProjects();
       const currentVal = filterSelect.value || 'all';
 
       filterSelect.innerHTML = `<option value="all">Tất cả dự án (${projects.length})</option>`;
@@ -627,8 +619,30 @@
       const bar = document.getElementById('memberFilterBar');
       if (!bar) return;
 
-      const members = KanbanData.getMembers();
       bar.innerHTML = '';
+
+      const projects = this.getUserAccessibleProjects();
+      const currentUser = this.getCurrentUser();
+      const allMembers = KanbanData.getMembers();
+
+      // CÁ NHÂN HÓA BỘ LỌC THÀNH VIÊN: Chỉ lấy thành viên thực sự tham gia trong dự án đang chọn
+      let allowedMemberIds = new Set();
+      if (this.currentProjectFilter !== 'all') {
+        const curProj = projects.find(p => p.id === this.currentProjectFilter);
+        if (curProj) {
+          if (curProj.ownerId) allowedMemberIds.add(curProj.ownerId);
+          (curProj.members || []).forEach(mId => allowedMemberIds.add(mId));
+        }
+      } else {
+        // Nếu chọn tất cả dự án: Chỉ lấy các thành viên thuộc các dự án của User
+        projects.forEach(p => {
+          if (p.ownerId) allowedMemberIds.add(p.ownerId);
+          (p.members || []).forEach(mId => allowedMemberIds.add(mId));
+        });
+      }
+      if (currentUser && currentUser.id) allowedMemberIds.add(currentUser.id);
+
+      const members = allMembers.filter(m => allowedMemberIds.has(m.id));
 
       // Chip 'Tất cả'
       const allBtn = document.createElement('button');
@@ -643,7 +657,6 @@
       bar.appendChild(allBtn);
 
       // Chip 'Việc của tôi' (1-click My Tasks Filter)
-      const currentUser = this.getCurrentUser();
       const myBtn = document.createElement('button');
       myBtn.type = 'button';
       const isMyFilterActive = this.currentMemberFilter === currentUser.id;
@@ -656,7 +669,7 @@
       });
       bar.appendChild(myBtn);
 
-      // Chips từng thành viên
+      // Chips từng thành viên (CHỈ HIỂN THỊ CÁC THÀNH VIÊN TRONG DỰ ÁN)
       members.forEach(m => {
         const chip = document.createElement('button');
         chip.type = 'button';
@@ -677,48 +690,74 @@
     /**
      * Nạp dữ liệu vào các dropdown trong Modal
      */
-    populateModalDropdowns() {
+    populateModalDropdowns(targetProjectId = null) {
       const projectSelect = document.getElementById('taskInputProject');
       const assigneeSelect = document.getElementById('taskInputAssignee');
+      const projects = this.getUserAccessibleProjects();
+      const currentUser = this.getCurrentUser();
 
-      // 1. Dropdown Dự án (Chỉ lấy dự án được phép truy cập)
+      // 1. Dropdown Dự án
+      // Khi đang tạo task mới: CHỈ HIỆN CÁC DỰ ÁN USER LÀM CHỦ
+      // Khi xem task cũ: Hiện các dự án trong phạm vi truy cập
+      const isCreatingNow = !this.currentEditingTaskId;
+      const filteredProjList = isCreatingNow 
+        ? projects.filter(p => p && p.ownerId === currentUser.id)
+        : projects;
+
       if (projectSelect) {
-        const projects = this.getUserAccessibleProjects();
         projectSelect.innerHTML = '';
-        projects.forEach(p => {
+        filteredProjList.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
           opt.textContent = `${p.name} (${p.code || 'PRJ'})`;
           projectSelect.appendChild(opt);
         });
+        if (targetProjectId) projectSelect.value = targetProjectId;
       }
 
-      // 2. Dropdown Người phụ trách chính (Lead)
-      const members = KanbanData.getMembers();
+      // 2. Xác định dự án hiện hành để nạp đúng thành viên của dự án đó
+      const selectedProjId = targetProjectId || (projectSelect ? projectSelect.value : null) || this.currentProjectFilter;
+      const currentProj = projects.find(p => p.id === selectedProjId) || projects[0];
+
+      const allMembers = KanbanData.getMembers();
+      let allowedMembers = [];
+
+      if (currentProj) {
+        const projMemberIds = new Set([currentProj.ownerId, ...(currentProj.members || [])]);
+        allowedMembers = allMembers.filter(m => projMemberIds.has(m.id));
+      }
+
+      if (allowedMembers.length === 0 && currentUser) {
+        allowedMembers = [currentUser];
+      }
+
+      // 3. Dropdown Người phụ trách chính (Lead) - CHỈ HIỆN THÀNH VIÊN TRONG DỰ ÁN
       if (assigneeSelect) {
         assigneeSelect.innerHTML = '';
-        members.forEach(m => {
+        allowedMembers.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.id;
-          opt.textContent = `${m.name} (${m.role || 'Member'})`;
+          opt.textContent = `${m.name} (${m.email || m.role || 'Member'})`;
           opt.setAttribute('data-name', m.name);
           opt.setAttribute('data-avatar', m.avatar);
           assigneeSelect.appendChild(opt);
         });
       }
 
-      // 3. Render các chips chọn NHIỀU người cùng làm subtask
-      this.renderSubtaskMemberChips();
+      // 4. Render các chips chọn NHIỀU người cùng làm subtask (chỉ trong allowedMembers)
+      this.renderSubtaskMemberChips(allowedMembers);
     },
 
     /**
      * Render các chip cho phép chọn 1 hoặc NHIỀU người khi tạo việc con
      */
-    renderSubtaskMemberChips() {
+    renderSubtaskMemberChips(customMembers = null) {
       const container = document.getElementById('newSubtaskMembersSelector');
       if (!container) return;
 
-      const members = KanbanData.getMembers();
+      const members = Array.isArray(customMembers) && customMembers.length > 0 
+        ? customMembers 
+        : KanbanData.getMembers();
       container.innerHTML = '';
 
       members.forEach(m => {
@@ -738,7 +777,7 @@
           } else {
             this.selectedSubtaskMemberIds.add(m.id);
           }
-          this.renderSubtaskMemberChips();
+          this.renderSubtaskMemberChips(members);
         });
         container.appendChild(chip);
       });
@@ -1301,8 +1340,29 @@
      */
     openCreateTaskModal(defaultStatus = 'todo') {
       const user = this.getCurrentUser();
-      if (user.role !== 'admin') {
-        showToast('🔒 Chỉ Quản trị viên (Admin) mới có quyền khởi tạo công việc mới! Bạn có thể nhấn nút "Đổi vai trò ⇄" trên thanh công cụ để thử nghiệm quyền Admin.', 'warning');
+      if (!user || !user.id) {
+        showToast('⚠️ Vui lòng đăng nhập để tạo công việc mới!', 'warning');
+        return;
+      }
+
+      const allProjects = KanbanData.getProjects();
+      // CHỈ LẤY CÁC DỰ ÁN DO USER LÀM CHỦ (OWNER) ĐỂ TẠO TASK MỚI
+      const ownedProjects = allProjects.filter(p => p && p.ownerId === user.id);
+
+      // Nếu đang lọc theo 1 dự án cụ thể mà user KHÔNG PHẢI CHỦ DỰ ÁN -> CHẶN ĐỨNG
+      if (this.currentProjectFilter && this.currentProjectFilter !== 'all') {
+        const curProject = allProjects.find(p => p.id === this.currentProjectFilter);
+        if (curProject && curProject.ownerId !== user.id) {
+          const allMembers = KanbanData.getMembers();
+          const ownerMember = allMembers.find(m => m.id === curProject.ownerId);
+          const ownerName = ownerMember ? ownerMember.name : 'Chủ dự án';
+          showToast(`🔒 Bạn là thành viên tham gia dự án "${curProject.name}". Chỉ Chủ dự án (${ownerName}) mới có quyền khởi tạo và phân bổ công việc mới!`, 'warning');
+          return;
+        }
+      }
+
+      if (ownedProjects.length === 0) {
+        showToast('⚠️ Bạn chưa làm chủ dự án nào để tạo công việc. Hãy vào trang "Dự Án" để khởi tạo không gian dự án của riêng mình!', 'warning');
         return;
       }
 
@@ -1314,25 +1374,46 @@
       form.reset();
       document.getElementById('taskFormId').value = '';
 
+      // Xác định dự án mục tiêu: Dự án đang chọn (nếu là chủ) hoặc dự án làm chủ đầu tiên
+      let targetProj = null;
+      if (this.currentProjectFilter && this.currentProjectFilter !== 'all') {
+        targetProj = ownedProjects.find(p => p.id === this.currentProjectFilter);
+      }
+      if (!targetProj) {
+        targetProj = ownedProjects[0];
+      }
+      const targetProjectId = targetProj.id;
+
+      // 1. Nạp dropdown dự án và danh sách thành viên thuộc đúng dự án này
+      this.populateModalDropdowns(targetProjectId);
+
+      const projectSelect = document.getElementById('taskInputProject');
+      if (projectSelect) projectSelect.value = targetProjectId;
+
+      // 2. Cập nhật Breadcrumb đúng tên dự án đang tạo
+      const breadcrumb = document.getElementById('taskModalBreadcrumb');
+      if (breadcrumb) {
+        breadcrumb.innerHTML = `trong dự án: <b>${targetProj ? targetProj.name : 'Dự án'}</b>`;
+      }
+
       document.getElementById('taskInputTitle').value = '';
       document.getElementById('taskInputDesc').value = '';
       document.getElementById('taskInputStatus').value = defaultStatus;
 
-      // Reset Checklist & Multi-assignees
+      // 3. Reset Checklist & Multi-assignees
       this.currentEditingSubtasks = [];
       this.selectedSubtaskMemberIds.clear();
-      this.renderSubtaskMemberChips();
       this.renderSubtasksEditor();
 
-      // Reset Evidence & Breadcrumb
+      // 4. Reset Evidence & Breadcrumb
       this.renderContextualEvidence(null, defaultStatus);
       this.renderCommentsFeed([]);
 
-      // Reset Sidebar & Quyền form
-      this.updateApprovalSidebar(null);
-      this.updateFormPermissions(null);
+      // 5. Cập nhật Sidebar & Quyền form theo dự án mục tiêu (Toàn quyền cho người tạo)
+      this.updateApprovalSidebar(null, targetProjectId);
+      this.updateFormPermissions(null, targetProjectId);
 
-      // Ngày mặc định
+      // 6. Ngày mặc định (+3 ngày)
       const now = new Date();
       const startIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       const dueDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
@@ -1370,10 +1451,12 @@
         breadcrumb.innerHTML = `trong dự án: <b>${proj ? proj.name : 'Dự án chung'}</b>`;
       }
 
+      // Nạp dropdowns & thành viên thuộc dự án của task
+      this.populateModalDropdowns(task.projectId);
+
       // Checklist & Multi-assignees
       this.currentEditingSubtasks = JSON.parse(JSON.stringify(task.subtasks || []));
       this.selectedSubtaskMemberIds.clear();
-      this.renderSubtaskMemberChips();
       this.renderSubtasksEditor();
 
       // Bằng chứng ngữ cảnh (State-Aware)
@@ -1613,9 +1696,14 @@
     /**
      * Cập nhật Sidebar Phê duyệt & Quyền xóa theo RBAC
      */
-    updateApprovalSidebar(task) {
+    updateApprovalSidebar(task, targetProjectId = null) {
       const user = this.getCurrentUser();
-      const isAdmin = user.role === 'admin';
+      const projects = KanbanData.getProjects();
+      const projId = (task && task.projectId) 
+        ? task.projectId 
+        : (targetProjectId || document.getElementById('taskInputProject')?.value);
+      const project = projects.find(p => p.id === projId);
+      const isOwner = project && project.ownerId === user.id;
 
       const statusBadge = document.getElementById('approvalBadgeStatus');
       const adminActions = document.getElementById('approvalAdminActions');
@@ -1626,7 +1714,10 @@
 
       // 1. Badge trạng thái duyệt
       if (statusBadge) {
-        if (isApproved) {
+        if (!task) {
+          statusBadge.textContent = 'MỚI';
+          statusBadge.className = 'font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400';
+        } else if (isApproved) {
           statusBadge.textContent = 'ĐÃ DUYỆT';
           statusBadge.className = 'font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-500';
         } else {
@@ -1635,33 +1726,36 @@
         }
       }
 
-      // 2. Quyền Duyệt (Chỉ Admin)
+      // 2. Quyền Duyệt
       if (adminActions) {
-        if (isAdmin) {
+        if (!task) {
+          adminActions.classList.add('hidden');
+          if (infoText) {
+            infoText.innerHTML = isOwner
+              ? `Bạn là <b>Chủ dự án (${user.name})</b>. Sau khi giao việc và có kết quả hoàn thành, bạn sẽ có quyền nghiệm thu công việc này.`
+              : `Công việc sau khi hoàn thành sẽ được <b>Chủ dự án (${project ? project.name : 'Dự án'})</b> phê duyệt.`;
+          }
+        } else if (isOwner) {
           adminActions.classList.remove('hidden');
           if (infoText) {
             infoText.innerHTML = isApproved 
-              ? `<span class="text-emerald-500 font-bold">✓ Đã duyệt bởi ${task?.evidence?.approvedBy || 'Admin'} (${task?.evidence?.approvedAt || 'vừa xong'})</span>` 
-              : `Bạn đang đăng nhập vai trò <b>Admin (${user.name})</b>, có toàn quyền duyệt nghiệm thu hoặc yêu cầu sửa đổi.`;
+              ? `<span class="text-emerald-500 font-bold">✓ Đã duyệt bởi ${task?.evidence?.approvedBy || 'Chủ dự án'} (${task?.evidence?.approvedAt || 'vừa xong'})</span>` 
+              : `Bạn là <b>Chủ dự án (${user.name})</b>, có toàn quyền duyệt nghiệm thu hoặc yêu cầu sửa đổi.`;
           }
         } else {
-          // Member: Ẩn nút duyệt
+          // Thành viên tham gia: Ẩn nút duyệt
           adminActions.classList.add('hidden');
           if (infoText) {
             infoText.innerHTML = isApproved
-              ? `<span class="text-emerald-500 font-bold">✓ Công việc này đã được Admin nghiệm thu thành công.</span>`
-              : `<span class="text-amber-500">⏳ Đang chờ Quản trị viên (Admin) kiểm tra và duyệt nghiệm thu. Bạn không có quyền tự phê duyệt.</span>`;
+              ? `<span class="text-emerald-500 font-bold">✓ Công việc này đã được Chủ dự án nghiệm thu thành công.</span>`
+              : `<span class="text-amber-500">⏳ Đang chờ Chủ dự án kiểm tra và duyệt nghiệm thu. Bạn không có quyền tự phê duyệt.</span>`;
           }
         }
       }
 
-      // 3. Quyền Xóa (Chỉ Admin)
+      // 3. Quyền Xóa (Chỉ Chủ dự án và chỉ khi sửa task cũ)
       if (btnDelete) {
-        if (isAdmin) {
-          btnDelete.classList.remove('hidden');
-        } else {
-          btnDelete.classList.add('hidden'); // Member không có quyền xóa
-        }
+        btnDelete.classList.toggle('hidden', !task || !isOwner);
       }
     },
 
@@ -1670,27 +1764,44 @@
      * Admin: Toàn quyền sửa tất cả các trường
      * Member: Bị khóa Ngày bắt đầu, Hạn chót (Deadline), Dự án, Mức ưu tiên, Người phụ trách chính
      */
-    updateFormPermissions(task) {
+    updateFormPermissions(task, targetProjectId = null) {
       const user = this.getCurrentUser();
-      const isAdmin = user && (user.role === 'admin' || user.email === 'admin@taskflow.dev');
+      const isCreating = !task;
       
       const projects = KanbanData.getProjects();
-      const project = task ? projects.find(p => p.id === task.projectId) : null;
-      const isOwner = project && project.ownerId === user.id;
-      const isAssignee = task && (task.assigneeId === user.id || (task.assignee && (task.assignee.id === user.id || task.assignee.name === user.name)));
+      const projId = (task && task.projectId) 
+        ? task.projectId 
+        : (targetProjectId || document.getElementById('taskInputProject')?.value);
       
-      const isPrivileged = isAdmin || isOwner;
-      const isReadOnly = task && !isPrivileged && !isAssignee;
+      const project = projects.find(p => p.id === projId);
+      const isOwner = project && project.ownerId === user.id;
+
+      // So khớp người được phân công chính xác theo ID hoặc Email (KHÔNG so sánh bằng text name lỏng lẻo)
+      const userEmail = (user.email || '').toLowerCase().trim();
+      const isAssignee = task && (
+        task.assigneeId === user.id ||
+        (task.assignee && task.assignee.id === user.id) ||
+        (task.assignee && task.assignee.email && task.assignee.email.toLowerCase().trim() === userEmail)
+      );
+
+      // ĐẶC QUYỀN QUẢN TRỊ DỰ ÁN (isPrivileged):
+      // CHỈ CHỦ DỰ ÁN (isOwner) mới có quyền thay đổi 5 trường: Dự án, Mức độ ưu tiên, Người phụ trách chính, Ngày bắt đầu, Hạn chót!
+      // Người được giao việc (Assignee) KHÔNG PHẢI CHỦ DỰ ÁN cũng BỊ KHÓA 5 trường này!
+      const isPrivileged = isOwner;
+
+      // CHẾ ĐỘ CHỈ ĐỌC (VIEW-ONLY):
+      // Nếu KHÔNG PHẢI CHỦ DỰ ÁN VÀ KHÔNG PHẢI NGƯỜI ĐƯỢC PHÂN CÔNG -> Khóa 100%, ẩn nút Lưu!
+      const isReadOnly = !isCreating && !isOwner && !isAssignee;
 
       // Banner thông báo Chế độ Chỉ Đọc (View-only)
       const banner = document.getElementById('taskModalReadOnlyBanner');
       const bannerText = document.getElementById('taskModalReadOnlyText');
       if (banner) {
-        if (isReadOnly) {
+        if (isReadOnly && task) {
           banner.classList.remove('hidden');
           banner.classList.add('flex');
           if (bannerText) {
-            bannerText.innerHTML = `Chế độ <b>Chỉ đọc (View-only)</b>: Công việc này thuộc về <b>${task.assignee?.name || 'thành viên khác'}</b>. Bạn có thể theo dõi tiến độ và gửi bình luận trao đổi bên dưới.`;
+            bannerText.innerHTML = `Chế độ <b>Chỉ đọc (View-only)</b>: Bạn là thành viên tham gia dự án. Công việc này được giao cho <b>${task.assignee?.name || 'thành viên khác'}</b>. Chỉ Chủ dự án hoặc người phụ trách mới có quyền cập nhật tiến độ.`;
           }
         } else {
           banner.classList.add('hidden');
@@ -1737,28 +1848,29 @@
         if (btnAddSubtask) btnAddSubtask.disabled = false;
         if (btnSave) btnSave.classList.remove('hidden');
 
-        // Phân quyền quản lý (Admin / Chủ dự án): Được sửa Project, Assignee, Priority, Dates
-        const adminOnlyInputs = [startInput, dueInput, projectSelect, prioritySelect, assigneeSelect];
-        adminOnlyInputs.forEach(el => {
+        // Phân quyền quản lý: Khi tạo mới hoặc là Chủ dự án -> Được sửa Project, Assignee, Priority, Dates
+        const managementInputs = [startInput, dueInput, projectSelect, prioritySelect, assigneeSelect];
+        managementInputs.forEach(el => {
           if (!el) return;
           el.disabled = !isPrivileged;
           if (!isPrivileged) {
             el.classList.add('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
-            el.title = '🔒 Chỉ Chủ dự án hoặc Quản trị viên mới có quyền chỉnh sửa mục này';
+            el.title = '🔒 Chỉ Chủ dự án mới có quyền chỉnh sửa mục này';
           } else {
             el.classList.remove('cursor-not-allowed', 'opacity-75', 'bg-slate-100', 'dark:bg-slate-800/80');
             el.removeAttribute('title');
           }
         });
 
-        // Nút xóa chỉ dành cho Admin hoặc Chủ dự án
+        // Nút xóa chỉ dành cho Chủ dự án khi đang chỉnh sửa task đã tạo
         if (btnDelete) {
-          btnDelete.classList.toggle('hidden', !isPrivileged);
+          btnDelete.classList.toggle('hidden', isCreating || !isOwner);
         }
       }
 
+      // Khóa chỉ thị: Khi tạo mới hoặc có quyền (Chủ dự án), ẨN TOÀN BỘ ICON KHÓA
       lockIndicators.forEach(lock => {
-        lock.classList.toggle('hidden', isPrivileged || isReadOnly);
+        lock.classList.toggle('hidden', isPrivileged || isReadOnly || isCreating);
       });
     },
 
@@ -1853,6 +1965,29 @@
         });
       }
 
+      // 6b. Đổi Dự Án trong modal -> Tự động nạp thành viên & cập nhật quyền theo Dự án mới
+      const modalProjectSelect = document.getElementById('taskInputProject');
+      if (modalProjectSelect) {
+        modalProjectSelect.addEventListener('change', (e) => {
+          const newProjId = e.target.value;
+          const allProjs = KanbanData.getProjects();
+          const newProj = allProjs.find(p => p.id === newProjId);
+
+          const breadcrumb = document.getElementById('taskModalBreadcrumb');
+          if (breadcrumb && newProj) {
+            breadcrumb.innerHTML = `trong dự án: <b>${newProj.name}</b>`;
+          }
+
+          this.populateModalDropdowns(newProjId);
+
+          const currentTask = this.currentEditingTaskId 
+            ? KanbanData.getTasks().find(t => t.id === this.currentEditingTaskId) 
+            : null;
+          this.updateFormPermissions(currentTask, newProjId);
+          this.updateApprovalSidebar(currentTask, newProjId);
+        });
+      }
+
       // 7. Thêm Subtask mới (Hỗ trợ 1 hoặc NHIỀU người cùng phụ trách)
       const btnAddSubtask = document.getElementById('btnAddSubtask');
       const newSubtaskTitle = document.getElementById('newSubtaskTitle');
@@ -1904,11 +2039,16 @@
             hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'
           });
 
+          const allProjects = KanbanData.getProjects();
+          const curEditingTask = this.currentEditingTaskId ? KanbanData.getTasks().find(t => t.id === this.currentEditingTaskId) : null;
+          const curProj = curEditingTask ? allProjects.find(p => p.id === curEditingTask.projectId) : null;
+          const isOwnerOfProj = curProj && curProj.ownerId === currentUser.id;
+
           const newCmt = {
             id: 'cmt-' + Date.now(),
             authorName: currentUser.name,
             authorAvatar: currentUser.avatar,
-            role: currentUser.role === 'admin' ? 'Admin' : 'Member',
+            role: isOwnerOfProj ? 'Chủ dự án' : 'Thành viên',
             content: content,
             createdAt: nowStr
           };
@@ -1939,10 +2079,10 @@
           const task = tasks.find(t => t.id === this.currentEditingTaskId);
           const projects = KanbanData.getProjects();
           const project = task ? projects.find(p => p.id === task.projectId) : null;
-          const canApprove = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+          const canApprove = project && project.ownerId === user.id;
 
           if (!canApprove) {
-            showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền duyệt nghiệm thu!', 'error');
+            showToast('🔒 Chỉ Chủ dự án mới có quyền phê duyệt nghiệm thu công việc này!', 'error');
             return;
           }
 
@@ -1983,10 +2123,10 @@
           const task = tasks.find(t => t.id === this.currentEditingTaskId);
           const projects = KanbanData.getProjects();
           const project = task ? projects.find(p => p.id === task.projectId) : null;
-          const canRequest = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+          const canRequest = project && project.ownerId === user.id;
 
           if (!canRequest) {
-            showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền yêu cầu sửa lại!', 'error');
+            showToast('🔒 Chỉ Chủ dự án mới có quyền yêu cầu sửa lại!', 'error');
             return;
           }
 
@@ -2024,15 +2164,10 @@
         });
       }
 
-      // 11. Xóa Task trong Modal (Chỉ Admin)
+      // 11. Xóa Task trong Modal (Chỉ Chủ dự án)
       const btnDeleteInModal = document.getElementById('btnDeleteTaskInModal');
       if (btnDeleteInModal) {
         btnDeleteInModal.addEventListener('click', () => {
-          const user = this.getCurrentUser();
-          if (user.role !== 'admin') {
-            showToast('Chỉ Admin mới có quyền xóa công việc!', 'error');
-            return;
-          }
           if (this.currentEditingTaskId) {
             this.deleteTask(this.currentEditingTaskId);
             this.closeModal();
@@ -2089,16 +2224,18 @@
                 const prevEvidence = prevTask.evidence || {};
 
                 // Bảo vệ chống sửa trộm (Anti-tamper protection):
-                // Nếu người dùng hiện tại là Member, giữ nguyên Ngày bắt đầu, Hạn chót, Dự án, Mức ưu tiên và Người phân công chính từ dữ liệu gốc
+                // Chỉ Chủ dự án mới có toàn quyền đổi ngày bắt đầu, hạn chót, dự án, mức ưu tiên và người phụ trách chính
                 const user = this.getCurrentUser();
-                const isAdmin = user.role === 'admin';
+                const allProjs = KanbanData.getProjects();
+                const curProj = allProjs.find(p => p.id === prevTask.projectId);
+                const isProjectOwner = curProj && curProj.ownerId === user.id;
 
-                const finalStartDateTime = isAdmin ? startDateTime : prevTask.startDateTime;
-                const finalDueDateTime = isAdmin ? dueDateTime : prevTask.dueDateTime;
-                const finalProjectId = isAdmin ? projectId : prevTask.projectId;
-                const finalPriority = isAdmin ? priority : prevTask.priority;
-                const finalAssigneeId = isAdmin ? assigneeId : prevTask.assigneeId;
-                const finalAssignee = isAdmin ? { name: assigneeName, avatar: assigneeAvatar } : prevTask.assignee;
+                const finalStartDateTime = isProjectOwner ? startDateTime : prevTask.startDateTime;
+                const finalDueDateTime = isProjectOwner ? dueDateTime : prevTask.dueDateTime;
+                const finalProjectId = isProjectOwner ? projectId : prevTask.projectId;
+                const finalPriority = isProjectOwner ? priority : prevTask.priority;
+                const finalAssigneeId = isProjectOwner ? assigneeId : prevTask.assigneeId;
+                const finalAssignee = isProjectOwner ? { name: assigneeName, avatar: assigneeAvatar } : prevTask.assignee;
 
                 const submittedDoneUrl = doneUrlInput ? doneUrlInput.value.trim() : (prevEvidence.doneUrl || '');
                 let finalStatus = status;
@@ -2336,10 +2473,10 @@
 
       const projects = KanbanData.getProjects();
       const project = projects.find(p => p.id === task.projectId);
-      const canDelete = user.role === 'admin' || user.email === 'admin@taskflow.dev' || (project && project.ownerId === user.id);
+      const isOwner = project && project.ownerId === user.id;
 
-      if (!canDelete) {
-        showToast('Chỉ Chủ dự án hoặc Quản trị viên mới có quyền xóa công việc này!', 'error');
+      if (!isOwner) {
+        showToast('🔒 Chỉ Chủ dự án mới có quyền xóa công việc trong dự án này!', 'error');
         return;
       }
 

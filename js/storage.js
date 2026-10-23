@@ -236,8 +236,8 @@
         progress: 45,
         startDate: '2026-10-18',
         deadline: '2026-11-30T18:00:00.000Z',
-        ownerId: 'mem-01',
-        members: ['mem-01', 'mem-02'],
+        ownerId: 'mem-02',
+        members: ['mem-02', 'mem-01'],
         color: '#8B5CF6'
       }
     ],
@@ -539,8 +539,8 @@
   function ensureUserOnboarding(user) {
     if (!user || !user.id) return null;
 
-    // Nếu là admin@taskflow.dev thì dùng dữ liệu hệ thống, không cần tạo onboarding riêng
-    if (user.email === 'admin@taskflow.dev') return null;
+    // Nếu là admin@taskflow.dev hoặc member@taskflow.dev (tài khoản demo) thì dùng dữ liệu mẫu
+    if (user.email === 'admin@taskflow.dev' || user.email === 'member@taskflow.dev') return null;
 
     const projects = Storage.get(STORAGE_KEYS.PROJECTS, []);
     const tasks = Storage.get(STORAGE_KEYS.TASKS, []);
@@ -654,6 +654,79 @@
     );
 
     return welcomeProject;
+  }
+
+  /**
+   * Truy xuất danh sách dự án thuộc phạm vi liên quan của User (Làm chủ hoặc Tham gia)
+   * Tuyệt đối không để lộ dự án của người ngoài
+   */
+  function getUserProjects(userId) {
+    if (!userId) return [];
+    const projects = Storage.get(STORAGE_KEYS.PROJECTS, []);
+    return projects.filter(p => p && (p.ownerId === userId || (Array.isArray(p.members) && p.members.includes(userId))));
+  }
+
+  /**
+   * Truy xuất danh sách công việc thuộc phạm vi các dự án User có mặt
+   */
+  function getUserTasks(userId, filterMode = 'all-accessible') {
+    if (!userId) return [];
+    const userProjects = getUserProjects(userId);
+    const allowedProjectIds = new Set(userProjects.map(p => p.id));
+    const allTasks = Storage.get(STORAGE_KEYS.TASKS, []);
+    const inScopeTasks = allTasks.filter(t => allowedProjectIds.has(t.projectId));
+
+    if (filterMode === 'my-tasks-only') {
+      return inScopeTasks.filter(t => t.assigneeId === userId || (t.subtasks || []).some(s => (s.assigneeIds || []).includes(userId)));
+    }
+    return inScopeTasks;
+  }
+
+  /**
+   * ==========================================================================
+   * DANH BẠ CỘNG TÁC VIÊN GẦN ĐÂY & TÌM THÀNH VIÊN THEO GMAIL
+   * Không hiển thị mặc định người lạ; chỉ gợi ý những ai đã từng làm việc cùng
+   * ==========================================================================
+   */
+  function getRecentCollaborators(userId) {
+    if (!userId) return [];
+    try {
+      const raw = localStorage.getItem('taskflow_collaborators_' + userId);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  function addRecentCollaborator(userId, collaborator) {
+    if (!userId || !collaborator || !collaborator.email) return;
+    try {
+      let list = getRecentCollaborators(userId);
+      const normEmail = collaborator.email.toLowerCase().trim();
+      list = list.filter(c => (c.email || '').toLowerCase().trim() !== normEmail);
+      list.unshift({
+        id: collaborator.id || ('collab-' + Date.now()),
+        name: collaborator.name || normEmail.split('@')[0],
+        email: normEmail,
+        avatar: collaborator.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normEmail)}`,
+        addedAt: new Date().toISOString()
+      });
+      list = list.slice(0, 20); // Giữ tối đa 20 người gần nhất
+      localStorage.setItem('taskflow_collaborators_' + userId, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function findUserByEmail(email) {
+    if (!email) return null;
+    const norm = email.toLowerCase().trim();
+    const members = Storage.get(STORAGE_KEYS.MEMBERS, []);
+    let found = members.find(m => (m.email || '').toLowerCase().trim() === norm);
+    if (!found && Array.isArray(SEED_DATA.members)) {
+      found = SEED_DATA.members.find(m => (m.email || '').toLowerCase().trim() === norm);
+    }
+    return found || null;
   }
 
   /**
@@ -1180,9 +1253,14 @@
     getReportsSummary: ReportingEngine.getSummary.bind(ReportingEngine),
     exportReportsCSV: ReportingEngine.exportCSV.bind(ReportingEngine),
 
-    // Database Initialization
+    // Database Initialization & User Personalization
     initDatabase,
     ensureUserOnboarding,
+    getUserProjects,
+    getUserTasks,
+    getRecentCollaborators,
+    addRecentCollaborator,
+    findUserByEmail,
     SEED_DATA,
 
     // Storage Keys Constants

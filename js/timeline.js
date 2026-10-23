@@ -948,7 +948,8 @@
       const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
       
       const allProjects = TimelineData.getProjects();
-      TimelineState.projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id)));
+      // CÁ NHÂN HÓA 100%: Chỉ nạp dự án thuộc phạm vi của người dùng
+      TimelineState.projects = allProjects.filter(p => p && (p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id))));
       
       const allowedIds = new Set(TimelineState.projects.map(p => p.id));
       TimelineState.tasks = TimelineData.getTasks().filter(t => allowedIds.has(t.projectId));
@@ -999,7 +1000,8 @@
       const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.email === 'admin@taskflow.dev');
       
       const allProjects = TimelineData.getProjects();
-      TimelineState.projects = isAdmin ? allProjects : allProjects.filter(p => p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id)));
+      // CÁ NHÂN HÓA 100%: Chỉ nạp dự án thuộc phạm vi của người dùng
+      TimelineState.projects = allProjects.filter(p => p && (p.ownerId === currentUser?.id || (Array.isArray(p.members) && p.members.includes(currentUser?.id))));
       
       const allowedIds = new Set(TimelineState.projects.map(p => p.id));
       TimelineState.tasks = TimelineData.getTasks().filter(t => allowedIds.has(t.projectId));
