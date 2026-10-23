@@ -6,7 +6,7 @@
 
 ---
 
-Tài liệu này lưu trữ **100% nguyên văn các câu lệnh (User Prompts)** và **tóm tắt chi tiết các giải pháp kiến trúc kỹ thuật, mã nguồn đã triển khai bởi AI Assistant** theo từng lượt tương tác trong suốt quá trình hoàn thiện **Phân hệ Trang 3: Bảng Việc Kanban Workspace**.
+Tài liệu này lưu trữ **100% nguyên văn các câu lệnh (User Prompts)** và **tóm tắt chi tiết các giải pháp kiến trúc kỹ thuật, mã nguồn đã triển khai bởi AI Assistant** theo từng lượt tương tác trong suốt quá trình hoàn thiện toàn bộ **Phân hệ Thành viên B: Trang 3 (Kanban Board), Trang 4 (Timeline / Gantt Chart) và Trang 5 (Báo cáo & Time-tracker tự động)**.
 
 ---
 
@@ -20,6 +20,9 @@ Tài liệu này lưu trữ **100% nguyên văn các câu lệnh (User Prompts)*
 6. [Turn 6: Phân tích kiến trúc & Hiện thực hóa mã nguồn Trang 4: Timeline & Interactive Gantt Chart](#turn-6-phan-tich-kien-truc--hien-thuc-hoa-ma-nguon-trang-4-timeline--interactive-gantt-chart)
 7. [Turn 7: Giải thích ý nghĩa thực tế, triết lý quản trị & Kịch bản vấn đáp bảo vệ Trang 4](#turn-7-giai-thich-y-nghia-thuc-te-triet-ly-quan-tri--kich-ban-van-dap-bao-ve-trang-4)
 8. [Turn 8: Tối ưu Typography Font Roboto & Quy chuẩn Hệ màu sắc Modern SaaS cho Trang 4](#turn-8-toi-uu-typography-font-roboto--quy-chuan-he-mau-sac-modern-saas-cho-trang-4)
+9. [Turn 9: Phân tích yêu cầu & Bóc tách nội dung thiết kế Trang 5: Báo Cáo & Time-tracker tự động](#turn-9-phan-tich-yeu-cau--boc-tach-noi-dung-thiet-ke-trang-5-bao-cao--time-tracker-tu-dong)
+10. [Turn 10: Phân tích liên kết dữ liệu đa tầng & Chuẩn hóa Frontend Anti-AI theo skill.md & ai_detected.md](#turn-10-phan-tich-lien-ket-du-lieu-da-tang--chuan-hoa-frontend-anti-ai-theo-skillmd--ai_detectedmd)
+11. [Turn 11: Hiện thực hóa toàn bộ mã nguồn Trang 5 (reports.html, js/reports.js & Mục 14 css/styles.css)](#turn-11-hien-thuc-hoa-toan-bo-ma-nguon-trang-5-reportshtml-jsreportsjs--muc-14-cssstylescss)
 
 ---
 
@@ -366,13 +369,143 @@ Yêu cầu toàn bộ chữ trong trang 4 phải dùng font: Roboto, và dùng g
 
 ---
 
-## TỔNG KẾT TÀI SẢN MÃ NGUỒN ĐÃ TẠO LẬP BỞI THÀNH VIÊN B (TRANG 3 & TRANG 4)
+### Turn 9: Phân tích yêu cầu & Bóc tách nội dung thiết kế Trang 5: Báo Cáo & Time-tracker tự động
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompt):
+```markdown
+Bạn hãy đọc file prompt training.md và phân tích chi tiết cho mình biết về nội dung cần thiết kế trong trang 5: Báo cáo & Time-tracker tự động (reports.html + js/reports.js)
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Định vị Chiến lược của Trang 5 trong Hệ Sinh Thái TaskFlow**:
+  - Xác lập Trang 5 là **"Trung tâm Đo lường Hiệu suất Thực tế & Kiểm toán Thời gian" (Productivity Audit & Timesheet Engine)**, hoàn thiện chu trình khép kín: Khởi tạo (Projects) $\rightarrow$ Lập kế hoạch lộ trình (Timeline) $\rightarrow$ Tác nghiệp hàng ngày (Kanban) $\rightarrow$ **Đo lường & Chấm công thực tế (Reports & Timesheet)**.
+- **Bóc tách 5 Khối Chức Năng Cốt Lõi**:
+  1. *Khung vỏ App Shell & Ambient Orbs*: Anti-flicker script trong `<head>`, chỉ dùng 2 thẻ giữ chỗ `#app-sidebar` và `#app-header`, 3 cầu ánh sáng Ambient Orbs phía sau kính mờ.
+  2. *Dải KPI Năng Suất (Performance Metrics Strip)*: 4 chỉ số (Tổng giờ đã ghi nhận, Tổng số lượt báo cáo, Giờ làm việc hôm nay, Công việc tiêu tốn nhiều thời gian nhất) với hiệu ứng số nhảy Count-up 60fps.
+  3. *Trạm Bấm Giờ Trực Tiếp (Live Stopwatch Console)*: Mặt đồng hồ kỹ thuật số phong cách Neon/Glass Monospace `00:00:00.00`, các nút điều khiển *Bắt đầu*, *Tạm dừng*, *Đặt lại*, và nút *Dừng & Điền Vào Form* (tự động quy đổi thời gian thực sang số giờ thập phân).
+  4. *Biểu Mẫu Nộp Báo Cáo & Nhật Ký (Timesheet Form)*: Tự động nhận diện thành viên đăng nhập; dropdown chọn Task kèm mã PRJ và trạng thái; input số giờ, ngày thực hiện, kết quả đạt được và trở ngại (blockers).
+  5. *Bảng Lịch Sử Chấm Công & Xuất CSV*: Nền phẳng tương phản cao chuẩn WCAG AAA, bộ lọc đa năng (từ khóa, dự án, thành viên), trạng thái rỗng Empty State và nút xuất CSV Blob API nhúng UTF-8 BOM (`\uFEFF`).
+- **Phân tích Kiến trúc Động cơ Nghiệp vụ (`js/reports.js`)**:
+  - Cơ chế máy trạng thái Stopwatch (`IDLE`, `RUNNING`, `PAUSED`).
+  - Cơ chế Đồng bộ kép (Dual Sync: LocalStorage `TASKFLOW_DATA` + Google Sheets Webhook).
+  - Phản ứng dây chuyền: Cộng dồn `spentHours` vào task tương ứng.
+
+---
+
+### Turn 10: Phân tích liên kết dữ liệu đa tầng & Chuẩn hóa Frontend Anti-AI theo `skill.md` & `ai_detected.md`
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompt):
+```markdown
+Tiếp theo, bạn hãy dựa vào file skill.md, file ai_detected.md và trang 5 phải có sự liên kết chặt chẽ về mặt dữ liệu cũng như các mặt khác về fontend với các trang index.html, board.html, login.html, project.html, timeline.html
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Thiết lập Sơ đồ Luồng Dữ Liệu 2 Chiều (System Integration Paradigm)**:
+  - Chứng minh Trang 5 là "Vòng lặp khép kín" (The Closing Loop), liên kết mật thiết với 5 trang đã hoàn thiện.
+- **Phân tích Chi tiết Liên kết Dữ liệu (Data Contract)**:
+  - *Với `login.html` & `auth.js`*: Tự động gán người báo cáo (`currentUser` - Nguyễn Đăng Nhật / Phạm Đăng Khoa); phân quyền RBAC (Admin toàn quyền quản lý, Member chỉ thao tác log của mình); nhịp tim phiên ngân hàng (`Auth.extendSession()`) tự động gia hạn khi bấm giờ.
+  - *Với `projects.html` & `projects.js`*: Tự động tra cứu mã dự án, tên dự án và màu sắc nhận diện gắn vào từng log.
+  - *Với `board.html` & `kanban.js`*: Đọc danh sách task `doing` và `todo`. Khi nộp báo cáo, tự động kích hoạt công thức cộng dồn $\text{task.spentHours} = (\text{task.spentHours} || 0) + \text{hoursSpent}$ và lưu vào LocalStorage để Kanban cập nhật giờ thực tế.
+  - *Với `timeline.html` & `timeline.js`*: Dữ liệu `spentHours` cộng dồn từ Trang 5 trực tiếp làm dài thêm thanh tiến độ con bên trong Gantt bar theo kỹ thuật Tone-on-tone progress fill.
+  - *Với `index.html` & `dashboard.js`*: Cung cấp nguồn dữ liệu sống cho KPI Tổng giờ đã thực hiện và biểu đồ phân bổ thời gian hàng tuần.
+  - *Với `sheets-sync.js`*: Tự động gọi `SheetsSync.sendTimeLog(payload)` đồng bộ lên Google Sheets.
+- **Hiện thực hóa Tiêu chuẩn Human-Crafted theo `ai_detected.md`**:
+  - *Triệt tiêu Over-blur*: Chỉ áp dụng kính mờ cho Navbar và Stopwatch Console; Bảng dữ liệu và Form dùng nền phẳng tương phản cao để chống mỏi mắt.
+  - *Nói không với Gradient lòe loẹt*: Giữ nền Deep Slate `#090D16` / Slate-50 `#F8FAFC`, chỉ dùng Glow viền tinh tế ở trạng thái active.
+  - *Dữ liệu thực tế 100%*: Không dùng "Task 1", "Lorem Ipsum", mà dùng các task đồ án thực thụ (VNPay, Redis, Design Tokens, RBAC).
+  - *Empty State chỉn chu*: Có hình minh họa SVG và văn phong tự nhiên hướng dẫn người dùng.
+  - *Công thái học Fitts's Law*: Target bấm tối thiểu $44 \times 44\text{px}$ kèm trạng thái loading spinner khi submit.
+
+---
+
+### Turn 11: Hiện thực hóa toàn bộ mã nguồn Trang 5 (`reports.html`, `js/reports.js` & Mục 14 `css/styles.css`)
+
+#### 1. Nguyên văn các câu lệnh của người dùng (User Prompts):
+**Lượt hỏi 1 (Lệnh thiết kế mã nguồn theo yêu cầu):**
+```markdown
+Với những phân tích chi tiết ở trên, bây giờ bạn hãy tiến hành thiết kế trang 5 theo yêu cầu
+```
+
+**Lượt hỏi 2 (Lệnh cập nhật nhật ký hội thoại):**
+```markdown
+Bạn hãy tiếp tục lưu nhật ký dùng Prompt của trang 5 vào file PROMPT_NguyenDangNhat.md
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Tạo mới [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html)**:
+  - Khung ngữ nghĩa Semantic HTML5, Anti-flicker trong `<head>`, bố cục App Shell chuẩn (`#app-sidebar`, `#app-header`).
+  - Google Font Roboto & Roboto Mono, dải 4 thẻ KPI Metrics, giao diện 2 cột Stopwatch & Timesheet Form.
+  - Bảng Timesheet đa năng với tìm kiếm thời gian thực, lọc dự án, lọc thành viên, trạng thái rỗng và nút xuất CSV.
+  - Nạp đúng thứ tự 5 script: `storage.js` $\rightarrow$ `auth.js` $\rightarrow$ `layout.js` $\rightarrow$ `sheets-sync.js` $\rightarrow$ `reports.js`.
+  - Khởi tạo qua: `AppLayout.init("Báo Cáo & Time-tracker", "Thống kê hiệu suất làm việc và ghi nhận nhật ký công việc tự động")`.
+- **Tạo mới [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js)**:
+  - Đóng gói an toàn IIFE, bọc khối `try...catch` bảo vệ Auth Guard.
+  - Động cơ Live Stopwatch 60fps với 3 trạng thái (`IDLE`, `RUNNING`, `PAUSED`), hàm `stopAndFill` tự động quy đổi thời gian thực sang số giờ thập phân điền thẳng vào form.
+  - Cơ chế Dual Sync: Ghi nhận `timeLogs`, cộng dồn `spentHours` trên task, gọi `SheetsSync.sendTimeLog()` và hiển thị Toast notification kính mờ.
+  - Tính năng xóa log an toàn: Hộp thoại xác nhận và tự động hoàn trả/trừ số giờ đã tích lũy trên task.
+  - Động cơ xuất báo cáo CSV chuẩn quốc tế sử dụng JavaScript Blob API kết hợp tiền tố **UTF-8 BOM (`\uFEFF`)** giúp Microsoft Excel hiển thị tiếng Việt không bao giờ bị lỗi font.
+  - Động cơ số nhảy Count-up chạy bằng `requestAnimationFrame`.
+  - Đồng bộ đa tab (Cross-tab sync) thông qua sự kiện `storage`.
+- **Bổ sung CSS Tokens vào [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) (Mục 14)**:
+  - `.page-reports`: Khóa font Roboto toàn trang.
+  - `.stopwatch-digital-clock`: Font số Roboto Mono với tabular figures.
+  - `@keyframes timerPulseRing` & `.stopwatch-running-glow`: Viền phát sáng nhịp nhàng khi đồng hồ chạy.
+  - Nút bấm `.btn-stopwatch-action` đạt chuẩn Fitts's Law, huy hiệu `.badge-sheets-synced`, `.badge-blocker-alert`, `.badge-hours-spent`.
+  - Tối ưu bảng cuộn ngang `.timesheet-table-container` và hiệu ứng nháy sáng `.kpi-stat-flash`.
+
+---
+
+### Turn 12: Đánh giá UX/UI Chuyên Sâu theo Tiêu Chuẩn Trello.com & Cải Tiến Toàn Diện Trang 5
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompts):
+**Lượt hỏi 1 (Đóng vai trò Chuyên gia UX/UI & Human Action Recognition phân tích video `TRANG5.mp4` và đối chuẩn Trello.com):**
+```markdown
+Dựa vào file TRANG 5.mp4
+Đóng vai trò một Human action recognition/prediction(hành vi người dùng) và chuyên gia UX/UI hàng đầu và là một người dùng Trello.com thường xuyên, hãy dựa trên một hệ thống tương tự tên là trello.com để so sánh và đánh giá trang reports.html. Xong sau đó cho mình biết phân tích của bạn về các vấn đề nên thay đổi. Yêu cầu bạn hãy ở chế độ nghiên cứu sâu để có thêm thời gian bóc tách chính xác tất cả các vấn đề, sau đó xem xét những thay đổi mới có phù hợp với hệ thống TaskFlow chúng ta đang thực hiện hay không, kèm giải thích ý nghĩa của trang reports.html trong dự án này(ví dụ như tác dụng là gì, dùng để làm gì, mục đích là gì).
+```
+
+**Lượt hỏi 2 (Lệnh thực thi cải tiến toàn diện):**
+```markdown
+Từ những phân tích và đề xuất cải tiến bạn đã diễn giải ở phía trên. Hãy thực hiện chỉnh sửa lại, cải tiến sao cho trang 5 hoạt động một cách chuyên nghiệp
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Nghiên cứu sâu video thao tác người dùng (`TRANG5.mp4`) & Phân tích hành vi (Cognitive Friction Points)**:
+  - Bóc tách từng frame video bằng `ffmpeg`: Nhận diện khoảnh khắc người dùng nhập phản hồi `"Chưa chỉnh lại font chữ"` tại thời điểm 01:35 vào trường kết quả công việc.
+  - Phát hiện 4 điểm ma sát trải nghiệm:
+    1. *Font Mismatch*: Các thẻ form control (`input`, `select`, `textarea`, `button`) không kế thừa font `Roboto` từ `body`.
+    2. *Header Redundancy*: Banner tiêu đề lớn bên dưới header App Shell làm lãng phí không gian hiển thị thông tin.
+    3. *Stopwatch tách rời ngữ cảnh*: Bấm giờ tự do không liên kết với thẻ công việc (Card-Centric), khác với chuẩn Trello + Harvest/Chronos.
+    4. *Lệch bước quy đổi thời gian*: Đồng hồ hiển thị 0.00h nhưng khi bấm "Dừng & Điền" lại ra 0.05h do fallback làm tròn chưa đồng bộ.
+    5. *Thiếu trực quan hóa phân bổ (Visual Analytics)*: Chỉ có bảng số liệu thuần túy, chưa có biểu đồ phân bổ thời gian dự án và cống hiến thành viên.
+- **Hiện thực hóa cải tiến toàn diện vào mã nguồn**:
+  - **Cập nhật [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) (Mục 14)**:
+    + Áp dụng quy tắc font cưỡng chế: `.page-reports input, select, textarea, button, table, th, td { font-family: 'Roboto', sans-serif !important; }`.
+    + Bổ sung `.font-mono-numbers` với `'Roboto Mono'` cho toàn bộ số đo KPI và thời gian.
+    + Thêm hệ Token cho Date Filter Chips (`.filter-date-chip`, `.filter-date-chip.is-active`) và Visual Analytics Bars (`.analytics-progress-track`, `.analytics-progress-fill`).
+  - **Tái cấu trúc [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html)**:
+    + Loại bỏ dải banner tiêu đề thừa, thay thế bằng Action Bar chuẩn SaaS: Bộ lọc chu kỳ nhanh (`Tất cả`, `Hôm nay`, `Tuần này`, `Tháng này`), huy hiệu `Cloud Synced`, nút Làm mới và nút Xuất CSV.
+    + Bổ sung Module **Visual Analytics Breakdown (Trello Dashboard Style)** gồm 2 Card: *Phân Bổ Thời Gian Theo Dự Án* và *Đóng Góp Của Từng Thành Viên* dựng bằng 100% Pure CSS/Tailwind.
+    + Nâng cấp Stopwatch Card với bộ chọn Task trực tiếp (`#stopwatchTaskSelect`) kèm Banner thông báo task đang chạy (`#stopwatchActiveTaskBanner`).
+    + Tinh chỉnh trường số giờ: `step="0.01" min="0.01"` giúp khớp hoàn toàn với số đo thời gian thực.
+  - **Nâng cấp động cơ [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js)**:
+    + Thiết lập đồng bộ 2 chiều (`stopwatchTaskSelect` $\leftrightarrow$ `logTaskId`).
+    + Công thức quy đổi giờ thập phân chính xác tuyệt đối: $\text{decimalHours} = +(\text{totalSeconds} / 3600).\text{toFixed}(2)$, bước nhảy $0.01\text{h}$ (tương đương 36 giây).
+    + Xây dựng phân hệ `AnalyticsController`: Tính toán tỷ trọng thời gian và hiển thị thanh tiến độ phần trăm theo mã màu dự án và thành viên.
+    + Xây dựng tiện ích `DateUtils`: Hỗ trợ lọc theo chu kỳ `TODAY`, `WEEK`, `MONTH`, `ALL`, cập nhật đồng thời Bảng, KPI Count-up và Biểu đồ phân bổ.
+    + Kiểm tra cú pháp an toàn với `node -c js/reports.js` đạt 100% không lỗi.
+
+---
+
+## TỔNG KẾT TÀI SẢN MÃ NGUỒN ĐÃ HOÀN THIỆN TOÀN BỘ PHÂN HỆ THÀNH VIÊN B (TRANG 3, 4 & 5)
 
 | Tên Tệp | Đường Dẫn | Trạng Thái | Mô Tả Nghiệp Vụ |
 | :--- | :--- | :--- | :--- |
-| **`board.html`** | [`board.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/board.html) | Hoàn thành 100% | Giao diện Bảng Kanban 3 cột, App Shell động, bộ lọc Glow/Shadow, Modal tạo việc, Toast container |
-| **`js/kanban.js`** | [`js/kanban.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/kanban.js) | Hoàn thành 100% | Động cơ Drag & Drop 60fps, Touch 1-chạm, Count-up KPI, Highlight từ khóa, Loading state, Sync `TASKFLOW_DATA` |
-| **`timeline.html`** | [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html) | Hoàn thành 100% | Giao diện Timeline Gantt Chart, Font Roboto, bảng màu Modern SaaS, khung canvas cuộn 2 chiều |
-| **`js/timeline.js`** | [`js/timeline.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/timeline.js) | Hoàn thành 100% | Động cơ CSS Grid thuần, kỹ thuật Tone-on-tone progress fill, Milestone Diamond, Today Line #EF4444 |
-| **`css/styles.css`** | [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) | Cập nhật mục 12 & 13 | Hệ quy chuẩn màu Modern SaaS, font Roboto, ghost outline, milestone diamond, today line #EF4444 |
-| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/TRANG4-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Cập nhật Turn 8 | Nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B (Trang 3 & Trang 4) |
+| **`board.html`** | [`board.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/board.html) | Hoàn thành 100% | Giao diện Bảng Kanban 3 cột, App Shell động, bộ lọc Glow/Shadow, Modal tạo việc, Toast container |
+| **`js/kanban.js`** | [`js/kanban.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/kanban.js) | Hoàn thành 100% | Động cơ Drag & Drop 60fps, Touch 1-chạm, Count-up KPI, Highlight từ khóa, Loading state, Sync `TASKFLOW_DATA` |
+| **`timeline.html`** | [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html) | Hoàn thành 100% | Giao diện Timeline Gantt Chart, Font Roboto, bảng màu Modern SaaS, khung canvas cuộn 2 chiều |
+| **`js/timeline.js`** | [`js/timeline.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/timeline.js) | Hoàn thành 100% | Động cơ CSS Grid thuần, kỹ thuật Tone-on-tone progress fill, Milestone Diamond, Today Line #EF4444 |
+| **`reports.html`** | [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html) | Nâng cấp Turn 12 | Trello-Grade Dashboard, Khắc phục lỗi Font Roboto, Action Bar tinh gọn, Visual Analytics, Task-Centric Stopwatch |
+| **`js/reports.js`** | [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js) | Nâng cấp Turn 12 | Đồng bộ 2 chiều Task-Stopwatch, quy đổi 0.01h tuyệt đối, Bộ lọc chu kỳ (Hôm nay/Tuần/Tháng), Biểu đồ Pure CSS |
+| **`css/styles.css`** | [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) | Cập nhật mục 14 | Ép font Roboto toàn diện form control, Tokens Date Chips, thanh Progress Analytics |
+| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Cập nhật Turn 12 | Toàn văn nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B (Trang 3, 4 & 5) |

@@ -1948,3 +1948,258 @@ body.light-theme .gantt-popover {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
 }
+
+/* ==========================================================================
+   14. TRANG 5: BÁO CÁO & TIME-TRACKER TỰ ĐỘNG (REPORTS & TIMESHEET STYLES)
+   Tuân thủ: Rubric học phần, colorweb.md, skill.md và ai_detected.md
+   ========================================================================== */
+
+/* 14.1 Quy chuẩn Typography Font Roboto toàn trang & ép triệt để form controls */
+.page-reports,
+.page-reports body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.page-reports input,
+.page-reports select,
+.page-reports textarea,
+.page-reports button,
+.page-reports table,
+.page-reports th,
+.page-reports td,
+.page-reports label {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* 14.2 Stopwatch Console Digital Display & Số đo Mono */
+.stopwatch-digital-clock,
+.font-mono-numbers {
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: 0.05em;
+}
+
+@keyframes timerPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.stopwatch-running-glow {
+  animation: timerPulseRing 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+}
+
+.dark .stopwatch-running-glow {
+  border-color: rgba(129, 140, 248, 0.5) !important;
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.25);
+}
+
+/* 14.3 Nút bấm điều khiển bấm giờ & xúc giác Fitts's Law */
+.btn-stopwatch-action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  cursor: pointer;
+}
+
+.btn-stopwatch-action:active {
+  transform: scale(0.96);
+}
+
+/* 14.4 Trạng thái đồng bộ Google Sheets Cloud Badge */
+.badge-sheets-synced {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.dark .badge-sheets-synced {
+  background-color: rgba(16, 185, 129, 0.18);
+  color: #34D399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* 14.5 Badge Blockers cảnh báo rủi ro */
+.badge-blocker-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(244, 63, 94, 0.1);
+  color: #E11D48;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.dark .badge-blocker-alert {
+  background: rgba(244, 63, 94, 0.18);
+  color: #FB7185;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.badge-blocker-none {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(148, 163, 184, 0.1);
+  color: #64748B;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.dark .badge-blocker-none {
+  background: rgba(148, 163, 184, 0.08);
+  color: #94A3B8;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 14.6 Huy hiệu số giờ cống hiến */
+.badge-hours-spent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-feature-settings: "tnum" 1;
+  background: rgba(99, 102, 241, 0.1);
+  color: #4F46E5;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.dark .badge-hours-spent {
+  background: rgba(99, 102, 241, 0.18);
+  color: #818CF8;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* 14.7 Tối ưu bảng dữ liệu Timesheet phẳng & chuẩn WCAG */
+.timesheet-table-container {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.timesheet-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.timesheet-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timesheet-table-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
+.timesheet-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #F1F5F9;
+}
+
+.dark .timesheet-table th {
+  background: #0F172A;
+}
+
+/* 14.8 Hiệu ứng nháy sáng cập nhật KPI */
+.kpi-stat-flash {
+  animation: kpiFlashAnim 0.75s ease-out;
+}
+
+@keyframes kpiFlashAnim {
+  0% {
+    transform: scale(1.04);
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* 14.9 Quick Date Filter Chips & Trello Style Pills */
+.filter-date-chip {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.6);
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dark .filter-date-chip {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94A3B8;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.filter-date-chip:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: #4F46E5;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.dark .filter-date-chip:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: #A5B4FC;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.filter-date-chip.is-active {
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
+  color: #FFFFFF !important;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* 14.10 Visual Analytics CSS Bars */
+.analytics-progress-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.15);
+  overflow: hidden;
+  position: relative;
+}
+
+.dark .analytics-progress-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.analytics-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
