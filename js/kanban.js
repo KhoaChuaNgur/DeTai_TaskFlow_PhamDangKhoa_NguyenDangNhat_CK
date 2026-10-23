@@ -1285,6 +1285,8 @@
       } else if (prevStatus === 'doing' && targetStatus === 'todo') {
         task.timerStartedAt = null;
         task.isTracking = false;
+      }
+
       // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT KHI CHUYỂN SANG DONE (DEFINITION OF DONE GATE)
       // Bắt buộc phải có Link sản phẩm/nghiệm thu hợp lệ mới được chuyển sang Đã hoàn thành
       if (targetStatus === 'done') {
