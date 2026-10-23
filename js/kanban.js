@@ -257,6 +257,8 @@
           startDateTime: t.startDateTime || (t.startDate ? `${t.startDate}T08:00` : '2026-10-20T08:00'),
           dueDateTime: t.dueDateTime || (t.dueDate ? `${t.dueDate}T18:00` : '2026-10-25T18:00'),
           spentHours: typeof t.spentHours === 'number' ? t.spentHours : 0,
+          timerStartedAt: t.timerStartedAt || (t.status === 'doing' ? (Date.now() - 15 * 60 * 1000) : null),
+          isTracking: t.isTracking || (t.status === 'doing'),
           estimatedHours: typeof t.estimatedHours === 'number' ? t.estimatedHours : 8,
           tags: Array.isArray(t.tags) ? t.tags : ['Sprint'],
           subtasks: subtasks,
@@ -583,6 +585,32 @@
       this.populateModalDropdowns();
       this.bindEvents();
       this.render();
+      this.handleHashNavigation();
+      window.addEventListener('hashchange', () => this.handleHashNavigation());
+    },
+
+    /**
+     * Tự động cuộn đến thẻ công việc và mở modal chi tiết khi chuyển từ Timeline hoặc Reports qua URL hash (#taskId)
+     */
+    handleHashNavigation() {
+      const hash = window.location.hash ? window.location.hash.replace('#', '').trim() : '';
+      if (!hash) return;
+
+      const attemptFocus = (retry = 0) => {
+        const card = document.querySelector(`.task-card[data-task-id="${hash}"], [data-task-id="${hash}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('ring-4', 'ring-indigo-500', 'ring-offset-2', 'animate-pulse');
+          setTimeout(() => {
+            card.classList.remove('animate-pulse');
+          }, 3000);
+          this.openEditModal(hash);
+        } else if (retry < 6) {
+          setTimeout(() => attemptFocus(retry + 1), 200);
+        }
+      };
+
+      setTimeout(() => attemptFocus(), 250);
     },
 
     /**
@@ -945,6 +973,17 @@
         }
       }
 
+            // Huy hiệu tính giờ ngầm cho task Đang Làm (In-Progress) đồng bộ Trang 5
+      let liveTimerBadgeHtml = '';
+      if (task.status === 'doing') {
+        liveTimerBadgeHtml = `
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 animate-pulse" title="Đang tự động tính giờ ngầm cho Trang 5 (Reports)">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
+            ⏱️ Đang tính giờ
+          </span>
+        `;
+      }
+
       let approvalBadgeHtml = '';
       if (task.status === 'done') {
         if (task.evidence?.isApproved) {
@@ -1036,6 +1075,7 @@
             ${checklistBadgeHtml}
             ${evidenceBadgeHtml}
             ${approvalBadgeHtml}
+            ${liveTimerBadgeHtml}
             ${commentsBadgeHtml}
           </div>
 
@@ -1169,6 +1209,84 @@
       const prevStatus = task.status;
       if (prevStatus === targetStatus) return;
 
+      const currentUser = this.getCurrentUser();
+      const nowMs = Date.now();
+      let autoLoggedHours = 0;
+
+      // =========================================================================
+      // ĐỒNG BỘ TÍNH GIỜ TỰ ĐỘNG VỚI TRANG 5 (REPORTS & TIME-TRACKER)
+      // 1. Kéo sang "doing" (In-Progress): Tự động kích hoạt tính giờ ngầm
+      // 2. Kéo sang "done" (Đã hoàn thành): Tự động dừng tính giờ và chốt giờ
+      // 3. Kéo về "todo": Dừng tính giờ
+      // =========================================================================
+      if (targetStatus === 'doing') {
+        task.timerStartedAt = nowMs;
+        task.isTracking = true;
+      } else if (prevStatus === 'doing' && targetStatus === 'done') {
+        const startMs = task.timerStartedAt || (nowMs - 15 * 60 * 1000);
+        const elapsedMs = Math.max(0, nowMs - startMs);
+        autoLoggedHours = +(elapsedMs / 3600000).toFixed(2);
+        if (autoLoggedHours <= 0) autoLoggedHours = 0.01;
+
+        task.spentHours = +((parseFloat(task.spentHours) || 0) + autoLoggedHours).toFixed(2);
+        task.timerStartedAt = null;
+        task.isTracking = false;
+
+        // Tự động sinh bản ghi chấm công vào TimeLogs của Trang 5
+        try {
+          let timeLogs = [];
+          if (window.TaskFlowStorage && typeof window.TaskFlowStorage.get === 'function') {
+            timeLogs = window.TaskFlowStorage.get('taskflow_time_logs', []);
+          }
+          if (!Array.isArray(timeLogs) || timeLogs.length === 0) {
+            const rawBundle = localStorage.getItem('TASKFLOW_DATA');
+            const bundle = rawBundle ? JSON.parse(rawBundle) : {};
+            timeLogs = Array.isArray(bundle.timeLogs) ? bundle.timeLogs : [];
+          }
+
+          const projects = KanbanData.getProjects();
+          const proj = projects.find(p => p.id === task.projectId);
+
+          const autoLog = {
+            id: 'log-' + Date.now(),
+            taskId: task.id,
+            taskTitle: task.title,
+            projectId: task.projectId || '',
+            projectName: proj ? proj.name : 'Chung',
+            projectColor: proj ? (proj.color || '#6366F1') : '#6366F1',
+            assigneeName: currentUser.name || (task.assignee ? task.assignee.name : 'Thành viên'),
+            assigneeAvatar: currentUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
+            hoursSpent: autoLoggedHours,
+            date: new Date().toISOString().slice(0, 10),
+            workResult: `[Tự động từ Kanban] Đã hoàn thành công việc và chốt ${autoLoggedHours}h làm việc.`,
+            blockers: 'Không có',
+            syncedToSheets: true,
+            createdAt: new Date().toISOString()
+          };
+
+          timeLogs.unshift(autoLog);
+
+          if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
+            window.TaskFlowStorage.set('taskflow_time_logs', timeLogs);
+          } else {
+            localStorage.setItem('taskflow_time_logs', JSON.stringify(timeLogs));
+            const rawBundle = localStorage.getItem('TASKFLOW_DATA');
+            const bundle = rawBundle ? JSON.parse(rawBundle) : {};
+            bundle.timeLogs = timeLogs;
+            localStorage.setItem('TASKFLOW_DATA', JSON.stringify(bundle));
+          }
+
+          if (window.SheetsSync && typeof window.SheetsSync.sendTimeLog === 'function') {
+            window.SheetsSync.sendTimeLog(autoLog);
+          }
+        } catch (err) {
+          console.error('[Kanban] Lỗi khi tạo timeLog tự động:', err);
+        }
+      } else if (prevStatus === 'doing' && targetStatus === 'todo') {
+        task.timerStartedAt = null;
+        task.isTracking = false;
+      }
+
       // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT KHI CHUYỂN SANG DONE (DEFINITION OF DONE GATE)
       // Bắt buộc phải có Link sản phẩm/nghiệm thu hợp lệ mới được chuyển sang Đã hoàn thành
       if (targetStatus === 'done') {
@@ -1186,6 +1304,13 @@
 
       task.status = targetStatus;
       KanbanData.saveTasks(tasks);
+
+      // Kích hoạt sự kiện toàn cục để trang Reports đang mở cập nhật tức thì
+      try {
+        window.dispatchEvent(new CustomEvent('taskflow_timer_updated', {
+          detail: { taskId, targetStatus, task, autoLoggedHours }
+        }));
+      } catch (e) {}
 
       const progressResult = recalculateProjectProgress(task.projectId);
       this.render();
@@ -1206,7 +1331,13 @@
       const projName = progressResult?.project?.name || 'Dự án';
       const progressText = progressResult ? ` • Tiến độ ${projName}: ${progressResult.progress}%` : '';
 
-      showToast(`Đã chuyển sang "${statusLabels[targetStatus]}"${progressText}`, 'success');
+      if (targetStatus === 'doing') {
+        showToast(`⚡ [Tự động tính giờ] Đã kích hoạt tính giờ ngầm cho: "${task.title}"!`, 'info');
+      } else if (prevStatus === 'doing' && targetStatus === 'done') {
+        showToast(`✅ [Tự động chốt giờ] Đã chốt ${autoLoggedHours}h làm việc vào Báo cáo & Time-tracker!`, 'success');
+      } else {
+        showToast(`Đã chuyển sang "${statusLabels[targetStatus]}"${progressText}`, 'success');
+      }
 
       // Tự động ghi nhận vào Nhật ký kiểm toán (Audit Trail)
       if (window.TaskFlowStorage && typeof window.TaskFlowStorage.logActivity === 'function') {
