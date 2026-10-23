@@ -1,6 +1,6 @@
-// js/layout.js - Quản lý App Shell (Sidebar, Header, Active Nav) dùng chung 100%
+// js/layout.js - Quản lý App Shell (Sidebar, Header, Active Nav, Session Countdown & Unified Toast)
 const AppLayout = {
-  // Cấu hình danh sách menu
+  // Cấu hình danh sách menu (Giữ nguyên theo quy chuẩn phân chia nhiệm vụ của nhóm)
   navItems: [
     { title: "Dashboard", href: "index.html", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
     { title: "Dự Án", href: "projects.html", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
@@ -16,6 +16,7 @@ const AppLayout = {
     this.renderSidebar();
     this.renderHeader(pageTitle, pageDesc);
     this.bindEvents();
+    this.updateUserProfile();
   },
 
   renderSidebar() {
@@ -66,7 +67,7 @@ const AppLayout = {
             <p id="userName" class="text-xs font-bold text-slate-900 dark:text-white truncate">Phạm Đăng Khoa</p>
             <p id="userRole" class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-wider font-bold">Admin</p>
           </div>
-          <button id="btnLogout" title="Đăng xuất" class="text-slate-400 hover:text-rose-500 transition-colors p-1">
+          <button id="btnLogout" title="Đăng xuất" class="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           </button>
         </div>
@@ -87,13 +88,13 @@ const AppLayout = {
 
       <div class="flex items-center gap-4">
         <!-- Session Countdown (Banking style) -->
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
+        <div id="sessionBadge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-medium transition-all">
+          <span id="sessionPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
           <span>Phiên: <b id="sessionCountdown" class="font-bold">05:00</b></span>
         </div>
 
         <!-- Dark/Light Theme Button -->
-        <button id="themeToggleBtn" class="p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300">
+        <button id="themeToggleBtn" aria-label="Đổi giao diện" class="p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300 cursor-pointer">
           <svg id="sunIcon" class="w-4 h-4 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
           <svg id="moonIcon" class="w-4 h-4 block dark:hidden text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
         </button>
@@ -101,8 +102,7 @@ const AppLayout = {
     `;
   },
 
-  bindEvents() {
-    // Cập nhật thông tin user từ Auth nếu có
+  updateUserProfile() {
     const authService = window.Auth || window.TaskFlowAuth;
     if (authService && typeof authService.getCurrentUser === 'function') {
       const currentUser = authService.getCurrentUser();
@@ -111,28 +111,50 @@ const AppLayout = {
         const roleEl = document.getElementById("userRole");
         const avatarEl = document.getElementById("userAvatar");
         if (nameEl && currentUser.name) nameEl.textContent = currentUser.name;
-        if (roleEl && currentUser.role) roleEl.textContent = currentUser.role;
+        if (roleEl && currentUser.role) roleEl.textContent = currentUser.role.toUpperCase();
         if (avatarEl && currentUser.avatar) avatarEl.src = currentUser.avatar;
       }
     }
+  },
+
+  bindEvents() {
+    this.updateUserProfile();
 
     // Lắng nghe đếm ngược nhịp tim phiên ngân hàng từ auth.js
     window.addEventListener("sessionTick", (e) => {
       const countdownEl = document.getElementById("sessionCountdown");
-      if (countdownEl && e.detail && typeof e.detail.remainingSeconds === "number") {
-        const mins = String(Math.floor(e.detail.remainingSeconds / 60)).padStart(2, "0");
-        const secs = String(e.detail.remainingSeconds % 60).padStart(2, "0");
-        countdownEl.textContent = `${mins}:${secs}`;
+      const sessionBadge = document.getElementById("sessionBadge");
+      const pulseDot = document.getElementById("sessionPulseDot");
+
+      if (countdownEl && e.detail) {
+        if (e.detail.formatted) {
+          countdownEl.textContent = e.detail.formatted;
+        } else if (typeof e.detail.remainingSeconds === "number") {
+          const mins = String(Math.floor(e.detail.remainingSeconds / 60)).padStart(2, "0");
+          const secs = String(e.detail.remainingSeconds % 60).padStart(2, "0");
+          countdownEl.textContent = `${mins}:${secs}`;
+        }
+
+        // Cảnh báo thị giác khi phiên còn dưới 1 phút (60 giây)
+        if (typeof e.detail.remainingSeconds === "number" && e.detail.remainingSeconds <= 60) {
+          if (sessionBadge) {
+            sessionBadge.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs bg-rose-500/10 text-rose-500 border border-rose-500/30 font-bold transition-all";
+          }
+          if (pulseDot) {
+            pulseDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+          }
+        }
       }
     });
 
     const btnTheme = document.getElementById("themeToggleBtn");
     if (btnTheme) {
       btnTheme.addEventListener("click", () => {
-        if (window.TaskFlowStorage && TaskFlowStorage.toggleTheme) {
+        if (window.TaskFlowStorage && typeof TaskFlowStorage.toggleTheme === "function") {
           TaskFlowStorage.toggleTheme();
         } else {
           const isDark = document.documentElement.classList.toggle("dark");
+          localStorage.setItem("taskflow_theme", isDark ? "dark" : "light");
           localStorage.setItem("TASKFLOW_THEME", isDark ? "dark" : "light");
         }
       });
@@ -150,4 +172,61 @@ const AppLayout = {
   }
 };
 
+/**
+ * ==============================================================================
+ * UNIFIED GLASSMORPHISM TOAST NOTIFICATION ENGINE
+ * Duy nhất một Toast Container trong DOM (tái sử dụng #toastContainer nếu có)
+ * ==============================================================================
+ */
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    container.setAttribute('aria-live', 'polite');
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+  } else {
+    container.style.zIndex = '9999';
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast-item';
+
+  const icons = {
+    success: `<span class="text-emerald-500 flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></span>`,
+    info: `<span class="text-indigo-500 flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>`,
+    warning: `<span class="text-amber-500 flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></span>`,
+    error: `<span class="text-rose-500 flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></span>`
+  };
+
+  toast.innerHTML = `
+    ${icons[type] || icons.success}
+    <div class="flex-1 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100">
+      ${message}
+    </div>
+    <button type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition-colors cursor-pointer" title="Đóng">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  `;
+
+  const closeBtn = toast.querySelector('button');
+  const dismissToast = () => {
+    toast.classList.add('is-dismissing');
+    setTimeout(() => toast.remove(), 280);
+  };
+
+  if (closeBtn) closeBtn.addEventListener('click', dismissToast);
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    if (toast.parentElement) dismissToast();
+  }, 3800);
+}
+
+// Đăng ký toàn cục Toast Engine
+window.showToast = showToast;
+window.TaskFlowToast = { show: showToast };
+AppLayout.showToast = showToast;
 window.AppLayout = AppLayout;

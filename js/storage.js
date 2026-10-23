@@ -12,16 +12,21 @@
   'use strict';
 
   /**
-   * Bộ khóa định danh cho LocalStorage (Namespaced Keys tránh xung đột)
+   * Bộ khóa định danh cho LocalStorage (Namespaced Keys tránh xung đột & đồng bộ toàn hệ thống)
    */
   const STORAGE_KEYS = Object.freeze({
     THEME: 'taskflow_theme',
+    LEGACY_THEME: 'TASKFLOW_THEME',
     PROJECTS: 'taskflow_projects',
     TASKS: 'taskflow_tasks',
     MEMBERS: 'taskflow_members',
     TIME_LOGS: 'taskflow_time_logs',
-    CURRENT_USER: 'taskflow_current_user',
-    SESSION: 'taskflow_session_meta'
+    CURRENT_USER: 'currentUser',
+    LEGACY_USER: 'TASKFLOW_USER',
+    NAMESPACED_USER: 'taskflow_current_user',
+    SESSION: 'TASKFLOW_SESSION',
+    SESSION_META: 'taskflow_session_meta',
+    TASKFLOW_DATA: 'TASKFLOW_DATA'
   });
 
   /**
@@ -45,6 +50,17 @@
       try {
         const item = window.localStorage.getItem(key);
         if (item === null || item === undefined) {
+          // Nếu không tìm thấy ở subkey riêng, thử tìm trong TASKFLOW_DATA bundle
+          if (key === STORAGE_KEYS.PROJECTS || key === STORAGE_KEYS.TASKS || key === STORAGE_KEYS.MEMBERS || key === STORAGE_KEYS.TIME_LOGS) {
+            const rawBundle = window.localStorage.getItem(STORAGE_KEYS.TASKFLOW_DATA);
+            if (rawBundle) {
+              const bundle = JSON.parse(rawBundle);
+              if (key === STORAGE_KEYS.PROJECTS && Array.isArray(bundle.projects)) return bundle.projects;
+              if (key === STORAGE_KEYS.TASKS && Array.isArray(bundle.tasks)) return bundle.tasks;
+              if (key === STORAGE_KEYS.MEMBERS && Array.isArray(bundle.members)) return bundle.members;
+              if (key === STORAGE_KEYS.TIME_LOGS && Array.isArray(bundle.timeLogs)) return bundle.timeLogs;
+            }
+          }
           return defaultValue;
         }
         return JSON.parse(item);
@@ -55,10 +71,10 @@
     },
 
     /**
-     * Ghi dữ liệu vào LocalStorage với JSON.stringify an toàn
+     * Ghi dữ liệu vào LocalStorage với JSON.stringify an toàn & TỰ ĐỘNG ĐỒNG BỘ 2 CHIỀU
      * @param {string} key - Tên khóa lưu trữ
      * @param {*} value - Dữ liệu cần lưu
-     * @returns {boolean} True nếu lưu thành công, ngược lại False (VD: QuotaExceeded)
+     * @returns {boolean} True nếu lưu thành công
      */
     set(key, value) {
       if (!key || typeof key !== 'string') {
@@ -69,6 +85,41 @@
       try {
         const serializedValue = JSON.stringify(value);
         window.localStorage.setItem(key, serializedValue);
+
+        // Tự động đồng bộ hai chiều với key tổng hợp TASKFLOW_DATA
+        if ([STORAGE_KEYS.PROJECTS, STORAGE_KEYS.TASKS, STORAGE_KEYS.MEMBERS, STORAGE_KEYS.TIME_LOGS].includes(key)) {
+          let bundle = {};
+          try {
+            const rawBundle = window.localStorage.getItem(STORAGE_KEYS.TASKFLOW_DATA);
+            bundle = rawBundle ? JSON.parse(rawBundle) : {};
+          } catch (e) {
+            bundle = {};
+          }
+
+          if (key === STORAGE_KEYS.PROJECTS) bundle.projects = value;
+          if (key === STORAGE_KEYS.TASKS) bundle.tasks = value;
+          if (key === STORAGE_KEYS.MEMBERS) bundle.members = value;
+          if (key === STORAGE_KEYS.TIME_LOGS) bundle.timeLogs = value;
+
+          window.localStorage.setItem(STORAGE_KEYS.TASKFLOW_DATA, JSON.stringify(bundle));
+        }
+
+        // Tự động đồng bộ hai chiều nếu ghi trực tiếp vào TASKFLOW_DATA
+        if (key === STORAGE_KEYS.TASKFLOW_DATA && typeof value === 'object' && value !== null) {
+          if (Array.isArray(value.projects)) {
+            window.localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(value.projects));
+          }
+          if (Array.isArray(value.tasks)) {
+            window.localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(value.tasks));
+          }
+          if (Array.isArray(value.members)) {
+            window.localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(value.members));
+          }
+          if (Array.isArray(value.timeLogs)) {
+            window.localStorage.setItem(STORAGE_KEYS.TIME_LOGS, JSON.stringify(value.timeLogs));
+          }
+        }
+
         return true;
       } catch (error) {
         console.error(`[TaskFlowStorage.set] Lỗi tuần tự hóa hoặc hết hạn mức lưu trữ cho khóa "${key}":`, error);
@@ -114,37 +165,37 @@
 
   /**
    * ==========================================================================
-   * 2. DỮ LIỆU MẪU CHUẨN DOANH NGHIỆP (ANTI-AI & THỰC TẾ)
-   * Phù hợp quy chuẩn ai_detected.md: Tên công việc công nghệ cụ thể,
-   * nhân sự thật (Phạm Đăng Khoa & Nguyễn Đăng Nhật), đủ 3 trạng thái Kanban.
+   * 2. DỮ LIỆU KHỞI TẠO MẪU BAN ĐẦU (SEED DATA CHUẨN RUBRIC)
    * ==========================================================================
    */
   const SEED_DATA = {
-    // 2 Dự án công nghệ thực tế
+    // 2 Dự án mẫu thực tế theo chuẩn Agile Sprint
     projects: [
       {
         id: 'proj-101',
-        name: 'TaskFlow Platform Core 2026',
-        code: 'TFP-2026',
-        description: 'Hệ thống quản lý công việc và tiến độ dự án 60fps với kiến trúc Modular Vanilla JS và Glassmorphism UI.',
+        name: 'Hệ Thống Thiết Kế UI/UX & Design Tokens',
+        code: 'PRJ-101',
+        category: 'Design System',
+        description: 'Định nghĩa biến màu sắc CSS theo chuẩn Deep Slate & Electric Neo-Violet, cấu phần Glassmorphism và tối ưu 60fps.',
         status: 'active',
-        progress: 68,
+        progress: 75,
         startDate: '2026-10-01',
-        deadline: '2026-11-20',
+        deadline: '2026-11-15T18:00',
         members: ['mem-01', 'mem-02'],
-        color: '#6366F1'
+        color: '#6366F1' // Indigo
       },
       {
         id: 'proj-102',
-        name: 'Cổng thanh toán & Tích hợp VNPay',
-        code: 'VNPAY-GW',
-        description: 'Xây dựng module thanh toán học phí/dịch vụ qua VNPay QR Code, bảo mật chữ ký điện tử SHA256 và IPN webhook.',
-        status: 'planning',
-        progress: 25,
-        startDate: '2026-10-15',
-        deadline: '2026-12-10',
-        members: ['mem-01', 'mem-02'],
-        color: '#8B5CF6'
+        name: 'Cổng Tích Hợp Thanh Toán Đa Kênh VNPay',
+        code: 'PRJ-102',
+        category: 'E-Commerce Core',
+        description: 'Tích hợp luồng IPN webhook thời gian thực, đối soát giao dịch tự động và mã hóa chữ ký SHA256 an toàn.',
+        status: 'active',
+        progress: 35,
+        startDate: '2026-10-12',
+        deadline: '2026-12-01T18:00',
+        members: ['mem-02'],
+        color: '#8B5CF6' // Neo-Violet
       }
     ],
 
@@ -155,8 +206,8 @@
         name: 'Phạm Đăng Khoa',
         role: 'Admin',
         title: 'Frontend Lead & System Architect',
-        email: 'khoa.pham@taskflow.dev',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=KhoaPham&backgroundColor=6366f1',
+        email: 'admin@taskflow.dev',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa',
         status: 'online'
       },
       {
@@ -164,8 +215,8 @@
         name: 'Nguyễn Đăng Nhật',
         role: 'Member',
         title: 'Backend & Cloud Infrastructure Dev',
-        email: 'nhat.nguyen@taskflow.dev',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NhatNguyen&backgroundColor=8b5cf6',
+        email: 'member@taskflow.dev',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
         status: 'online'
       }
     ],
@@ -247,8 +298,16 @@
       Storage.set(STORAGE_KEYS.MEMBERS, SEED_DATA.members);
       Storage.set(STORAGE_KEYS.TIME_LOGS, SEED_DATA.timeLogs);
 
+      const bundle = {
+        projects: SEED_DATA.projects,
+        tasks: SEED_DATA.tasks,
+        members: SEED_DATA.members,
+        timeLogs: SEED_DATA.timeLogs
+      };
+      window.localStorage.setItem(STORAGE_KEYS.TASKFLOW_DATA, JSON.stringify(bundle));
+
       console.info(
-        '%c[TaskFlowStorage]%c Đã khởi tạo cơ sở dữ liệu mẫu ban đầu thành công (2 Projects, 4 Tasks, 2 Members, 0 TimeLogs).',
+        '%c[TaskFlowStorage]%c Đã khởi tạo cơ sở dữ liệu mẫu ban đầu thành công (2 Projects, 4 Tasks, 2 Members, 0 TimeLogs) đồng bộ 2 chiều.',
         'color: #6366F1; font-weight: bold;',
         'color: inherit;'
       );
@@ -272,7 +331,7 @@
      * @returns {'dark'|'light'}
      */
     resolveTheme() {
-      const savedTheme = Storage.get(STORAGE_KEYS.THEME);
+      const savedTheme = Storage.get(STORAGE_KEYS.THEME) || window.localStorage.getItem(STORAGE_KEYS.LEGACY_THEME);
       if (savedTheme === 'dark' || savedTheme === 'light') {
         return savedTheme;
       }
@@ -337,6 +396,7 @@
     setTheme(targetTheme) {
       const theme = targetTheme === 'light' ? 'light' : 'dark';
       Storage.set(STORAGE_KEYS.THEME, theme);
+      window.localStorage.setItem(STORAGE_KEYS.LEGACY_THEME, theme);
       this.applyThemeToDOM(theme);
 
       // Phát sự kiện tùy biến themeChanged để các view/chart cập nhật lại màu sắc
