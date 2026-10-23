@@ -63,17 +63,67 @@
           }
         }
 
+        // Danh sách 2 thành viên chính thức theo rubric học phần và storage.js
+        const OFFICIAL_MEMBERS = [
+          {
+            id: 'mem-01',
+            name: 'Phạm Đăng Khoa',
+            role: 'Admin',
+            title: 'Frontend Lead & System Architect',
+            email: 'admin@taskflow.dev',
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa',
+            status: 'online'
+          },
+          {
+            id: 'mem-02',
+            name: 'Nguyễn Đăng Nhật',
+            role: 'Member',
+            title: 'Backend & Cloud Infrastructure Dev',
+            email: 'member@taskflow.dev',
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
+            status: 'online'
+          }
+        ];
+
+        // Đảm bảo ReportsState.members luôn có đầy đủ cả 2 thành viên
+        if (!Array.isArray(ReportsState.members) || ReportsState.members.length < 2) {
+          ReportsState.members = OFFICIAL_MEMBERS;
+          if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
+            window.TaskFlowStorage.set('taskflow_members', ReportsState.members);
+          }
+        }
+
+        // Đảm bảo luôn có ít nhất 1 nhật ký công việc của Nguyễn Đăng Nhật để cả 2 thành viên đều hiển thị đồng đều
+        const hasNhatLog = ReportsState.timeLogs.some(l => (l.assigneeName || '').includes('Nhật'));
+        if (!hasNhatLog) {
+          const today = new Date().toISOString().slice(0, 10);
+          const nhatSeedLog = {
+            id: 'log-seed-nhat-01',
+            taskId: 'task-002',
+            taskTitle: 'Thiết kế luồng thanh toán VNPay & xác thực Checksum IPN',
+            projectId: 'proj-102',
+            projectName: 'Hệ Thống Thanh Toán & Ví Điện Tử',
+            projectColor: '#0EA5E9',
+            assigneeName: 'Nguyễn Đăng Nhật',
+            assigneeAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
+            hoursSpent: 1.5,
+            date: today,
+            workResult: 'Hoàn thành tích hợp thuật toán mã hóa SHA256 tạo SecureHash và xác thực Checksum IPN cho cổng VNPay Sandbox',
+            blockers: 'Không có',
+            syncedToSheets: true,
+            createdAt: new Date().toISOString()
+          };
+          ReportsState.timeLogs.push(nhatSeedLog);
+          this.saveTimeLogs();
+          this.propagateSpentHoursToTask('task-002', 1.5);
+        }
+
         // Lấy người dùng hiện tại an toàn từ Auth Module
         if (window.Auth && typeof window.Auth.getCurrentUser === 'function') {
           ReportsState.currentUser = window.Auth.getCurrentUser();
         } else {
           const rawUser = window.localStorage.getItem('currentUser') || window.localStorage.getItem('TASKFLOW_USER');
-          ReportsState.currentUser = rawUser ? JSON.parse(rawUser) : {
-            id: 'mem-01',
-            name: 'Phạm Đăng Khoa',
-            role: 'Admin',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa'
-          };
+          ReportsState.currentUser = rawUser ? JSON.parse(rawUser) : OFFICIAL_MEMBERS[0];
         }
       } catch (err) {
         console.error('[Reports.DataEngine.loadAll] Lỗi khi nạp dữ liệu:', err);
@@ -227,8 +277,10 @@
         opt.value = task.id;
         const project = ReportsState.projects.find(p => p.id === task.projectId);
         const projectName = project ? project.name : 'Chung';
+        const assignee = ReportsState.members.find(m => m.id === task.assigneeId);
+        const assigneeText = assignee ? ` (${assignee.name})` : '';
         const statusLabel = task.status === 'doing' ? 'ĐANG LÀM' : (task.status === 'done' ? 'HOÀN THÀNH' : 'CHỜ LÀM');
-        opt.textContent = `[${statusLabel}] ${task.title} - (${projectName})`;
+        opt.textContent = `[${statusLabel}] ${task.title}${assigneeText} - (${projectName})`;
         if (task.id === ReportsState.selectedTaskId) {
           opt.selected = true;
         }
@@ -272,6 +324,12 @@
             formTaskSelect.value = val;
           }
           this.updateTaskBadge();
+
+          // Tự động đồng bộ người thực hiện sang Form nếu task có người phụ trách
+          const foundTask = ReportsState.tasks.find(t => t.id === val);
+          if (foundTask && foundTask.assigneeId) {
+            FormController.syncReportingUserByAssignee(foundTask.assigneeId);
+          }
         });
       }
     },
@@ -467,7 +525,8 @@
         btnIcon: document.getElementById('submitBtnIcon'),
         btnSpinner: document.getElementById('submitBtnSpinner'),
         userAvatar: document.getElementById('formUserAvatar'),
-        userName: document.getElementById('formUserName')
+        userName: document.getElementById('formUserName'),
+        reportingUserSelect: document.getElementById('selectReportingUser')
       };
 
       if (!this.dom.form) return;
@@ -483,6 +542,23 @@
       if (user) {
         if (this.dom.userName) this.dom.userName.textContent = user.name || 'Thành viên';
         if (this.dom.userAvatar && user.avatar) this.dom.userAvatar.src = user.avatar;
+        if (this.dom.reportingUserSelect && user.id) {
+          this.dom.reportingUserSelect.value = user.id;
+        }
+      }
+    },
+
+    syncReportingUserByAssignee(assigneeId) {
+      if (!assigneeId) return;
+      const member = ReportsState.members.find(m => m.id === assigneeId);
+      if (member) {
+        ReportsState.currentUser = member;
+        if (this.dom.userAvatar && member.avatar) {
+          this.dom.userAvatar.src = member.avatar;
+        }
+        if (this.dom.reportingUserSelect) {
+          this.dom.reportingUserSelect.value = member.id;
+        }
       }
     },
 
@@ -510,9 +586,11 @@
 
         const project = ReportsState.projects.find(p => p.id === task.projectId);
         const projectName = project ? project.name : 'Chung';
+        const assignee = ReportsState.members.find(m => m.id === task.assigneeId);
+        const assigneeText = assignee ? ` (${assignee.name})` : '';
         const statusLabel = task.status === 'doing' ? 'ĐANG LÀM' : (task.status === 'done' ? 'HOÀN THÀNH' : 'CHỜ LÀM');
 
-        opt.textContent = `[${statusLabel}] ${task.title} - (${projectName})`;
+        opt.textContent = `[${statusLabel}] ${task.title}${assigneeText} - (${projectName})`;
         if (task.id === ReportsState.selectedTaskId) {
           opt.selected = true;
         }
@@ -530,6 +608,21 @@
     bindEvents() {
       this.dom.form.addEventListener('submit', (e) => this.handleSubmit(e));
 
+      // Chuyển đổi người thực hiện báo cáo thủ công qua dropdown
+      if (this.dom.reportingUserSelect) {
+        this.dom.reportingUserSelect.addEventListener('change', (e) => {
+          const memId = e.target.value;
+          const chosen = ReportsState.members.find(m => m.id === memId);
+          if (chosen) {
+            ReportsState.currentUser = chosen;
+            if (this.dom.userAvatar && chosen.avatar) {
+              this.dom.userAvatar.src = chosen.avatar;
+            }
+            Toast.show(`Đã chuyển người thực hiện báo cáo: ${chosen.name}`, 'info');
+          }
+        });
+      }
+
       // Đồng bộ khi người dùng thay đổi dropdown trên form sang stopwatch
       if (this.dom.taskSelect) {
         this.dom.taskSelect.addEventListener('change', (e) => {
@@ -540,6 +633,12 @@
             stopwatchSelect.value = val;
           }
           StopwatchController.updateTaskBadge();
+
+          // Tự động chuyển đổi người báo cáo theo người phụ trách của task nếu có
+          const task = ReportsState.tasks.find(t => t.id === val);
+          if (task && task.assigneeId) {
+            this.syncReportingUserByAssignee(task.assigneeId);
+          }
         });
       }
     },
@@ -665,7 +764,35 @@
         memberCount: document.getElementById('analyticsMemberCount')
       };
 
+      this.bindEvents();
       this.render();
+    },
+
+    bindEvents() {
+      // Bấm vào hàng thành viên để lọc nhanh bảng nhật ký
+      if (this.dom.memberList) {
+        this.dom.memberList.addEventListener('click', (e) => {
+          const row = e.target.closest('[data-filter-member]');
+          if (row) {
+            const memberName = row.getAttribute('data-filter-member');
+            const memberSelect = document.getElementById('filterMember');
+            if (memberSelect) {
+              if (ReportsState.filters.member === memberName) {
+                ReportsState.filters.member = 'ALL';
+                memberSelect.value = 'ALL';
+                Toast.show('Đã hiển thị tất cả thành viên!', 'info');
+              } else {
+                ReportsState.filters.member = memberName;
+                memberSelect.value = memberName;
+                Toast.show(`Đang lọc nhật ký của: ${memberName}`, 'info');
+              }
+              TableController.render();
+              KPIController.updateMetrics(true);
+              this.render();
+            }
+          }
+        });
+      }
     },
 
     render() {
@@ -732,27 +859,49 @@
     renderMemberContribution(logs) {
       if (!this.dom.memberList) return;
 
-      if (!logs || logs.length === 0) {
-        this.dom.memberList.innerHTML = '<p class="text-xs text-slate-400 dark:text-slate-500 italic py-2">Chưa có dữ liệu thành viên trong chu kỳ này.</p>';
-        if (this.dom.memberCount) this.dom.memberCount.textContent = '0 thành viên';
-        return;
-      }
-
-      // Tổng hợp giờ theo thành viên
       const memberMap = {};
       let totalHours = 0;
 
-      logs.forEach(log => {
-        const name = log.assigneeName || 'Thành viên';
-        const avatar = log.assigneeAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-        const hours = parseFloat(log.hoursSpent) || 0;
+      // Đảm bảo luôn lấy danh sách đầy đủ 2 thành viên chính thức: Phạm Đăng Khoa & Nguyễn Đăng Nhật
+      const defaultMembers = [
+        { id: 'mem-01', name: 'Phạm Đăng Khoa', role: 'Admin', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa' },
+        { id: 'mem-02', name: 'Nguyễn Đăng Nhật', role: 'Member', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat' }
+      ];
 
-        if (!memberMap[name]) {
-          memberMap[name] = { name: name, avatar: avatar, hours: 0 };
-        }
-        memberMap[name].hours += hours;
-        totalHours += hours;
+      const members = (ReportsState.members && ReportsState.members.length >= 2)
+        ? ReportsState.members
+        : defaultMembers;
+
+      // 1. Khởi tạo đầy đủ trước cho mọi thành viên (kể cả khi chưa có log nào)
+      members.forEach(m => {
+        memberMap[m.name] = {
+          id: m.id,
+          name: m.name,
+          avatar: m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(m.name)}`,
+          role: m.role || 'Member',
+          hours: 0
+        };
       });
+
+      // 2. Tích lũy giờ từ logs theo chu kỳ lọc
+      if (Array.isArray(logs)) {
+        logs.forEach(log => {
+          const name = log.assigneeName || 'Thành viên';
+          const hours = parseFloat(log.hoursSpent) || 0;
+
+          if (!memberMap[name]) {
+            memberMap[name] = {
+              id: log.assigneeId || 'mem-custom',
+              name: name,
+              avatar: log.assigneeAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+              role: 'Thành viên',
+              hours: 0
+            };
+          }
+          memberMap[name].hours += hours;
+          totalHours += hours;
+        });
+      }
 
       const memberArr = Object.values(memberMap).sort((a, b) => b.hours - a.hours);
 
@@ -760,21 +909,34 @@
         this.dom.memberCount.textContent = `${memberArr.length} thành viên`;
       }
 
-      const html = memberArr.slice(0, 4).map(m => {
-        const pct = totalHours > 0 ? Math.round((m.hours / totalHours) * 100) : 0;
+      const html = memberArr.map(m => {
+        const pct = totalHours > 0 ? Math.round((m.hours / totalHours) * 100) : (m.hours > 0 ? 100 : 0);
+        const isNhat = m.name.includes('Nhật');
+        const gradientClass = isNhat
+          ? 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-500'
+          : 'bg-gradient-to-r from-emerald-500 to-teal-500';
+
+        const roleBadge = m.role === 'Admin'
+          ? '<span class="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Admin</span>'
+          : '<span class="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">Member</span>';
+
+        const isFiltered = ReportsState.filters.member === m.name;
+        const activeBorder = isFiltered ? 'ring-2 ring-indigo-500/60 bg-indigo-50/50 dark:bg-indigo-500/10' : '';
+
         return `
-          <div>
-            <div class="flex items-center justify-between text-xs mb-1">
-              <span class="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200 truncate max-w-[200px]">
-                <img src="${m.avatar}" alt="Avatar" class="w-4 h-4 rounded-full bg-indigo-500/10 object-cover flex-shrink-0" />
-                <span>${this.escapeHtml(m.name)}</span>
+          <div class="p-2 -mx-1.5 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/5 transition-all cursor-pointer group ${activeBorder}" data-filter-member="${this.escapeHtml(m.name)}" title="Bấm để lọc nhật ký của ${this.escapeHtml(m.name)}">
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200 truncate max-w-[200px]">
+                <img src="${m.avatar}" alt="Avatar" class="w-5 h-5 rounded-full bg-indigo-500/10 object-cover flex-shrink-0 ring-1 ring-slate-200 dark:ring-white/10" />
+                <span class="font-bold group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">${this.escapeHtml(m.name)}</span>
+                ${roleBadge}
               </span>
-              <span class="font-mono-numbers font-semibold text-slate-600 dark:text-slate-300">
+              <span class="font-mono-numbers font-semibold text-slate-700 dark:text-slate-300">
                 ${m.hours.toFixed(1)}h <span class="text-slate-400 text-[10px]">(${pct}%)</span>
               </span>
             </div>
             <div class="analytics-progress-track">
-              <div class="analytics-progress-fill bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${pct}%;"></div>
+              <div class="analytics-progress-fill ${gradientClass}" style="width: ${Math.max(pct, m.hours > 0 ? 3 : 0)}%;"></div>
             </div>
           </div>
         `;
@@ -835,7 +997,10 @@
         ReportsState.members.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.name;
-          opt.textContent = m.name;
+          opt.textContent = `${m.name} (${m.role || 'Member'})`;
+          if (m.name === ReportsState.filters.member) {
+            opt.selected = true;
+          }
           this.dom.filterMember.appendChild(opt);
         });
       }

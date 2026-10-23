@@ -362,10 +362,16 @@
                     <span>Ghi Nhận Kết Quả Công Việc (Timesheet Form)</span>
                   </h3>
 
-                  <!-- Người báo cáo hiện tại (móc nối với auth.js) -->
-                  <div id="formCurrentUserBadge" class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
-                    <img id="formUserAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa" alt="Avatar" class="w-4 h-4 rounded-full bg-indigo-500/20 object-cover" />
-                    <span id="formUserName" class="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">Phạm Đăng Khoa</span>
+                  <!-- Người báo cáo hiện tại (Hỗ trợ chuyển đổi nhanh giữa Phạm Đăng Khoa & Nguyễn Đăng Nhật) -->
+                  <div id="formCurrentUserBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs shadow-sm">
+                    <img id="formUserAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Khoa" alt="Avatar" class="w-5 h-5 rounded-full bg-indigo-500/20 object-cover flex-shrink-0 ring-1 ring-indigo-500/30" />
+                    <div class="flex items-center gap-1">
+                      <label for="selectReportingUser" class="text-[10px] text-slate-400 font-medium whitespace-nowrap hidden sm:inline">Báo cáo bởi:</label>
+                      <select id="selectReportingUser" class="bg-transparent font-bold text-slate-800 dark:text-slate-100 text-xs focus:outline-none cursor-pointer pr-1 border-b border-dashed border-indigo-400/50 hover:border-indigo-500 transition-colors">
+                        <option value="mem-01">Phạm Đăng Khoa (Admin)</option>
+                        <option value="mem-02">Nguyễn Đăng Nhật (Member)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

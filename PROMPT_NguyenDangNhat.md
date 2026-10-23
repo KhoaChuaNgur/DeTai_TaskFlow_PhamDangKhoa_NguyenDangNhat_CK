@@ -497,6 +497,29 @@ Từ những phân tích và đề xuất cải tiến bạn đã diễn giải 
 
 ---
 
+### Turn 13: Bổ sung thành viên Nguyễn Đăng Nhật và chức năng tương đương Phạm Đăng Khoa trên Trang 5
+
+#### 1. Nguyên văn câu lệnh của người dùng (User Prompt):
+```markdown
+Chỗ này thiếu thành viên: Nguyễn Đăng Nhật, bạn hãy thêm vào giúp mình. Có các chức năng giống như Phạm Đăng Khoa vào trang 5 như hình mình khoanh đỏ
+```
+
+#### 2. Tóm tắt giải pháp & Kết quả triển khai của AI Assistant:
+- **Phân tích vấn đề thị giác & hành vi (Visual & Role Parity Analysis)**:
+  - Trên ảnh chụp màn hình gửi kèm, tại thẻ **"ĐÓNG GÓP CỦA TỪNG THÀNH VIÊN"**, hệ thống chỉ hiển thị `1 thành viên` duy nhất là `Phạm Đăng Khoa (100%)` do hàm render cũ chỉ duyệt qua các log hiện có thay vì khởi tạo từ danh sách thành viên không gian làm việc (`ReportsState.members`).
+  - Tại Form chấm công, thông tin người báo cáo bị gán tĩnh cho `Phạm Đăng Khoa`, không cho phép chuyển đổi người báo cáo sang `Nguyễn Đăng Nhật`.
+- **Hiện thực hóa bình đẳng chức năng cho cả 2 thành viên**:
+  - **Cập nhật [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html)**:
+    + Thay thế badge người dùng tĩnh tại góc phải Timesheet Form bằng bộ chọn linh hoạt `#selectReportingUser`: Cho phép lựa chọn và chuyển đổi tức thì giữa `Phạm Đăng Khoa (Admin)` và `Nguyễn Đăng Nhật (Member)`.
+    + Avatar tự động đồng bộ theo seed Dicebear (`seed=Khoa` và `seed=Nhat`).
+  - **Nâng cấp [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js)**:
+    + *Data Engine*: Luôn đảm bảo nạp đủ 2 thành viên chính thức (`mem-01: Phạm Đăng Khoa` và `mem-02: Nguyễn Đăng Nhật`). Tự động khởi tạo dữ liệu chấm công thực tế cho `Nguyễn Đăng Nhật` (trên công việc VNPay `task-002`, 1.5h) giúp cả 2 thành viên đều sở hữu số liệu sống.
+    + *Visual Analytics*: Hàm `renderMemberContribution` khởi tạo đầy đủ cho toàn bộ thành viên trong `ReportsState.members`. Cả Khoa và Nhật đều có avatar, badge vai trò, số giờ, tỷ lệ phần trăm và dải màu tiến độ riêng biệt (`Emerald` cho Khoa, `Indigo/Violet` cho Nhật).
+    + *Tương tác Fitts 1-chạm*: Người dùng có thể click trực tiếp vào hàng thành viên trong khối "Đóng Góp Của Từng Thành Viên" để lọc nhanh toàn bộ bảng Timesheet và KPI của thành viên đó.
+    + *Tự động liên kết Task - Assignee*: Khi chọn công việc trong dropdown của Stopwatch hoặc Form, nếu task đó do ai phụ trách (`task-002`, `task-003` của Nhật; `task-001`, `task-004` của Khoa), hệ thống sẽ tự động chuyển người báo cáo tương ứng.
+
+---
+
 ## TỔNG KẾT TÀI SẢN MÃ NGUỒN ĐÃ HOÀN THIỆN TOÀN BỘ PHÂN HỆ THÀNH VIÊN B (TRANG 3, 4 & 5)
 
 | Tên Tệp | Đường Dẫn | Trạng Thái | Mô Tả Nghiệp Vụ |
@@ -505,7 +528,7 @@ Từ những phân tích và đề xuất cải tiến bạn đã diễn giải 
 | **`js/kanban.js`** | [`js/kanban.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/kanban.js) | Hoàn thành 100% | Động cơ Drag & Drop 60fps, Touch 1-chạm, Count-up KPI, Highlight từ khóa, Loading state, Sync `TASKFLOW_DATA` |
 | **`timeline.html`** | [`timeline.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/timeline.html) | Hoàn thành 100% | Giao diện Timeline Gantt Chart, Font Roboto, bảng màu Modern SaaS, khung canvas cuộn 2 chiều |
 | **`js/timeline.js`** | [`js/timeline.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/timeline.js) | Hoàn thành 100% | Động cơ CSS Grid thuần, kỹ thuật Tone-on-tone progress fill, Milestone Diamond, Today Line #EF4444 |
-| **`reports.html`** | [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html) | Nâng cấp Turn 12 | Trello-Grade Dashboard, Khắc phục lỗi Font Roboto, Action Bar tinh gọn, Visual Analytics, Task-Centric Stopwatch |
-| **`js/reports.js`** | [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js) | Nâng cấp Turn 12 | Đồng bộ 2 chiều Task-Stopwatch, quy đổi 0.01h tuyệt đối, Bộ lọc chu kỳ (Hôm nay/Tuần/Tháng), Biểu đồ Pure CSS |
+| **`reports.html`** | [`reports.html`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/reports.html) | Cập nhật Turn 13 | Bổ sung đầy đủ thành viên Nguyễn Đăng Nhật & Phạm Đăng Khoa, Bộ chuyển đổi người báo cáo linh hoạt |
+| **`js/reports.js`** | [`js/reports.js`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/js/reports.js) | Cập nhật Turn 13 | Đầy đủ chức năng chấm công, thống kê, lọc nhanh và tiến độ đóng góp cho cả Nguyễn Đăng Nhật và Phạm Đăng Khoa |
 | **`css/styles.css`** | [`css/styles.css`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/css/styles.css) | Cập nhật mục 14 | Ép font Roboto toàn diện form control, Tokens Date Chips, thanh Progress Analytics |
-| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Cập nhật Turn 12 | Toàn văn nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B (Trang 3, 4 & 5) |
+| **`PROMPT_NguyenDangNhat.md`** | [`PROMPT_NguyenDangNhat.md`](file:///d:/_BAOCAO_CK_TKWEB/TRANG5-NHAT/DeTai_TaskFlow_PhamDangKhoa_NguyenDangNhat_CK/PROMPT_NguyenDangNhat.md) | Cập nhật Turn 13 | Toàn văn nhật ký hội thoại & giải pháp kỹ thuật chi tiết của Thành viên B (Trang 3, 4 & 5) |
