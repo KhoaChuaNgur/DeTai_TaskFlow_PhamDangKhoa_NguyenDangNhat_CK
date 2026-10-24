@@ -245,6 +245,11 @@
           }
         }
 
+        const isDoing = (t.status || 'todo') === 'doing';
+        const resolvedTimerStart = isDoing
+          ? (Number(t.timerStartedAt) > 0 ? Number(t.timerStartedAt) : (Date.now() - 15 * 60 * 1000))
+          : null;
+
         return {
           id: t.id || 'task-' + Math.floor(100 + Math.random() * 900),
           projectId: t.projectId || 'proj-101',
@@ -257,8 +262,8 @@
           startDateTime: t.startDateTime || (t.startDate ? `${t.startDate}T08:00` : '2026-10-20T08:00'),
           dueDateTime: t.dueDateTime || (t.dueDate ? `${t.dueDate}T18:00` : '2026-10-25T18:00'),
           spentHours: typeof t.spentHours === 'number' ? t.spentHours : 0,
-          timerStartedAt: t.timerStartedAt || (t.status === 'doing' ? (Date.now() - 15 * 60 * 1000) : null),
-          isTracking: t.isTracking || (t.status === 'doing'),
+          timerStartedAt: resolvedTimerStart,
+          isTracking: isDoing,
           estimatedHours: typeof t.estimatedHours === 'number' ? t.estimatedHours : 8,
           tags: Array.isArray(t.tags) ? t.tags : ['Sprint'],
           subtasks: subtasks,
@@ -1252,6 +1257,21 @@
       const nowMs = Date.now();
       let autoLoggedHours = 0;
 
+      // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT KHI CHUYỂN SANG DONE (DEFINITION OF DONE GATE)
+      // Bắt buộc phải có Link sản phẩm/nghiệm thu hợp lệ mới được chuyển sang Đã hoàn thành
+      if (targetStatus === 'done') {
+        const hasDoneLink = Boolean(task.evidence && task.evidence.doneUrl && task.evidence.doneUrl.trim().length > 0);
+        if (!hasDoneLink) {
+          // KHÔNG CẬP NHẬT task.status và KHÔNG dừng đồng hồ sớm! Giữ nguyên vị trí ở cột trước đó
+          this.render(); // Snap thẻ về lại vị trí cũ ngay lập tức
+          showToast('⚠️ Bắt buộc phải có Link sản phẩm nghiệm thu để chuyển sang "Đã hoàn thành"!', 'warning');
+          setTimeout(() => {
+            this.openQuickEvidenceModal(task, 'done', { isMandatoryGate: true, fromStatus: prevStatus });
+          }, 150);
+          return;
+        }
+      }
+
       // =========================================================================
       // ĐỒNG BỘ TÍNH GIỜ TỰ ĐỘNG VỚI TRANG 5 (REPORTS & TIME-TRACKER)
       // 1. Kéo sang "doing" (In-Progress): Tự động kích hoạt tính giờ ngầm
@@ -1324,21 +1344,6 @@
       } else if (prevStatus === 'doing' && targetStatus === 'todo') {
         task.timerStartedAt = null;
         task.isTracking = false;
-      }
-
-      // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT KHI CHUYỂN SANG DONE (DEFINITION OF DONE GATE)
-      // Bắt buộc phải có Link sản phẩm/nghiệm thu hợp lệ mới được chuyển sang Đã hoàn thành
-      if (targetStatus === 'done') {
-        const hasDoneLink = Boolean(task.evidence && task.evidence.doneUrl && task.evidence.doneUrl.trim().length > 0);
-        if (!hasDoneLink) {
-          // KHÔNG CẬP NHẬT task.status! Giữ nguyên vị trí ở cột trước đó
-          this.render(); // Snap thẻ về lại vị trí cũ ngay lập tức
-          showToast('⚠️ Bắt buộc phải có Link sản phẩm nghiệm thu để chuyển sang "Đã hoàn thành"!', 'warning');
-          setTimeout(() => {
-            this.openQuickEvidenceModal(task, 'done', { isMandatoryGate: true, fromStatus: prevStatus });
-          }, 150);
-          return;
-        }
       }
 
       task.status = targetStatus;
@@ -2267,6 +2272,8 @@
           if (!this.currentEditingTaskId || !task) return;
 
           task.status = 'doing'; // Chuyển ngược về In-Progress
+          task.timerStartedAt = Date.now();
+          task.isTracking = true;
           if (!task.evidence) task.evidence = {};
           task.evidence.isApproved = false;
 
@@ -2375,12 +2382,18 @@
                   finalStatus = prevTask.status !== 'done' ? prevTask.status : 'doing';
                 }
 
+                const nextTimerStartedAt = finalStatus === 'doing'
+                  ? (prevTask.status === 'doing' && prevTask.timerStartedAt ? prevTask.timerStartedAt : Date.now())
+                  : null;
+
                 tasks[taskIndex] = {
                   ...prevTask,
                   title,
                   description,
                   projectId: finalProjectId,
                   status: finalStatus,
+                  timerStartedAt: nextTimerStartedAt,
+                  isTracking: finalStatus === 'doing',
                   priority: finalPriority,
                   assigneeId: finalAssigneeId,
                   assignee: finalAssignee,
@@ -2401,6 +2414,9 @@
                 };
                 targetTask = tasks[taskIndex];
                 KanbanData.saveTasks(tasks);
+                window.dispatchEvent(new CustomEvent('taskflow_timer_updated', {
+                  detail: { taskId: targetTask.id, status: finalStatus, timerStartedAt: targetTask.timerStartedAt }
+                }));
                 recalculateProjectProgress(projectId);
                 showToast(`Đã lưu công việc "${title}"!`, 'success');
               }
@@ -2417,6 +2433,8 @@
                 title,
                 description,
                 status: finalNewStatus,
+                timerStartedAt: finalNewStatus === 'doing' ? Date.now() : null,
+                isTracking: finalNewStatus === 'doing',
                 priority,
                 assigneeId,
                 assignee: { name: assigneeName, avatar: assigneeAvatar },
@@ -2439,6 +2457,9 @@
               };
               tasks.push(targetTask);
               KanbanData.saveTasks(tasks);
+              window.dispatchEvent(new CustomEvent('taskflow_timer_updated', {
+                detail: { taskId: targetTask.id, status: finalNewStatus, timerStartedAt: targetTask.timerStartedAt }
+              }));
               recalculateProjectProgress(projectId);
               showToast(`Đã thêm mới công việc "${title}"!`, 'success');
             }
@@ -2497,16 +2518,61 @@
               showToast('⚠️ Vui lòng nhập link sản phẩm bàn giao để hoàn tất!', 'error');
               return;
             }
+            if (task.status === 'doing') {
+              const nowMs = Date.now();
+              const startMs = task.timerStartedAt || (nowMs - 15 * 60 * 1000);
+              const elapsedMs = Math.max(0, nowMs - startMs);
+              let autoLoggedHours = +(elapsedMs / 3600000).toFixed(2);
+              if (autoLoggedHours <= 0) autoLoggedHours = 0.01;
+              task.spentHours = +((parseFloat(task.spentHours) || 0) + autoLoggedHours).toFixed(2);
+              try {
+                const currentUser = this.getCurrentUser();
+                let timeLogs = window.TaskFlowStorage ? window.TaskFlowStorage.get('taskflow_time_logs', []) : [];
+                if (!Array.isArray(timeLogs)) timeLogs = [];
+                const projects = KanbanData.getProjects();
+                const proj = projects.find(p => p.id === task.projectId);
+                timeLogs.unshift({
+                  id: 'log-' + Date.now(),
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  projectId: task.projectId || '',
+                  projectName: proj ? proj.name : 'Chung',
+                  projectColor: proj ? (proj.color || '#6366F1') : '#6366F1',
+                  assigneeName: currentUser.name || (task.assignee ? task.assignee.name : 'Thành viên'),
+                  assigneeAvatar: currentUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nhat',
+                  hoursSpent: autoLoggedHours,
+                  date: new Date().toISOString().slice(0, 10),
+                  workResult: `[Tự động từ Kanban] Đã hoàn thành công việc và chốt ${autoLoggedHours}h làm việc.`,
+                  blockers: 'Không có',
+                  syncedToSheets: true,
+                  createdAt: new Date().toISOString()
+                });
+                if (window.TaskFlowStorage && typeof window.TaskFlowStorage.set === 'function') {
+                  window.TaskFlowStorage.set('taskflow_time_logs', timeLogs);
+                } else {
+                  localStorage.setItem('taskflow_time_logs', JSON.stringify(timeLogs));
+                }
+              } catch (err) {
+                console.error('[Kanban] Lỗi tạo timeLog từ QuickEvidence:', err);
+              }
+            }
             task.evidence.doneUrl = evidenceUrl;
             task.evidence.doneNote = evidenceNote;
             task.evidence.isApproved = false; // Chờ Admin duyệt
             task.status = 'done'; // NÂNG CẤP TRẠNG THÁI SANG DONE SAU KHI CÓ LINK
+            task.timerStartedAt = null;
+            task.isTracking = false;
           } else if (targetStatus === 'doing') {
             task.evidence.inProgressUrl = evidenceUrl;
             task.evidence.inProgressNote = evidenceNote;
+            if (!task.timerStartedAt) task.timerStartedAt = Date.now();
+            task.isTracking = true;
           }
 
           KanbanData.saveTasks(tasks);
+          window.dispatchEvent(new CustomEvent('taskflow_timer_updated', {
+            detail: { taskId: task.id, status: task.status, timerStartedAt: task.timerStartedAt, spentHours: task.spentHours }
+          }));
           const progressResult = recalculateProjectProgress(task.projectId);
           this.pendingEvidenceData = null;
           this.closeQuickEvidenceModal(false);
