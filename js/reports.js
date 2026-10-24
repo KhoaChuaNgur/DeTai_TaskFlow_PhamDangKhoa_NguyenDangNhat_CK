@@ -251,8 +251,9 @@
 
   /**
    * ==========================================================================
-   * 3. ĐỘNG CƠ BẤM GIỜ TRỰC TIẾP 60FPS (LIVE STOPWATCH CONTROLLER)
-   * Phong cách Trello Card-Centric Tracking: Liên kết đồng bộ chặt chẽ với Task
+   * 3. BỘ ĐẾM GIỜ TỰ ĐỘNG ĐỒNG BỘ KANBAN (AUTOMATIC KANBAN TIMER CONTROLLER)
+   * Tự động theo dõi công việc thời gian thực khi ở trạng thái "Đang Làm" (doing)
+   * Không yêu cầu bấm nút thủ công - Đồng bộ trực tiếp 2 chiều với Bảng Kanban
    * ==========================================================================
    */
   const StopwatchController = {
@@ -263,27 +264,26 @@
         msDisplay: document.getElementById('stopwatchMs'),
         decimalDisplay: document.getElementById('stopwatchDecimalDisplay'),
         statusBadge: document.getElementById('stopwatchStatusBadge'),
-        btnStart: document.getElementById('btnStopwatchStart'),
-        btnPause: document.getElementById('btnStopwatchPause'),
-        btnReset: document.getElementById('btnStopwatchReset'),
-        btnStopFill: document.getElementById('btnStopwatchStopFill'),
-        hoursInput: document.getElementById('logHoursSpent'),
         taskSelect: document.getElementById('stopwatchTaskSelect'),
         projectBadge: document.getElementById('stopwatchTaskProjectBadge'),
         activeBanner: document.getElementById('stopwatchActiveTaskBanner'),
-        activeTitle: document.getElementById('stopwatchActiveTaskTitle')
+        activeTitle: document.getElementById('stopwatchActiveTaskTitle'),
+        activeMeta: document.getElementById('stopwatchActiveTaskMeta'),
+        taskStateBadge: document.getElementById('autoTimerTaskStateBadge'),
+        kanbanStatus: document.getElementById('autoTimerKanbanStatus')
       };
 
       if (!this.dom.display) return;
       this.populateTaskSelect();
       this.bindEvents();
-      this.updateUI();
+      this.startAutoTimer();
     },
 
     populateTaskSelect() {
       if (!this.dom.taskSelect) return;
 
-      this.dom.taskSelect.innerHTML = '<option value="">-- Chọn công việc (hoặc chọn tại Form) --</option>';
+      const previousValue = this.dom.taskSelect.value || ReportsState.selectedTaskId;
+      this.dom.taskSelect.innerHTML = '<option value="">-- Chọn công việc để theo dõi tự động --</option>';
 
       if (!ReportsState.tasks || ReportsState.tasks.length === 0) return;
 
@@ -301,12 +301,15 @@
         const assigneeText = assignee ? ` (${assignee.name})` : '';
         const statusLabel = task.status === 'doing' ? 'ĐANG LÀM' : (task.status === 'done' ? 'HOÀN THÀNH' : 'CHỜ LÀM');
         opt.textContent = `[${statusLabel}] ${task.title}${assigneeText} - (${projectName})`;
-        if (task.id === ReportsState.selectedTaskId) {
+        if (task.id === previousValue) {
           opt.selected = true;
         }
         this.dom.taskSelect.appendChild(opt);
       });
 
+      if (previousValue) {
+        this.dom.taskSelect.value = previousValue;
+      }
       this.updateTaskBadge();
     },
 
@@ -315,155 +318,152 @@
       const task = ReportsState.tasks.find(t => t.id === taskId);
       if (task) {
         const project = ReportsState.projects.find(p => p.id === task.projectId);
+        const projectName = project ? project.name : 'Chung';
         if (this.dom.projectBadge) {
-          this.dom.projectBadge.textContent = project ? `Dự án: ${project.name}` : '';
+          const statusText = task.status === 'doing' ? 'In-Progress' : (task.status === 'done' ? 'Completed' : 'To-do');
+          this.dom.projectBadge.textContent = `${projectName} • ${statusText}`;
         }
         if (this.dom.activeTitle) {
-          this.dom.activeTitle.textContent = `Đang theo dõi: ${task.title}`;
+          const prefix = task.status === 'doing' ? 'Đang tự động tính giờ: ' : 'Đang chọn: ';
+          this.dom.activeTitle.textContent = `${prefix}${task.title}`;
+        }
+        if (this.dom.activeMeta) {
+          const statusDesc = task.status === 'doing' 
+            ? 'Đồng bộ từ cột "Đang Làm" trên Kanban Board' 
+            : (task.status === 'done' ? 'Công việc đã hoàn thành trên Kanban' : 'Thẻ đang chờ làm trên Kanban');
+          this.dom.activeMeta.textContent = statusDesc;
         }
       } else {
-        if (this.dom.projectBadge) this.dom.projectBadge.textContent = '';
+        if (this.dom.projectBadge) this.dom.projectBadge.textContent = 'Chưa chọn task';
         if (this.dom.activeTitle) this.dom.activeTitle.textContent = 'Đang theo dõi: Chưa chỉ định task cụ thể';
+        if (this.dom.activeMeta) this.dom.activeMeta.textContent = 'Chọn công việc để xem thời gian hoặc tự động chạy khi thẻ ở "Đang Làm"';
       }
     },
 
     bindEvents() {
-      this.dom.btnStart.addEventListener('click', () => this.start());
-      this.dom.btnPause.addEventListener('click', () => this.pause());
-      this.dom.btnReset.addEventListener('click', () => this.reset());
-      this.dom.btnStopFill.addEventListener('click', () => this.stopAndFill());
-
-      // Lắng nghe chọn task trên Stopwatch
       if (this.dom.taskSelect) {
         this.dom.taskSelect.addEventListener('change', (e) => {
           const val = e.target.value;
-          ReportsState.selectedTaskId = val;
-          // Đồng bộ sang dropdown Form
-          const formTaskSelect = document.getElementById('logTaskId');
-          if (formTaskSelect && formTaskSelect.value !== val) {
-            formTaskSelect.value = val;
-          }
-          this.updateTaskBadge();
-
-          // Tự động đồng bộ người thực hiện sang Form nếu task có người phụ trách
-          const foundTask = ReportsState.tasks.find(t => t.id === val);
-          if (foundTask && foundTask.assigneeId) {
-            FormController.syncReportingUserByAssignee(foundTask.assigneeId);
-          }
+          this.handleTaskChange(val);
         });
       }
     },
 
-    start() {
-      if (ReportsState.stopwatch.status === 'RUNNING') return;
+    handleTaskChange(taskId) {
+      ReportsState.selectedTaskId = taskId || '';
 
-      ReportsState.stopwatch.status = 'RUNNING';
-      ReportsState.stopwatch.startTime = performance.now() - ReportsState.stopwatch.elapsedMs;
-
-      // Gia hạn phiên làm việc khi tương tác
-      if (window.Auth && typeof window.Auth.extendSession === 'function') {
-        window.Auth.extendSession();
+      // Đồng bộ sang dropdown Form
+      const formTaskSelect = document.getElementById('logTaskId');
+      if (formTaskSelect && formTaskSelect.value !== taskId) {
+        formTaskSelect.value = taskId;
+      }
+      if (this.dom.taskSelect && this.dom.taskSelect.value !== taskId) {
+        this.dom.taskSelect.value = taskId;
       }
 
+      this.updateTaskBadge();
+
+      // Kích hoạt điền tự động dữ liệu sang Form
+      if (typeof FormController !== 'undefined' && typeof FormController.onTaskSelected === 'function') {
+        FormController.onTaskSelected(taskId);
+      }
+    },
+
+    startAutoTimer() {
       if (ReportsState.stopwatch.intervalId) {
         clearInterval(ReportsState.stopwatch.intervalId);
       }
 
-      // 60fps refresh rate (~33ms)
+      // Vòng lặp đếm giờ tự động 60fps (~50ms)
       ReportsState.stopwatch.intervalId = setInterval(() => {
-        ReportsState.stopwatch.elapsedMs = performance.now() - ReportsState.stopwatch.startTime;
-        this.updateTimeDisplay();
-      }, 33);
-
-      this.updateUI();
-
-      // Hiển thị banner công việc đang theo dõi
-      if (this.dom.activeBanner) {
-        this.dom.activeBanner.classList.remove('hidden');
-      }
-
-      const activeTask = ReportsState.tasks.find(t => t.id === ReportsState.selectedTaskId);
-      const taskMsg = activeTask ? `cho task: "${activeTask.title}"` : '(chưa chọn task)';
-      Toast.show(`Đã bắt đầu bấm giờ làm việc ${taskMsg}!`, 'info');
+        this.tick();
+      }, 50);
     },
 
-    pause() {
-      if (ReportsState.stopwatch.status !== 'RUNNING') return;
-
-      ReportsState.stopwatch.status = 'PAUSED';
-      if (ReportsState.stopwatch.intervalId) {
-        clearInterval(ReportsState.stopwatch.intervalId);
-        ReportsState.stopwatch.intervalId = null;
+    tick() {
+      let currentTask = null;
+      if (ReportsState.selectedTaskId) {
+        currentTask = ReportsState.tasks.find(t => t.id === ReportsState.selectedTaskId);
       }
 
-      this.updateUI();
-      Toast.show('Đã tạm dừng đồng hồ bấm giờ.', 'warning');
-    },
-
-    reset() {
-      if (ReportsState.stopwatch.intervalId) {
-        clearInterval(ReportsState.stopwatch.intervalId);
-        ReportsState.stopwatch.intervalId = null;
+      // Nếu người dùng chưa chọn task, ưu tiên tự động chọn task đang "doing" trên Kanban
+      if (!currentTask) {
+        const doingTask = ReportsState.tasks.find(t => t.status === 'doing' || Boolean(t.isTracking));
+        if (doingTask) {
+          ReportsState.selectedTaskId = doingTask.id;
+          currentTask = doingTask;
+          if (this.dom.taskSelect) this.dom.taskSelect.value = doingTask.id;
+          const formTaskSelect = document.getElementById('logTaskId');
+          if (formTaskSelect) formTaskSelect.value = doingTask.id;
+          if (typeof FormController !== 'undefined' && typeof FormController.onTaskSelected === 'function') {
+            FormController.onTaskSelected(doingTask.id, true);
+          }
+          this.updateTaskBadge();
+        }
       }
 
-      ReportsState.stopwatch.status = 'IDLE';
-      ReportsState.stopwatch.elapsedMs = 0;
-      ReportsState.stopwatch.startTime = 0;
+      if (currentTask) {
+        const isDoing = currentTask.status === 'doing' || Boolean(currentTask.isTracking);
+        let totalElapsedMs = 0;
+        const baseSpentHours = parseFloat(currentTask.spentHours) || 0;
 
-      if (this.dom.activeBanner) {
-        this.dom.activeBanner.classList.add('hidden');
-      }
+        if (isDoing) {
+          ReportsState.stopwatch.status = 'RUNNING';
+          const startMs = currentTask.timerStartedAt || (Date.now() - 15 * 60 * 1000);
+          const activeMs = Math.max(0, Date.now() - startMs);
+          totalElapsedMs = (baseSpentHours * 3600000) + activeMs;
 
-      this.updateTimeDisplay();
-      this.updateUI();
-    },
+          if (this.dom.card) {
+            this.dom.card.classList.add('stopwatch-running-glow');
+          }
+          if (this.dom.statusBadge) {
+            this.dom.statusBadge.innerHTML = `
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>⚡ Đang tự động đếm giờ (Kanban Đang Làm)</span>
+            `;
+            this.dom.statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors flex items-center gap-1.5';
+          }
+          if (this.dom.taskStateBadge) {
+            this.dom.taskStateBadge.textContent = '⚡ Đang Chạy Realtime';
+            this.dom.taskStateBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+          }
+        } else {
+          ReportsState.stopwatch.status = 'IDLE';
+          totalElapsedMs = baseSpentHours * 3600000;
 
-    stopAndFill() {
-      // Dừng đồng hồ
-      if (ReportsState.stopwatch.intervalId) {
-        clearInterval(ReportsState.stopwatch.intervalId);
-        ReportsState.stopwatch.intervalId = null;
-      }
-      ReportsState.stopwatch.status = 'IDLE';
-
-      if (this.dom.activeBanner) {
-        this.dom.activeBanner.classList.add('hidden');
-      }
-
-      // Tính số giờ thập phân chính xác tuyệt đối (làm tròn 2 chữ số, tối thiểu 0.01h = 36 giây)
-      const totalSeconds = Math.floor(ReportsState.stopwatch.elapsedMs / 1000);
-      let decimalHours = +(totalSeconds / 3600).toFixed(2);
-
-      // Nếu bấm ngắn từ 1s - 35s, quy đổi thành 0.01h; nếu chưa bấm gì (0s) mặc định 0.01h
-      if (decimalHours <= 0) {
-        decimalHours = totalSeconds > 0 ? 0.01 : 0.01;
-      }
-
-      if (this.dom.hoursInput) {
-        this.dom.hoursInput.value = decimalHours.toFixed(2);
-        // Kích hoạt hiệu ứng highlight trên input
-        this.dom.hoursInput.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500');
-        setTimeout(() => {
-          this.dom.hoursInput.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
-        }, 1200);
-
-        // Đảm bảo Form Task Select khớp với Stopwatch Task Select
-        const formTaskSelect = document.getElementById('logTaskId');
-        if (formTaskSelect && ReportsState.selectedTaskId) {
-          formTaskSelect.value = ReportsState.selectedTaskId;
+          if (this.dom.card) {
+            this.dom.card.classList.remove('stopwatch-running-glow');
+          }
+          const isDone = currentTask.status === 'done';
+          if (this.dom.statusBadge) {
+            this.dom.statusBadge.innerHTML = isDone
+              ? '<span class="text-emerald-500 font-bold">✓</span><span>Đã Hoàn Thành Trên Kanban</span>'
+              : '<span class="text-slate-400">⏳</span><span>Chờ Làm (To-do)</span>';
+            this.dom.statusBadge.className = isDone
+              ? 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors flex items-center gap-1.5'
+              : 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10 flex items-center gap-1.5';
+          }
+          if (this.dom.taskStateBadge) {
+            this.dom.taskStateBadge.textContent = isDone ? '✓ Đã Hoàn Thành' : 'Chờ Làm';
+            this.dom.taskStateBadge.className = isDone
+              ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+              : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 border border-slate-200 dark:border-white/10';
+          }
         }
 
-        // Tự động focus sang ô kết quả công việc để người dùng viết nhanh
-        const workResultEl = document.getElementById('logWorkResult');
-        if (workResultEl) workResultEl.focus();
+        this.renderTime(totalElapsedMs);
+      } else {
+        ReportsState.stopwatch.status = 'IDLE';
+        if (this.dom.card) this.dom.card.classList.remove('stopwatch-running-glow');
+        if (this.dom.statusBadge) {
+          this.dom.statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span><span>Chưa chọn công việc</span>';
+          this.dom.statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10 flex items-center gap-1.5';
+        }
+        this.renderTime(0);
       }
-
-      Toast.show(`Đã quy đổi chính xác ${decimalHours.toFixed(2)} giờ công vào biểu mẫu!`, 'success');
-      this.reset();
     },
 
-    updateTimeDisplay() {
-      const ms = Math.floor(ReportsState.stopwatch.elapsedMs);
+    renderTime(ms) {
       const totalSeconds = Math.floor(ms / 1000);
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -485,50 +485,14 @@
         const decimal = (totalSeconds / 3600).toFixed(2);
         this.dom.decimalDisplay.textContent = decimal;
       }
-    },
-
-    updateUI() {
-      const st = ReportsState.stopwatch.status;
-
-      if (st === 'RUNNING') {
-        this.dom.statusBadge.textContent = 'Đang chạy...';
-        this.dom.statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
-        
-        this.dom.card.classList.add('stopwatch-running-glow');
-        this.dom.btnStart.disabled = true;
-        this.dom.btnStart.classList.add('opacity-50', 'cursor-not-allowed');
-
-        this.dom.btnPause.disabled = false;
-        this.dom.btnPause.classList.remove('opacity-50', 'cursor-not-allowed');
-      } else if (st === 'PAUSED') {
-        this.dom.statusBadge.textContent = 'Tạm dừng';
-        this.dom.statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
-
-        this.dom.card.classList.remove('stopwatch-running-glow');
-        this.dom.btnStart.disabled = false;
-        this.dom.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
-        this.dom.btnStart.querySelector('span').textContent = 'Tiếp tục';
-
-        this.dom.btnPause.disabled = true;
-        this.dom.btnPause.classList.add('opacity-50', 'cursor-not-allowed');
-      } else {
-        this.dom.statusBadge.textContent = 'Đang dừng';
-        this.dom.statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10';
-
-        this.dom.card.classList.remove('stopwatch-running-glow');
-        this.dom.btnStart.disabled = false;
-        this.dom.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
-        this.dom.btnStart.querySelector('span').textContent = 'Bắt đầu';
-
-        this.dom.btnPause.disabled = true;
-        this.dom.btnPause.classList.add('opacity-50', 'cursor-not-allowed');
-      }
     }
   };
 
   /**
    * ==========================================================================
    * 4. BIỂU MẪU NỘP BÁO CÁO & ĐỒNG BỘ KÉP (TIMESHEET SUBMISSION)
+   * Tự động điền số giờ và ngày thực hiện khi chọn việc (User có toàn quyền sửa)
+   * Kết quả đạt được và khó khăn trở ngại để trống giữ nguyên chữ mờ
    * ==========================================================================
    */
   const FormController = {
@@ -546,7 +510,8 @@
         btnSpinner: document.getElementById('submitBtnSpinner'),
         userAvatar: document.getElementById('formUserAvatar'),
         userName: document.getElementById('formUserName'),
-        reportingUserSelect: document.getElementById('selectReportingUser')
+        reportingUserSelect: document.getElementById('selectReportingUser'),
+        btnSyncHours: document.getElementById('btnSyncHoursFromStopwatch')
       };
 
       if (!this.dom.form) return;
@@ -585,6 +550,7 @@
     populateTaskSelect() {
       if (!this.dom.taskSelect) return;
 
+      const previousValue = this.dom.taskSelect.value || ReportsState.selectedTaskId;
       this.dom.taskSelect.innerHTML = '<option value="" disabled selected>-- Chọn công việc đang thực hiện --</option>';
 
       if (!ReportsState.tasks || ReportsState.tasks.length === 0) {
@@ -611,11 +577,15 @@
         const statusLabel = task.status === 'doing' ? 'ĐANG LÀM' : (task.status === 'done' ? 'HOÀN THÀNH' : 'CHỜ LÀM');
 
         opt.textContent = `[${statusLabel}] ${task.title}${assigneeText} - (${projectName})`;
-        if (task.id === ReportsState.selectedTaskId) {
+        if (task.id === previousValue) {
           opt.selected = true;
         }
         this.dom.taskSelect.appendChild(opt);
       });
+
+      if (previousValue) {
+        this.dom.taskSelect.value = previousValue;
+      }
     },
 
     setDefaultDate() {
@@ -625,8 +595,89 @@
       }
     },
 
+    /**
+     * Tự động điền dữ liệu khi người dùng chọn công việc:
+     * - Số giờ đã kết thúc của công việc đó (User/chủ dự án vẫn có toàn quyền sửa)
+     * - Ngày thực hiện (User/chủ dự án vẫn có toàn quyền sửa)
+     * - Kết quả đạt được và khó khăn trở ngại để trống giữ nguyên chữ mờ
+     */
+    onTaskSelected(taskId, isInitialAutoSelect) {
+      if (!taskId) return;
+      const task = ReportsState.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      // 1. Tự động điền số giờ đã kết thúc của công việc đó
+      let hours = parseFloat(task.spentHours) || 0;
+      if ((task.status === 'doing' || task.isTracking) && task.timerStartedAt) {
+        const activeHours = Math.max(0, Date.now() - task.timerStartedAt) / 3600000;
+        hours += activeHours;
+      }
+      if (hours <= 0) {
+        hours = 0.50; // Giá trị khởi điểm thân thiện
+      }
+
+      if (this.dom.hoursInput) {
+        this.dom.hoursInput.value = (+hours).toFixed(2);
+        // ĐẢM BẢO USER CHỦ DỰ ÁN VẪN CÓ QUYỀN SỬA
+        this.dom.hoursInput.readOnly = false;
+        this.dom.hoursInput.disabled = false;
+      }
+
+      // 2. Tự động điền ngày thực hiện
+      if (this.dom.dateInput) {
+        let taskDate = '';
+        if (task.dueDateTime) taskDate = task.dueDateTime.slice(0, 10);
+        else if (task.dueDate) taskDate = task.dueDate;
+        else if (task.startDateTime) taskDate = task.startDateTime.slice(0, 10);
+        else if (task.startDate) taskDate = task.startDate;
+        else taskDate = new Date().toISOString().slice(0, 10);
+
+        this.dom.dateInput.value = taskDate;
+        // ĐẢM BẢO USER CHỦ DỰ ÁN VẪN CÓ QUYỀN SỬA
+        this.dom.dateInput.readOnly = false;
+        this.dom.dateInput.disabled = false;
+      }
+
+      // 3. Kết quả đạt được và khó khăn trở ngại: ĐỂ TRỐNG GIỮ NGUYÊN CHỮ MỜ
+      if (this.dom.workResultInput) {
+        this.dom.workResultInput.value = '';
+      }
+      if (this.dom.blockersInput) {
+        this.dom.blockersInput.value = '';
+      }
+
+      // 4. Đồng bộ người thực hiện
+      if (task.assigneeId) {
+        this.syncReportingUserByAssignee(task.assigneeId);
+      }
+    },
+
+    handleTaskChange(taskId) {
+      ReportsState.selectedTaskId = taskId || '';
+      const stopwatchSelect = document.getElementById('stopwatchTaskSelect');
+      if (stopwatchSelect && stopwatchSelect.value !== taskId) {
+        stopwatchSelect.value = taskId;
+      }
+      StopwatchController.updateTaskBadge();
+      this.onTaskSelected(taskId);
+    },
+
     bindEvents() {
       this.dom.form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+      // Nút lấy nhanh giờ từ đồng hồ bấm giờ (nếu người dùng muốn sync số đo realtime hiện tại)
+      if (this.dom.btnSyncHours) {
+        this.dom.btnSyncHours.addEventListener('click', () => {
+          const decEl = document.getElementById('stopwatchDecimalDisplay');
+          if (decEl && this.dom.hoursInput) {
+            const val = parseFloat(decEl.textContent) || 0;
+            this.dom.hoursInput.value = val > 0 ? val.toFixed(2) : '0.50';
+            this.dom.hoursInput.classList.add('ring-2', 'ring-emerald-500');
+            setTimeout(() => this.dom.hoursInput.classList.remove('ring-2', 'ring-emerald-500'), 1000);
+            Toast.show(`Đã lấy ${this.dom.hoursInput.value} giờ từ đồng hồ!`, 'info');
+          }
+        });
+      }
 
       // Chuyển đổi người thực hiện báo cáo thủ công qua dropdown
       if (this.dom.reportingUserSelect) {
@@ -643,22 +694,11 @@
         });
       }
 
-      // Đồng bộ khi người dùng thay đổi dropdown trên form sang stopwatch
+      // Đồng bộ khi người dùng thay đổi dropdown trên form
       if (this.dom.taskSelect) {
         this.dom.taskSelect.addEventListener('change', (e) => {
           const val = e.target.value;
-          ReportsState.selectedTaskId = val;
-          const stopwatchSelect = document.getElementById('stopwatchTaskSelect');
-          if (stopwatchSelect && stopwatchSelect.value !== val) {
-            stopwatchSelect.value = val;
-          }
-          StopwatchController.updateTaskBadge();
-
-          // Tự động chuyển đổi người báo cáo theo người phụ trách của task nếu có
-          const task = ReportsState.tasks.find(t => t.id === val);
-          if (task && task.assigneeId) {
-            this.syncReportingUserByAssignee(task.assigneeId);
-          }
+          this.handleTaskChange(val);
         });
       }
     },
@@ -718,19 +758,31 @@
         ReportsState.timeLogs.unshift(newLog);
         DataEngine.saveTimeLogs();
 
-        // B. Phản ứng dây chuyền: Cộng dồn spentHours vào task tương ứng
-        DataEngine.propagateSpentHoursToTask(taskId, hours);
+        // B. Cập nhật và đồng bộ spentHours vào Task (đồng bộ trực tiếp sang Timeline & Kanban)
+        if (task) {
+          task.spentHours = +hours.toFixed(2);
+          if (task.status === 'doing') {
+            task.timerStartedAt = Date.now(); // reset mốc đếm giờ từ mốc mới ghi nhận
+          }
+        }
+        DataEngine.saveTasks(ReportsState.tasks);
+
+        // Phát sự kiện đồng bộ toàn hệ thống (Cross-module Sync sang Timeline & Kanban)
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('taskflow_data_updated', {
+          detail: { taskId, spentHours: task ? task.spentHours : hours, newLog }
+        }));
 
         // C. Gửi dữ liệu lên Google Sheets
         if (window.SheetsSync && typeof window.SheetsSync.sendTimeLog === 'function') {
           await window.SheetsSync.sendTimeLog(newLog);
         }
 
-        Toast.show('Đã lưu và đồng bộ lên Google Sheets thành công!', 'success');
+        Toast.show('Đã lưu kết quả công việc và đồng bộ thành công sang Timeline & Kanban!', 'success');
 
-        // Reset form (giữ lại ngày hôm nay)
+        // Reset form: Để trống kết quả và trở ngại giữ nguyên chữ mờ
         this.dom.workResultInput.value = '';
-        this.dom.blockersInput.value = 'Không có';
+        this.dom.blockersInput.value = '';
         this.dom.hoursInput.value = '';
         this.dom.taskSelect.selectedIndex = 0;
         ReportsState.selectedTaskId = '';

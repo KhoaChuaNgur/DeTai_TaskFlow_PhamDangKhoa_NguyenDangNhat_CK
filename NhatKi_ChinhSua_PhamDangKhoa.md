@@ -696,3 +696,50 @@ Khi người dùng nhập từ khóa vào ô tìm kiếm `#projectSearchInput`, 
   ✓ Thành viên bị chặn tạo task vào dự án người khác.  
   ✓ Khử bỏ so sánh name, bảo mật bằng ID/Email.  
   ✓ 5 trường quản trị khóa cứng chỉ dành cho Chủ dự án.
+
+
+---
+
+## ⚡ NÂNG CẤP TRANG 5 (BÁO CÁO & TIME-TRACKER) VÀ ĐỒNG BỘ 2 CHIỀU VỚI LỘ TRÌNH TIMELINE & BẢNG KANBAN
+
+**Thời gian:** 24/10/2026  
+**Người thực hiện:** Phạm Đăng Khoa (Lead Frontend Architect & UI/UX Specialist)  
+**Các tập tin tác động:** `reports.html`, `js/reports.js`, `js/timeline.js`.
+
+### 1. Phân tích bài toán & Yêu cầu thực tế:
+* **Khôi phục cơ chế đếm giờ tự động từ Kanban:** Thẻ công việc khi kéo sang cột `"Đang Làm"` (doing) trên Kanban sẽ tự động đếm giờ ngầm thời gian thực. Trang Báo cáo không cần các nút bấm thủ công phức tạp (Bắt đầu, Tạm dừng, Dừng, Reset, Chốt hoàn thành).
+* **Loại bỏ nút dư thừa:** Xóa hoàn toàn 6 nút bấm thủ công và nút *"Chốt Giờ & Đánh Dấu Hoàn Thành (Done Trên Kanban)"*, xóa bỏ tùy chọn checkbox *"Đồng thời chuyển công việc sang 'Đã Hoàn Thành' (Done) trên Bảng Kanban"*.
+* **Tự động điền dữ liệu vào Form nhưng giữ quyền sửa đổi:**
+  - Khi chọn công việc: Hệ thống tự động tính toán và điền số giờ đã tích lũy (`task.spentHours` + thời gian chạy thực tế nếu đang làm) vào ô `Số giờ đã làm`.
+  - Tự động điền ngày thực hiện (`task.dueDateTime` / `task.dueDate` / ngày hiện tại) vào ô `Ngày thực hiện`.
+  - **Quyền hạn người dùng:** Ô số giờ và ngày thực hiện hoàn toàn mở để Chủ dự án / người dùng tự do chỉnh sửa, tăng giảm hoặc cập nhật theo thực tế (`readOnly = false`, `disabled = false`).
+  - **Kết quả đạt được và khó khăn trở ngại:** Bỏ giá trị mặc định `"Không có"`, để trống hoàn toàn `value=""` để giữ nguyên chữ mờ (placeholder) tự nhiên.
+* **Đồng bộ với Trang Lộ Trình Timeline:** Khi ghi nhận kết quả hoặc xóa bản ghi, số giờ tích lũy (`spentHours`) của công việc được cập nhật ngay lập tức vào `taskflow_tasks` và `TASKFLOW_DATA`. Phát sự kiện `taskflow_data_updated` để biểu đồ Gantt trên Timeline cập nhật độ dài thanh tiến độ và số giờ ngay lập tức mà không cần tải lại trang.
+
+---
+
+### 2. Các giải pháp kỹ thuật đã triển khai:
+
+1. **Chuẩn hóa Giao diện Báo cáo (`reports.html`):**
+   - Loại bỏ cụm nút bấm thủ công `#btnStopwatchCompleteDone`, `#btnStopwatchStart`, `#btnStopwatchPause`, `#btnStopwatchStop`, `#btnStopwatchReset`, `#btnStopwatchStopFill`.
+   - Bổ sung **Bảng Giám Sát Đồng Bộ Tự Động Với Kanban (Realtime Sync Hub)** với badge trạng thái hoạt động động, thông tin thẻ Kanban đồng bộ và liên kết điều hướng 1-chạm sang Kanban và Timeline.
+   - Loại bỏ checkbox `#logMarkTaskDone` ("Đồng thời chuyển công việc sang Đã hoàn thành...").
+   - Đặt `#logBlockers` về `value=""` với placeholder `"Ghi nhận trở ngại nếu có (để trống nếu thuận lợi)..."`.
+
+2. **Tối ưu Động cơ Stopwatch & Form Controller (`js/reports.js`):**
+   - **`StopwatchController` Tự Động:** Tự động kích hoạt tick loop 60fps để quét và đếm giờ thời gian thực theo thẻ đang làm trên Kanban. Nếu chưa chọn task, tự động chọn task đang `doing`. Khi chọn task khác, hiển thị số giờ đã làm của task đó.
+   - **`onTaskSelected(taskId)` & `handleTaskChange(taskId)`:** Tự động điền `logHoursSpent` và `logDate` nhưng đảm bảo `readOnly = false`, giữ trống `logWorkResult` và `logBlockers` để lộ chữ mờ. Đồng bộ 2 chiều giữa 2 dropdown.
+   - **Đồng bộ 2 chiều sang Timeline & Kanban:** Khi submit form thành công, cập nhật `task.spentHours`, lưu vào `TaskFlowStorage` và `TASKFLOW_DATA`, phát cả `storage` event và `taskflow_data_updated` custom event.
+
+3. **Cập nhật Lộ Trình Timeline (`js/timeline.js`):**
+   - Bổ sung event listener `taskflow_data_updated` vào `TimelineApp`: Khi nhận tín hiệu cập nhật giờ từ Trang 5, tự động gọi `TimelineApp.reload()` để vẽ lại thanh Gantt Bar, cập nhật tỷ lệ phần trăm tiến độ và nhãn giờ thực tế.
+
+---
+
+### 3. Kết quả kiểm thử tự động:
+- Kiểm thử `node scratch/test_reports_features.js` đạt 100% PASS trên tất cả các tiêu chí:
+  ✔ Loại bỏ triệt để các nút bấm giờ thủ công và nút chốt hoàn thành.  
+  ✔ Loại bỏ checkbox chuyển hoàn thành trên Kanban.  
+  ✔ Ô giờ và ngày được điền tự động nhưng mở quyền sửa cho người dùng.  
+  ✔ Ô kết quả và khó khăn trở ngại để trống, giữ nguyên placeholder mờ.  
+  ✔ Đồng bộ thời gian thực mượt mà sang Bảng Kanban và Lộ Trình Timeline.

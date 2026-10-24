@@ -321,66 +321,40 @@
                 </div>
               </div>
 
-              <!-- Các nút điều khiển Stopwatch Fitts's Law -->
+              <!-- Bảng Giám Sát Đồng Bộ Tự Động Với Kanban (Realtime Sync) -->
               <div class="space-y-3">
-                <div class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between mb-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold">2</span>
-                    <span>Thao tác điều khiển & Chốt giờ:</span>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Chế Độ: Tự Động Đếm Giờ Kanban</span>
+                    </span>
+                    <span id="autoTimerTaskStateBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      ⚡ Hoạt Động
+                    </span>
                   </div>
-                  <span class="text-[10px] text-slate-400 font-normal">Tự động đồng bộ 2 chiều</span>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Hệ thống tự động theo dõi thời gian khi công việc ở trạng thái <b>"Đang làm"</b> trên Bảng Kanban. Khi bạn chọn công việc, số giờ hoàn thành và ngày thực hiện sẽ tự động được điền vào biểu mẫu bên cạnh để bạn kiểm tra hoặc điều chỉnh trước khi ghi nhận.
+                  </p>
+                  <div class="mt-2.5 pt-2 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-[11px]">
+                    <span class="text-slate-400">Trạng thái đồng bộ:</span>
+                    <span id="autoTimerKanbanStatus" class="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <span>● Đồng bộ 2 chiều thời gian thực</span>
+                    </span>
+                  </div>
                 </div>
 
-                <!-- Nút 1 LỚN NHẤT: Chốt Giờ & Hoàn Thành (Done) trên Kanban -->
-                <button id="btnStopwatchCompleteDone" type="button" class="btn-stopwatch-action w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/25 text-xs py-3 font-bold border border-emerald-400/30">
-                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Chốt Giờ & Đánh Dấu Hoàn Thành (Done Trên Kanban)</span>
-                </button>
-
-                <!-- 4 nút điều khiển thời gian -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <!-- Nút Start -->
-                  <button id="btnStopwatchStart" type="button" class="btn-stopwatch-action bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20 text-xs">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Bắt đầu</span>
-                  </button>
-
-                  <!-- Nút Pause -->
-                  <button id="btnStopwatchPause" type="button" disabled class="btn-stopwatch-action bg-amber-500 hover:bg-amber-400 text-white shadow-md shadow-amber-500/20 text-xs opacity-50 cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Tạm dừng</span>
-                  </button>
-
-                  <!-- Nút Dừng thời gian màu đỏ -->
-                  <button id="btnStopwatchStop" type="button" disabled class="btn-stopwatch-action bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/25 text-xs opacity-50 cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <rect x="5" y="5" width="10" height="10" rx="1.5"/>
-                    </svg>
-                    <span>Dừng</span>
-                  </button>
-
-                  <!-- Nút Reset -->
-                  <button id="btnStopwatchReset" type="button" class="btn-stopwatch-action bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 text-xs">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Đặt lại</span>
-                  </button>
+                <!-- Thao tác liên kết điều hướng nhanh -->
+                <div class="flex items-center gap-2">
+                  <a href="board.html" class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/30 transition-all shadow-xs" title="Mở Bảng Kanban để kéo thả và cập nhật trạng thái thẻ">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                    <span>Mở Bảng Kanban Quản Lý Thẻ</span>
+                  </a>
+                  <a href="timeline.html" class="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-white/10 transition-all" title="Xem tiến độ và biểu đồ Gantt trên Lộ Trình">
+                    <span>Lộ Trình Timeline</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
                 </div>
-
-                <!-- Nút dừng và điền thẳng vào Form -->
-                <button id="btnStopwatchStopFill" type="button" class="btn-stopwatch-action w-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-white/10 text-xs py-2.5">
-                  <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span>Chốt Giờ & Điền Vào Form Báo Cáo Chi Tiết</span>
-                </button>
               </div>
 
               <!-- Gợi ý công thái học -->
@@ -480,17 +454,9 @@
                 <div>
                   <label for="logBlockers" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
                     <span>Trở Ngại / Vướng Mắc (Blockers)</span>
-                    <span class="text-[10px] font-normal text-slate-400">Nếu không có thì ghi "Không có"</span>
+                    <span class="text-[10px] font-normal text-slate-400">Nếu không có thì để trống</span>
                   </label>
-                  <input type="text" id="logBlockers" placeholder="Không có" value="Không có" class="w-full text-xs md:text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" />
-                </div>
-
-                <!-- Tùy chọn đồng bộ: Hoàn thành task trên Kanban khi nộp báo cáo -->
-                <div class="flex items-center gap-2 pt-1 pb-1">
-                  <input type="checkbox" id="logMarkTaskDone" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 cursor-pointer" />
-                  <label for="logMarkTaskDone" class="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                    Đồng thời chuyển công việc sang <b>"Đã Hoàn Thành" (Done)</b> trên Bảng Kanban
-                  </label>
+                  <input type="text" id="logBlockers" placeholder="Ghi nhận trở ngại nếu có (để trống nếu thuận lợi)..." value="" class="w-full text-xs md:text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" />
                 </div>
 
                 <!-- Nút Submit Form với Loading State -->

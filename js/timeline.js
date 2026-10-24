@@ -1130,6 +1130,11 @@
         }
       });
 
+      // Lắng nghe cập nhật thời gian thực từ Trang 5 (Reports Time Logs)
+      window.addEventListener('taskflow_data_updated', () => {
+        TimelineApp.reload();
+      });
+
       // 6. Ẩn popover khi cuộn trang
       const scrollContainer = document.getElementById('ganttScrollContainer');
       if (scrollContainer) {
