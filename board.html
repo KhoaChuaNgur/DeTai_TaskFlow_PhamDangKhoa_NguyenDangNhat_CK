@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFlow - Bảng Việc Kanban Kéo Thả & Tiến Độ Tự Động</title>
-  <meta name="description" content="Quản lý luồng công việc Agile theo phương pháp Kanban kéo thả 60fps với cập nhật tiến độ tức thì" />
+  <meta name="description" content="Quản lý luồng công việc Agile theo phương pháp Kanban kéo thả 60fps chuẩn Trello với cập nhật tiến độ tức thì" />
 
   <!-- Anti-Flicker Script: Đặt ngay trong <head> để triệt tiêu chớp giật giao diện -->
   <script>
@@ -39,6 +39,8 @@
   </script>
 
   <!-- Custom Styles: Glassmorphism, CSS Grid Kanban, Custom Scrollbar & Keyframe Animations -->
+  <!-- Animate.css CDN (UI/UX Micro-interactions & Smooth Transitions) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 
@@ -71,14 +73,15 @@
 
         <!-- ====================================================================
              3. THANH ĐIỀU KHIỂN & BỘ LỌC ĐA NĂNG (FILTER & STATS BAR)
+             Bổ sung: Lọc nhanh 1 chạm theo thành viên & Hiển thị vai trò RBAC
              ==================================================================== -->
         <section class="glass-card p-5 sm:p-6 border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-4">
-          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
             
-            <!-- Nhóm Tìm kiếm & Lọc -->
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 flex-1 max-w-4xl">
+            <!-- Nhóm Tìm kiếm & Lọc chính -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-4xl">
               
-              <!-- Ô tìm kiếm thời gian thực (Glow/Shadow, Hover, Gradient, Slide-down) -->
+              <!-- Ô tìm kiếm thời gian thực (Live Search) -->
               <div class="search-glow-container flex-1">
                 <label for="taskSearchInput" class="sr-only">Tìm kiếm công việc</label>
                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors">
@@ -102,8 +105,8 @@
                 </button>
               </div>
 
-              <!-- Dropdown lọc theo Dự Án (border-radius: 10px, padding: 10px 14px, focus shadow, cursor pointer) -->
-              <div class="relative min-w-[210px]">
+              <!-- Dropdown lọc theo Dự Án -->
+              <div class="relative min-w-[200px]">
                 <label for="filterProject" class="sr-only">Lọc theo dự án</label>
                 <select 
                   id="filterProject" 
@@ -115,8 +118,8 @@
                 </select>
               </div>
 
-              <!-- Dropdown lọc theo Mức Độ Ưu Tiên (id="filterPriority", name="priority", value trên option) -->
-              <div class="relative min-w-[180px]">
+              <!-- Dropdown lọc theo Mức Độ Ưu Tiên -->
+              <div class="relative min-w-[170px]">
                 <label for="filterPriority" class="sr-only">Lọc theo mức độ ưu tiên</label>
                 <select 
                   id="filterPriority" 
@@ -133,22 +136,32 @@
 
             </div>
 
-            <!-- Nút Thêm Công Việc (Hover, Active, Transition, Focus-visible) -->
+            <!-- Nút Thêm Công Việc -->
             <div class="flex items-center gap-3">
               <button 
                 type="button" 
                 id="btnOpenCreateTaskModal" 
-                class="btn-add-task-primary w-full sm:w-auto"
+                class="btn-add-task-primary w-full sm:w-auto flex-shrink-0"
               >
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Thêm Task Mới</span>
+                <span>Thêm Task Mới</span>
               </button>
             </div>
 
           </div>
 
-          <!-- Dải KPI & Tiến độ động (Count-up + Thanh chạy mượt + Highlight khi thay đổi) -->
-          <div class="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600 dark:text-slate-400">
+          <!-- Lọc nhanh 1 chạm theo Thành viên (Trello Member Filter Chips) -->
+          <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-white/5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 mr-1">
+              <span>👤</span> Lọc nhanh:
+            </span>
+            <div class="flex flex-wrap items-center gap-1.5" id="memberFilterBar">
+              <!-- Nạp động qua JS: Chip 'Tất cả' + Chips thành viên -->
+            </div>
+          </div>
+
+          <!-- Dải KPI & Tiến độ động -->
+          <div class="pt-3 border-t border-slate-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600 dark:text-slate-400">
             <div class="flex flex-wrap items-center gap-4 sm:gap-6 font-medium" id="kpi-metrics-container">
               <span class="flex items-center gap-1.5 px-2 py-1 rounded-md transition-all duration-300" id="kpi-stat-total-wrap">
                 <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
@@ -168,7 +181,7 @@
               </span>
             </div>
 
-            <!-- Thanh tiến độ tổng hợp chạy mượt mà -->
+            <!-- Thanh tiến độ tổng hợp -->
             <div class="flex items-center gap-3 min-w-[200px]" id="kpi-progress-container">
               <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Tiến độ:</span>
               <div class="flex-1 h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden shadow-inner">
@@ -181,7 +194,7 @@
 
         <!-- ====================================================================
              4. BẢNG KANBAN WORKSPACE (CSS GRID 3 CỘT RESPONSIVE)
-             Desktop: Grid 3 cột; Mobile/Tablet: Tự động snap-scroll ngang
+             Đã tinh gọn triệt để theo chuẩn Trello (Không nút rác trên Card)
              ==================================================================== -->
         <section class="relative">
           <div class="kanban-board" id="kanbanBoard">
@@ -206,7 +219,7 @@
 
               <!-- Danh sách task có thể kéo thả (Drop Zone) -->
               <div class="kanban-list custom-scroll" id="kanban-list-todo" data-status="todo">
-                <!-- Nạp động qua JS với hiệu ứng Slide-down Fade-in & Keyword Highlight -->
+                <!-- Nạp động qua JS -->
               </div>
             </div>
 
@@ -230,7 +243,7 @@
 
               <!-- Danh sách task có thể kéo thả (Drop Zone) -->
               <div class="kanban-list custom-scroll" id="kanban-list-doing" data-status="doing">
-                <!-- Nạp động qua JS với hiệu ứng Slide-down Fade-in & Keyword Highlight -->
+                <!-- Nạp động qua JS -->
               </div>
             </div>
 
@@ -242,14 +255,11 @@
                   <h2 class="kanban-title">Đã Hoàn Thành (Done)</h2>
                   <span class="badge badge-done font-mono text-xs font-bold" id="count-done">0</span>
                 </div>
-                <span class="text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  +100% Progress
-                </span>
               </div>
 
               <!-- Danh sách task có thể kéo thả (Drop Zone) -->
               <div class="kanban-list custom-scroll" id="kanban-list-done" data-status="done">
-                <!-- Nạp động qua JS với hiệu ứng Slide-down Fade-in & Keyword Highlight -->
+                <!-- Nạp động qua JS -->
               </div>
             </div>
 
@@ -261,201 +271,470 @@
   </div>
 
   <!-- ========================================================================
-       5. MODAL FORM: THÊM MỚI / CHỈNH SỬA CÔNG VIỆC (TASK MODAL)
+       5. MODAL CHI TIẾT CÔNG VIỆC CHUẨN TRELLO (BỐ CỤC 2 CỘT MASTER-DETAIL)
+       Cột trái: Nội dung, Checklist nhiều người, Bằng chứng ngữ cảnh, Bình luận.
+       Cột phải: Sidebar thuộc tính, Hộp phê duyệt Admin & Hành động.
        ======================================================================== -->
   <div 
     id="taskModal" 
-    class="glass-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm hidden"
+    class="glass-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md hidden"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="modalTaskTitle"
+    aria-labelledby="taskInputTitle"
   >
-    <div class="glass-card bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 p-6 rounded-2xl w-full max-w-xl shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scroll animate-modal-enter">
+    <div class="glass-card bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 p-5 sm:p-7 rounded-2xl w-full max-w-4xl shadow-2xl relative max-h-[92vh] overflow-y-auto custom-scroll animate-modal-enter">
       
-      <!-- Tiêu đề Modal & Nút đóng -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10 mb-5">
-        <div class="flex items-center gap-2.5">
-          <span class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-          </span>
-          <h3 id="modalTaskTitle" class="text-base font-bold text-slate-900 dark:text-white">Thêm Công Việc Mới</h3>
+      <!-- Modal Top Header: Breadcrumb & Close -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10 mb-5">
+        <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold">📋</span>
+          <span id="taskModalBreadcrumb" class="font-medium">trong dự án: <b>TaskFlow Platform Core</b></span>
         </div>
         <button 
           type="button" 
           id="btnCloseTaskModal" 
           class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-          title="Đóng modal"
+          title="Đóng (Esc)"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <!-- Form nhập liệu Task -->
-      <form id="taskForm" class="space-y-4">
+      <!-- Main Form Container: Bố cục 2 cột -->
+      <form id="taskForm">
         <input type="hidden" id="taskFormId" value="" />
 
-        <!-- Tên Task -->
-        <div>
-          <label for="taskInputTitle" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-            Tên Công Việc <span class="text-rose-500">*</span>
-          </label>
-          <input 
-            type="text" 
-            id="taskInputTitle" 
-            required 
-            placeholder="VD: Xây dựng module thanh toán học phí VNPay QR" 
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          />
-        </div>
-
-        <!-- Mô tả chi tiết -->
-        <div>
-          <label for="taskInputDesc" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-            Mô Tả Nhiệm Vụ
-          </label>
-          <textarea 
-            id="taskInputDesc" 
-            rows="3" 
-            placeholder="Mô tả yêu cầu kỹ thuật, tài liệu API hoặc tiêu chuẩn hoàn thành..." 
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          ></textarea>
-        </div>
-
-        <!-- Chọn Dự án & Trạng thái khởi tạo -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="taskInputProject" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Dự Án Thuộc Về <span class="text-rose-500">*</span>
-            </label>
-            <select 
-              id="taskInputProject" 
-              required 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
-              <!-- Nạp danh sách dự án động -->
-            </select>
+        <!-- Banner Chế độ Chỉ Đọc (RBAC View-Only Banner) -->
+        <div id="taskModalReadOnlyBanner" class="hidden mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-xs text-amber-700 dark:text-amber-300 font-medium animate-fadeIn">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
-
-          <div>
-            <label for="taskInputStatus" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Trạng Thái Ban Đầu
-            </label>
-            <select 
-              id="taskInputStatus" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
-              <option value="todo">Chờ thực hiện (To-do)</option>
-              <option value="doing">Đang làm (In-Progress)</option>
-              <option value="done">Đã hoàn thành (Done)</option>
-            </select>
+          <div class="flex-1 leading-relaxed" id="taskModalReadOnlyText">
+            Chế độ <b>Chỉ đọc (View-only)</b>: Công việc này thuộc về thành viên khác. Bạn không thể chỉnh sửa nội dung nhưng vẫn có thể theo dõi tiến độ và để lại bình luận trao đổi bên dưới.
           </div>
         </div>
 
-        <!-- Mức độ ưu tiên & Người phụ trách -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="taskInputPriority" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Mức Độ Ưu Tiên <span class="text-rose-500">*</span>
-            </label>
-            <select 
-              id="taskInputPriority" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
-              <option value="medium">⚡ Medium (Bình thường)</option>
-              <option value="critical">🚨 Critical (Khẩn cấp)</option>
-              <option value="high">🔥 High (Cao)</option>
-              <option value="low">🌱 Low (Thấp)</option>
-            </select>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- CỘT TRÁI (NỘI DUNG CHÍNH - lg:col-span-8) -->
+          <div class="lg:col-span-8 space-y-6">
+            
+            <!-- Tiêu đề Task -->
+            <div>
+              <label for="taskInputTitle" class="sr-only">Tên công việc</label>
+              <input 
+                type="text" 
+                id="taskInputTitle" 
+                required 
+                placeholder="Nhập tên công việc..." 
+                class="w-full px-3 py-2 text-lg sm:text-xl font-bold bg-transparent border-b-2 border-slate-300 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            <!-- Mô tả chi tiết -->
+            <div>
+              <label for="taskInputDesc" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <span>📝</span> Mô tả chi tiết
+              </label>
+              <textarea 
+                id="taskInputDesc" 
+                rows="3" 
+                placeholder="Thêm mô tả chi tiết, tiêu chuẩn nghiệm thu hoặc tài liệu tham khảo..." 
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-relaxed"
+              ></textarea>
+            </div>
+
+            <!-- CHECKLIST MINI-TASKS (Phân công 1 hoặc NHIỀU người) -->
+            <div class="p-4 rounded-xl bg-slate-100/60 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-3.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">☑️</span>
+                  <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Danh Sách Việc Con (Checklist)
+                  </h4>
+                </div>
+                <span id="subtasksProgressText" class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">0/0 (0%)</span>
+              </div>
+
+              <!-- Thanh tiến độ checklist -->
+              <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                <div id="subtasksProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300" style="width: 0%"></div>
+              </div>
+
+              <!-- Danh sách việc con -->
+              <div id="subtasksContainer" class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1">
+                <!-- Nạp động qua JS -->
+              </div>
+
+              <!-- Form thêm việc con: Hỗ trợ chọn NHIỀU người cùng làm -->
+              <div class="pt-2 border-t border-slate-200/80 dark:border-white/5 space-y-2">
+                <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>+ Thêm việc con:</span>
+                  <span class="text-[10px] text-slate-400">Chọn 1 hoặc NHIỀU người cùng làm bên dưới</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    id="newSubtaskTitle" 
+                    placeholder="VD: Viết test case, Thiết kế wireframe..." 
+                    class="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  />
+                  <button 
+                    type="button" 
+                    id="btnAddSubtask" 
+                    class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 flex-shrink-0"
+                  >
+                    <span>+ Thêm việc</span>
+                  </button>
+                </div>
+
+                <!-- Chips chọn NHIỀU người cùng làm (Multi-select) -->
+                <div class="flex flex-wrap items-center gap-1.5 pt-1" id="newSubtaskMembersSelector">
+                  <!-- Render động các chip thành viên -->
+                </div>
+              </div>
+            </div>
+
+            <!-- BẰNG CHỨNG LÀM VIỆC NGỮ CẢNH (Contextual Evidence Area) -->
+            <div id="contextualEvidenceContainer">
+              <!-- Render động theo trạng thái hiện tại: todo / doing / done -->
+            </div>
+
+            <!-- HOẠT ĐỘNG & BÌNH LUẬN (Activity & Comments Feed) -->
+            <div class="pt-4 border-t border-slate-200 dark:border-white/10 space-y-3.5">
+              <div class="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                <span>💬</span> Trao Đổi & Bình Luận Công Việc
+              </div>
+
+              <!-- Hộp nhập bình luận mới -->
+              <div class="flex items-start gap-2.5">
+                <img 
+                  id="commentAuthorAvatar" 
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=KhoaPham" 
+                  alt="Author" 
+                  class="w-7 h-7 rounded-full bg-slate-200 dark:bg-white/10 flex-shrink-0 mt-1"
+                />
+                <div class="flex-1 space-y-2">
+                  <textarea 
+                    id="newCommentText" 
+                    rows="2" 
+                    placeholder="Viết phản hồi, góp ý tiến độ hoặc trao đổi với nhóm..." 
+                    class="w-full px-3 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  ></textarea>
+                  <div class="flex justify-end">
+                    <button 
+                      type="button" 
+                      id="btnPostComment" 
+                      class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors flex items-center gap-1"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                      <span>Gửi bình luận</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Danh sách bình luận -->
+              <div id="commentsListContainer" class="space-y-3 max-h-48 overflow-y-auto custom-scroll pr-1">
+                <!-- Nạp động qua JS -->
+              </div>
+            </div>
+
           </div>
 
-          <div>
-            <label for="taskInputAssignee" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Thành Viên Phụ Trách <span class="text-rose-500">*</span>
-            </label>
-            <select 
-              id="taskInputAssignee" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
-              <!-- Nạp danh sách thành viên động -->
-            </select>
-          </div>
-        </div>
+          <!-- CỘT PHẢI (SIDEBAR THAO TÁC - lg:col-span-4) -->
+          <div class="lg:col-span-4 space-y-4">
+            
+            <!-- Nhóm Thuộc tính cốt lõi -->
+            <div class="p-4 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 space-y-3.5 text-xs">
+              <h5 class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                Thuộc Tính & Phân Công
+              </h5>
 
-        <!-- Thời gian: Bắt đầu & Hạn chót -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="taskInputStart" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Ngày Giờ Bắt Đầu
-            </label>
-            <input 
-              type="datetime-local" 
-              id="taskInputStart" 
-              class="w-full px-3 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
+              <!-- Trạng thái -->
+              <div>
+                <label for="taskInputStatus" class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Trạng Thái Hiện Tại
+                </label>
+                <select 
+                  id="taskInputStatus" 
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <option value="todo">Chờ thực hiện (To-do)</option>
+                  <option value="doing">Đang làm (In-Progress)</option>
+                  <option value="done">Đã hoàn thành (Done)</option>
+                </select>
+              </div>
+
+              <!-- Dự án -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label for="taskInputProject" class="font-semibold text-slate-600 dark:text-slate-400">
+                    Dự Án Thuộc Về
+                  </label>
+                  <span class="admin-only-lock hidden text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🔒 Chỉ Chủ dự án</span>
+                </div>
+                <select 
+                  id="taskInputProject" 
+                  required 
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <!-- Nạp động -->
+                </select>
+              </div>
+
+              <!-- Mức độ ưu tiên -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label for="taskInputPriority" class="font-semibold text-slate-600 dark:text-slate-400">
+                    Mức Độ Ưu Tiên
+                  </label>
+                  <span class="admin-only-lock hidden text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🔒 Chỉ Chủ dự án</span>
+                </div>
+                <select 
+                  id="taskInputPriority" 
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <option value="critical">🚨 Critical (Khẩn cấp)</option>
+                  <option value="high">🔥 High (Ưu tiên cao)</option>
+                  <option value="medium">⚡ Medium (Trung bình)</option>
+                  <option value="low">🌱 Low (Thấp)</option>
+                </select>
+              </div>
+
+              <!-- Người phụ trách chính (Lead) -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label for="taskInputAssignee" class="font-semibold text-slate-600 dark:text-slate-400">
+                    Người Phụ Trách Chính (Lead)
+                  </label>
+                  <span class="admin-only-lock hidden text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🔒 Chỉ Chủ dự án</span>
+                </div>
+                <select 
+                  id="taskInputAssignee" 
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <!-- Nạp động -->
+                </select>
+              </div>
+
+              <!-- Thời gian: Bắt đầu & Hạn chót -->
+              <div class="space-y-2">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label for="taskInputStart" class="font-semibold text-slate-600 dark:text-slate-400">
+                      Ngày Bắt Đầu
+                    </label>
+                    <span class="admin-only-lock hidden text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🔒 Chỉ Chủ dự án</span>
+                  </div>
+                  <input 
+                    type="datetime-local" 
+                    id="taskInputStart" 
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label for="taskInputDue" class="font-semibold text-slate-600 dark:text-slate-400">
+                      Hạn Chót (Deadline) <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="admin-only-lock hidden text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🔒 Chỉ Chủ dự án</span>
+                  </div>
+                  <input 
+                    type="datetime-local" 
+                    id="taskInputDue" 
+                    required 
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <!-- Số giờ ước lượng & Tags -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="taskInputHours" class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Ước Lượng (h)</label>
+                  <input 
+                    type="number" 
+                    id="taskInputHours" 
+                    min="0.5" 
+                    step="0.5" 
+                    value="8" 
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label for="taskInputTags" class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Tags</label>
+                  <input 
+                    type="text" 
+                    id="taskInputTags" 
+                    placeholder="API, UI..." 
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- KHU VỰC PHÊ DUYỆT NGHIỆM THU (Dành cho Admin / Manager) -->
+            <div id="approvalSidebarBox" class="p-4 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 space-y-3 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1">
+                  <span>🛡️</span> Nghiệm Thu & Duyệt
+                </span>
+                <span id="approvalBadgeStatus" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/10">
+                  Chờ duyệt
+                </span>
+              </div>
+
+              <div id="approvalAdminActions" class="space-y-2">
+                <!-- Nút Phê duyệt nghiệm thu (Admin) -->
+                <button 
+                  type="button" 
+                  id="btnApproveTask" 
+                  class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition-all flex items-center justify-center gap-1.5"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  <span>Phê Duyệt Nghiệm Thu</span>
+                </button>
+
+                <!-- Nút Yêu cầu sửa lại (Trả về In-Progress) -->
+                <button 
+                  type="button" 
+                  id="btnRequestChangesTask" 
+                  class="w-full py-2 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/30 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                  <span>Yêu Cầu Sửa Lại</span>
+                </button>
+              </div>
+
+              <p id="approvalInfoText" class="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                Chỉ Chủ dự án mới có quyền phê duyệt nghiệm thu công việc này.
+              </p>
+            </div>
+
+            <!-- Hành động Lưu & Xóa -->
+            <div class="space-y-2 pt-2">
+              <button 
+                type="submit" 
+                id="btnSaveTask" 
+                class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2"
+              >
+                <span id="btnSaveTaskText">Lưu Toàn Bộ Thay Đổi</span>
+              </button>
+
+              <button 
+                type="button" 
+                id="btnDeleteTaskInModal" 
+                class="w-full py-2 px-4 rounded-xl border border-rose-500/30 text-rose-600 dark:text-rose-400 font-semibold text-xs hover:bg-rose-500/10 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Xóa Công Việc Này</span>
+              </button>
+            </div>
+
           </div>
 
-          <div>
-            <label for="taskInputDue" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Hạn Chót (Deadline) <span class="text-rose-500">*</span>
-            </label>
-            <input 
-              type="datetime-local" 
-              id="taskInputDue" 
-              required 
-              class="w-full px-3 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-          </div>
-        </div>
-
-        <!-- Số giờ ước lượng & Tags -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="taskInputHours" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Ước Lượng (Giờ)
-            </label>
-            <input 
-              type="number" 
-              id="taskInputHours" 
-              min="0.5" 
-              step="0.5" 
-              value="8" 
-              placeholder="VD: 8" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-          </div>
-
-          <div>
-            <label for="taskInputTags" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Thẻ Nhãn (Tags, phân cách bằng dấu phẩy)
-            </label>
-            <input 
-              type="text" 
-              id="taskInputTags" 
-              placeholder="Frontend, API, Security" 
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-          </div>
-        </div>
-
-        <!-- Các nút Submit / Cancel -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10 mt-6">
-          <button 
-            type="button" 
-            id="btnCancelTaskModal" 
-            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-          >
-            Hủy Bỏ
-          </button>
-          <button 
-            type="submit" 
-            id="btnSaveTask" 
-            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center min-w-[130px]"
-          >
-            <span id="btnSaveTaskText">Lưu Công Việc</span>
-          </button>
         </div>
       </form>
 
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL NỘP / CẬP NHẬT NHANH BẰNG CHỨNG (QUICK EVIDENCE MODAL)
+       ======================================================================== -->
+  <div 
+    id="quickEvidenceModal" 
+    class="glass-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="quickEvidenceModalTitle"
+  >
+    <div class="glass-card bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 p-6 rounded-2xl w-full max-w-lg shadow-2xl relative animate-modal-enter space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span id="quickEvidenceIcon" class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-500 flex items-center justify-center font-bold text-base">
+            🔗
+          </span>
+          <div>
+            <h3 id="quickEvidenceModalTitle" class="text-sm font-bold text-slate-900 dark:text-white">Nộp Bằng Chứng Tiến Độ</h3>
+            <p id="quickEvidenceTaskName" class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs font-medium"></p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          id="btnCloseQuickEvidenceModal" 
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          title="Đóng"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="quickEvidenceForm" class="space-y-3.5">
+        <input type="hidden" id="quickEvidenceTaskId" value="" />
+        <input type="hidden" id="quickEvidenceTargetStatus" value="" />
+
+        <div>
+          <label id="quickEvidenceUrlLabel" for="quickEvidenceUrl" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Đường dẫn Bằng chứng (URL) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔗</span>
+            <input 
+              type="url" 
+              id="quickEvidenceUrl" 
+              required
+              placeholder="https://figma.com/... hoặc https://github.com/..." 
+              class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
+          </div>
+          <p id="quickEvidenceHint" class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Dán link Figma, GitHub PR/Commit, Google Docs, hoặc Live Demo.</p>
+        </div>
+
+        <div>
+          <label for="quickEvidenceNote" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Ghi Chú Tiến Độ / Bàn Giao
+          </label>
+          <textarea 
+            id="quickEvidenceNote" 
+            rows="2" 
+            placeholder="Mô tả tóm tắt kết quả đạt được..." 
+            class="w-full px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input 
+            type="checkbox" 
+            id="quickEvidenceSyncSheets" 
+            checked 
+            class="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-white/20"
+          />
+          <label for="quickEvidenceSyncSheets" class="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+            Đồng bộ bản ghi bằng chứng này lên <b>Google Sheets Webhook</b>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-white/10">
+          <button 
+            type="button" 
+            id="btnSkipQuickEvidence" 
+            class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          >
+            Bỏ qua & Cập nhật sau
+          </button>
+          <button 
+            type="submit" 
+            id="btnSaveQuickEvidence" 
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition-all flex items-center gap-1.5"
+          >
+            <span>Lưu & Đồng Bộ</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -467,6 +746,7 @@
        ======================================================================== -->
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/sheets-sync.js"></script>
   <script src="js/layout.js"></script>
   <script src="js/kanban.js"></script>
 

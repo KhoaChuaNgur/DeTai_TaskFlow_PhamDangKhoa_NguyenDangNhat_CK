@@ -1,4 +1,4442 @@
 /**
+
+ * ==============================================================================
+
+ * TASKFLOW ARCHITECTURE DESIGN SYSTEM (styles.css)
+
+ * Theme: Deep Slate & Electric Neo-Violet (Xu hướng 2026/2027)
+
+ * Author: Senior UI/UX Designer & CSS Architect
+
+ * Compliant with: colorweb.md, skill.md, and ai_detected.md
+
+ * ==============================================================================
+
+ */
+
+
+
+/* ==========================================================================
+
+   1. CSS VARIABLES (DESIGN TOKENS - DARK & LIGHT THEMES)
+
+   ========================================================================== */
+
+
+
+:root {
+
+  /* Default Theme Tokens: Dark Mode Deep Slate & Electric Neo-Violet */
+
+  --bg-main: #090D16;
+
+  --bg-surface: rgba(15, 23, 42, 0.65);
+
+  --bg-surface-solid: #0F172A;
+
+  --bg-surface-hover: rgba(30, 41, 59, 0.75);
+
+  --bg-elevated: rgba(30, 41, 59, 0.85);
+
+
+
+  /* Card & Glass Borders */
+
+  --border-card: rgba(255, 255, 255, 0.08);
+
+  --border-card-hover: rgba(255, 255, 255, 0.16);
+
+  --border-subtle: rgba(255, 255, 255, 0.05);
+
+  --border-focus: #6366F1;
+
+
+
+  /* Typography Colors */
+
+  --text-primary: #F8FAFC;
+
+  --text-secondary: #94A3B8;
+
+  --text-muted: #64748B;
+
+  --text-inverse: #0F172A;
+
+
+
+  /* Brand & Accent Colors */
+
+  --primary-accent: #6366F1;
+
+  --primary-accent-hover: #4F46E5;
+
+  --primary-accent-glow: rgba(99, 102, 241, 0.25);
+
+  --secondary-accent: #8B5CF6;
+
+  --secondary-accent-hover: #7C3AED;
+
+  --secondary-accent-glow: rgba(139, 92, 246, 0.2);
+
+
+
+  /* Kanban Status Columns & Borders */
+
+  --kanban-todo-bg: rgba(100, 116, 139, 0.1);
+
+  --kanban-todo-text: #94A3B8;
+
+  --kanban-todo-border: rgba(100, 116, 139, 0.2);
+
+  --kanban-todo-col-border: rgba(51, 65, 85, 0.4);
+
+
+
+  --kanban-doing-bg: rgba(14, 165, 233, 0.1);
+
+  --kanban-doing-text: #38BDF8;
+
+  --kanban-doing-border: rgba(14, 165, 233, 0.2);
+
+  --kanban-doing-col-border: rgba(14, 165, 233, 0.3);
+
+
+
+  --kanban-done-bg: rgba(16, 185, 129, 0.1);
+
+  --kanban-done-text: #34D399;
+
+  --kanban-done-border: rgba(16, 185, 129, 0.2);
+
+  --kanban-done-col-border: rgba(16, 185, 129, 0.3);
+
+
+
+  /* Priority Tokens */
+
+  --priority-critical-bg: rgba(244, 63, 94, 0.15);
+
+  --priority-critical-text: #FB7185;
+
+  --priority-critical-border: rgba(244, 63, 94, 0.3);
+
+
+
+  --priority-high-bg: rgba(245, 158, 11, 0.15);
+
+  --priority-high-text: #FBBF24;
+
+  --priority-high-border: rgba(245, 158, 11, 0.3);
+
+
+
+  --priority-medium-bg: rgba(99, 102, 241, 0.15);
+
+  --priority-medium-text: #818CF8;
+
+  --priority-medium-border: rgba(99, 102, 241, 0.3);
+
+
+
+  --priority-low-bg: rgba(100, 116, 139, 0.15);
+
+  --priority-low-text: #94A3B8;
+
+  --priority-low-border: rgba(100, 116, 139, 0.3);
+
+
+
+  /* Glassmorphism Soft Elevations & Shadows */
+
+  --glass-blur: 12px;
+
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  --shadow-elevation-low: 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+
+  --shadow-elevation-mid: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+
+  --shadow-elevation-high: 0 20px 35px -10px rgba(0, 0, 0, 0.65), 0 10px 15px -8px rgba(99, 102, 241, 0.2);
+
+
+
+  /* Scrollbar Tokens */
+
+  --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.45);
+
+  --scrollbar-track: rgba(15, 23, 42, 0.4);
+
+
+
+  /* Gantt Grid Tokens */
+
+  --gantt-header-bg: rgba(15, 23, 42, 0.85);
+
+  --gantt-grid-line: rgba(255, 255, 255, 0.05);
+
+  --gantt-weekend-bg: rgba(255, 255, 255, 0.015);
+
+  --gantt-today-line: #F43F5E;
+
+}
+
+
+
+/* Explicit Dark Mode */
+
+html.dark,
+
+:root.dark,
+
+[data-theme="dark"] {
+
+  --bg-main: #090D16;
+
+  --bg-surface: rgba(15, 23, 42, 0.65);
+
+  --bg-surface-solid: #0F172A;
+
+  --bg-surface-hover: rgba(30, 41, 59, 0.75);
+
+  --bg-elevated: rgba(30, 41, 59, 0.85);
+
+
+
+  --border-card: rgba(255, 255, 255, 0.08);
+
+  --border-card-hover: rgba(255, 255, 255, 0.16);
+
+  --border-subtle: rgba(255, 255, 255, 0.05);
+
+  --border-focus: #6366F1;
+
+
+
+  --text-primary: #F8FAFC;
+
+  --text-secondary: #94A3B8;
+
+  --text-muted: #64748B;
+
+  --text-inverse: #0F172A;
+
+
+
+  --primary-accent: #6366F1;
+
+  --primary-accent-hover: #4F46E5;
+
+  --secondary-accent: #8B5CF6;
+
+  --secondary-accent-hover: #7C3AED;
+
+
+
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+
+  --scrollbar-track: rgba(15, 23, 42, 0.4);
+
+}
+
+
+
+/* Explicit Light Mode: WCAG AAA High Contrast & Clean Slate */
+
+html:not(.dark),
+
+:root:not(.dark),
+
+[data-theme="light"],
+
+body.light-theme {
+
+  --bg-main: #F8FAFC;
+
+  --bg-surface: rgba(255, 255, 255, 0.85);
+
+  --bg-surface-solid: #FFFFFF;
+
+  --bg-surface-hover: rgba(241, 245, 249, 0.95);
+
+  --bg-elevated: #FFFFFF;
+
+
+
+  /* Card & Glass Borders */
+
+  --border-card: rgba(226, 232, 240, 0.9);
+
+  --border-card-hover: rgba(203, 213, 225, 1);
+
+  --border-subtle: rgba(226, 232, 240, 0.7);
+
+  --border-focus: #4F46E5;
+
+
+
+  /* Typography Colors - High Contrast */
+
+  --text-primary: #0F172A;
+
+  --text-secondary: #475569;
+
+  --text-muted: #64748B;
+
+  --text-inverse: #F8FAFC;
+
+
+
+  /* Brand & Accent Colors */
+
+  --primary-accent: #4F46E5;
+
+  --primary-accent-hover: #4338CA;
+
+  --primary-accent-glow: rgba(79, 70, 229, 0.15);
+
+  --secondary-accent: #7C3AED;
+
+  --secondary-accent-hover: #6D28D9;
+
+  --secondary-accent-glow: rgba(124, 58, 237, 0.12);
+
+
+
+  /* Kanban Status Columns & Borders */
+
+  --kanban-todo-bg: rgba(100, 116, 139, 0.08);
+
+  --kanban-todo-text: #334155;
+
+  --kanban-todo-border: rgba(100, 116, 139, 0.25);
+
+  --kanban-todo-col-border: rgba(203, 213, 225, 0.9);
+
+
+
+  --kanban-doing-bg: rgba(14, 165, 233, 0.08);
+
+  --kanban-doing-text: #0369A1;
+
+  --kanban-doing-border: rgba(14, 165, 233, 0.25);
+
+  --kanban-doing-col-border: rgba(14, 165, 233, 0.35);
+
+
+
+  --kanban-done-bg: rgba(16, 185, 129, 0.08);
+
+  --kanban-done-text: #047857;
+
+  --kanban-done-border: rgba(16, 185, 129, 0.25);
+
+  --kanban-done-col-border: rgba(16, 185, 129, 0.35);
+
+
+
+  /* Priority Tokens */
+
+  --priority-critical-bg: rgba(244, 63, 94, 0.1);
+
+  --priority-critical-text: #BE123C;
+
+  --priority-critical-border: rgba(244, 63, 94, 0.3);
+
+
+
+  --priority-high-bg: rgba(245, 158, 11, 0.1);
+
+  --priority-high-text: #B45309;
+
+  --priority-high-border: rgba(245, 158, 11, 0.3);
+
+
+
+  --priority-medium-bg: rgba(79, 70, 229, 0.1);
+
+  --priority-medium-text: #4338CA;
+
+  --priority-medium-border: rgba(79, 70, 229, 0.3);
+
+
+
+  --priority-low-bg: rgba(100, 116, 139, 0.1);
+
+  --priority-low-text: #475569;
+
+  --priority-low-border: rgba(100, 116, 139, 0.3);
+
+
+
+  /* Glassmorphism Soft Elevations & Shadows */
+
+  --glass-blur: 12px;
+
+  --shadow-glass: 0 4px 20px -2px rgba(148, 163, 184, 0.22), 0 2px 6px -1px rgba(148, 163, 184, 0.12);
+
+  --shadow-elevation-low: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+
+  --shadow-elevation-mid: 0 4px 12px -2px rgba(148, 163, 184, 0.25);
+
+  --shadow-elevation-high: 0 20px 25px -5px rgba(148, 163, 184, 0.25), 0 8px 10px -6px rgba(148, 163, 184, 0.15);
+
+
+
+  /* Scrollbar Tokens */
+
+  --scrollbar-thumb: rgba(100, 116, 139, 0.3);
+
+  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.6);
+
+  --scrollbar-track: rgba(241, 245, 249, 0.9);
+
+
+
+  /* Gantt Grid Tokens */
+
+  --gantt-header-bg: rgba(248, 250, 252, 0.95);
+
+  --gantt-grid-line: rgba(226, 232, 240, 0.9);
+
+  --gantt-weekend-bg: rgba(241, 245, 249, 0.6);
+
+  --gantt-today-line: #E11D48;
+
+}
+
+
+
+/* ==========================================================================
+
+   2. GLOBAL RESET & BASE STYLES
+
+   ========================================================================== */
+
+
+
+*,
+
+*::before,
+
+*::after {
+
+  box-sizing: border-box;
+
+  margin: 0;
+
+  padding: 0;
+
+}
+
+
+
+html {
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  font-size: 16px;
+
+  line-height: 1.5;
+
+  scroll-behavior: smooth;
+
+  text-rendering: optimizeLegibility;
+
+  -webkit-font-smoothing: antialiased;
+
+  -moz-osx-font-smoothing: grayscale;
+
+}
+
+
+
+body {
+
+  min-height: 100vh;
+
+  background-color: var(--bg-main);
+
+  color: var(--text-primary);
+
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  overflow-x: hidden;
+
+  position: relative;
+
+}
+
+
+
+/* Accessible interactive touch targets (Rubric: min 44x44px touch-friendly) */
+
+button,
+
+a,
+
+input,
+
+select,
+
+textarea,
+
+.interactive-target {
+
+  font: inherit;
+
+  color: inherit;
+
+}
+
+
+
+button,
+
+.btn-touch {
+
+  min-height: 44px;
+
+  min-width: 44px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  touch-action: manipulation;
+
+  cursor: pointer;
+
+  user-select: none;
+
+}
+
+
+
+/* Accessibility Focus Ring */
+
+:focus-visible {
+
+  outline: 2px solid var(--border-focus);
+
+  outline-offset: 2px;
+
+}
+
+
+
+/* ==========================================================================
+
+   3. GLASSMORPHISM CORE UTILITY CLASSES
+
+   ========================================================================== */
+
+
+
+/**
+
+ * .glass-card:
+
+ * Thẻ kính nổi dùng cho Task Cards, Dashboard Widgets, KPI Cards.
+
+ * Dark mode: bg-slate-900/65 border-white/10 shadow-xl
+
+ * Light mode: bg-white/85 border-slate-200/90 shadow-sm
+
+ */
+
+.glass-card {
+
+  background: var(--bg-surface);
+
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  border: 1px solid var(--border-card);
+
+  border-radius: 1rem;
+
+  box-shadow: var(--shadow-glass);
+
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+
+              border-color 0.2s ease,
+
+              background-color 0.2s ease;
+
+  will-change: transform, box-shadow;
+
+}
+
+
+
+.glass-card:hover {
+
+  border-color: var(--border-card-hover);
+
+  box-shadow: var(--shadow-elevation-mid);
+
+}
+
+
+
+/* Light mode card override for maximum contrast & crispness */
+
+html:not(.dark) .glass-card,
+
+[data-theme="light"] .glass-card,
+
+body.light-theme .glass-card {
+
+  background: rgba(255, 255, 255, 0.85);
+
+  border-color: rgba(226, 232, 240, 0.9);
+
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+  color: #0F172A;
+
+}
+
+
+
+html.dark .glass-card,
+
+[data-theme="dark"] .glass-card {
+
+  background: rgba(15, 23, 42, 0.65);
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+  box-shadow: var(--shadow-glass);
+
+  color: #F8FAFC;
+
+}
+
+
+
+/**
+
+ * .glass-nav:
+
+ * Thanh điều hướng nổi (Floating Header/Sidebar).
+
+ * Light mode: bg-white/90 border-r border-b border-slate-200 text-slate-800
+
+ * Dark mode: bg-slate-900/65 border-white/10 text-slate-100
+
+ */
+
+.glass-nav {
+
+  background: var(--bg-surface);
+
+  backdrop-filter: blur(16px);
+
+  -webkit-backdrop-filter: blur(16px);
+
+  border-bottom: 1px solid var(--border-card);
+
+  box-shadow: var(--shadow-elevation-low);
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 40;
+
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+
+}
+
+
+
+html:not(.dark) .glass-nav,
+
+[data-theme="light"] .glass-nav,
+
+body.light-theme .glass-nav {
+
+  background: rgba(255, 255, 255, 0.90);
+
+  border-color: #E2E8F0;
+
+  color: #1E293B;
+
+}
+
+
+
+html.dark .glass-nav,
+
+[data-theme="dark"] .glass-nav {
+
+  background: rgba(15, 23, 42, 0.65);
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+  color: #F8FAFC;
+
+}
+
+
+
+/**
+
+ * .glass-modal & .glass-modal-backdrop:
+
+ * Hộp thoại Popup đạt chuẩn WCAG AAA với backdrop làm mờ toàn cảnh.
+
+ */
+
+.glass-modal-backdrop {
+
+  position: fixed;
+
+  inset: 0;
+
+  background-color: rgba(9, 13, 22, 0.7);
+
+  backdrop-filter: blur(8px);
+
+  -webkit-backdrop-filter: blur(8px);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  z-index: 50;
+
+  padding: 1rem;
+
+  opacity: 1;
+
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+}
+
+
+
+.glass-modal {
+
+  background: var(--bg-surface-solid);
+
+  background-color: var(--bg-surface);
+
+  backdrop-filter: blur(20px);
+
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 1px solid var(--border-card);
+
+  border-radius: 1.25rem;
+
+  box-shadow: var(--shadow-elevation-high);
+
+  width: 100%;
+
+  max-width: 560px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  position: relative;
+
+  z-index: 51;
+
+  transform-origin: center;
+
+  animation: modalEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+}
+
+
+
+/**
+
+ * .glass-panel:
+
+ * Bảng điều khiển phụ, Popover, Dropdown menu.
+
+ */
+
+.glass-panel {
+
+  background: var(--bg-surface);
+
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  border: 1px solid var(--border-card);
+
+  border-radius: 0.75rem;
+
+  box-shadow: var(--shadow-elevation-mid);
+
+}
+
+
+
+/* ==========================================================================
+
+   3D CARD FLIP ARCHITECTURE (projects.html)
+
+   ========================================================================== */
+
+.flip-card {
+
+  perspective: 1200px;
+
+  background-color: transparent;
+
+  min-height: 320px;
+
+}
+
+
+
+.flip-card-inner {
+
+  position: relative;
+
+  width: 100%;
+
+  height: 100%;
+
+  min-height: 320px;
+
+  text-align: left;
+
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+
+  transform-style: preserve-3d;
+
+}
+
+
+
+.flip-card.is-flipped .flip-card-inner {
+
+  transform: rotateY(180deg);
+
+}
+
+
+
+.flip-card-front {
+
+  cursor: pointer;
+
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+
+}
+
+
+
+.flip-card:not(.is-flipped):hover .flip-card-front {
+
+  transform: translateY(-4px);
+
+  box-shadow: 0 16px 32px -8px rgba(99, 102, 241, 0.2), 0 8px 16px -6px rgba(0, 0, 0, 0.08);
+
+  border-color: rgba(99, 102, 241, 0.45);
+
+}
+
+
+
+.flip-card-front,
+
+.flip-card-back {
+
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+
+  height: 100%;
+
+  -webkit-backface-visibility: hidden;
+
+  backface-visibility: hidden;
+
+  border-radius: 1rem;
+
+  overflow: hidden;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: space-between;
+
+}
+
+
+
+.flip-card-back {
+
+  transform: rotateY(180deg);
+
+  z-index: 2;
+
+}
+
+
+
+/* ==========================================================================
+
+   4. CUSTOM SCROLLBAR (SIÊU MỎNG, BO TRÒN THEO CHUẨN DESIGN)
+
+   ========================================================================== */
+
+
+
+/* Webkit-based browsers (Chrome, Safari, Edge) */
+
+::-webkit-scrollbar {
+
+  width: 6px;
+
+  height: 6px;
+
+}
+
+
+
+::-webkit-scrollbar-track {
+
+  background: var(--scrollbar-track);
+
+  border-radius: 9999px;
+
+}
+
+
+
+::-webkit-scrollbar-thumb {
+
+  background: var(--scrollbar-thumb);
+
+  border-radius: 9999px;
+
+  transition: background-color 0.2s ease;
+
+}
+
+
+
+::-webkit-scrollbar-thumb:hover {
+
+  background: var(--scrollbar-thumb-hover);
+
+}
+
+
+
+/* Firefox standard custom scrollbar */
+
+* {
+
+  scrollbar-width: thin;
+
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+
+}
+
+
+
+/* Cột Kanban & Bảng Báo Cáo Scrollbar tinh chỉnh */
+
+.kanban-list::-webkit-scrollbar,
+
+.table-container::-webkit-scrollbar,
+
+.custom-scroll::-webkit-scrollbar {
+
+  width: 5px;
+
+  height: 5px;
+
+}
+
+
+
+.kanban-list::-webkit-scrollbar-thumb,
+
+.table-container::-webkit-scrollbar-thumb,
+
+.custom-scroll::-webkit-scrollbar-thumb {
+
+  background: var(--scrollbar-thumb);
+
+  border-radius: 10px;
+
+}
+
+
+
+.kanban-list::-webkit-scrollbar-thumb:hover,
+
+.table-container::-webkit-scrollbar-thumb:hover,
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+
+  background: var(--scrollbar-thumb-hover);
+
+}
+
+
+
+/* ==========================================================================
+
+   5. KEYFRAME ANIMATIONS & MICRO-INTERACTIONS
+
+   ========================================================================== */
+
+
+
+/**
+
+ * 1. Spring Drop: Hiệu ứng nảy vật lý tự nhiên khi thả thẻ Kanban vào cột mới.
+
+ * Sử dụng cubic-bezier dao động nhẹ mô phỏng lò xo (Spring Curve).
+
+ */
+
+@keyframes springDrop {
+
+  0% {
+
+    transform: scale(1.04) translateY(-6px);
+
+    box-shadow: var(--shadow-elevation-high);
+
+  }
+
+  35% {
+
+    transform: scale(0.98) translateY(2px);
+
+  }
+
+  65% {
+
+    transform: scale(1.01) translateY(-1px);
+
+  }
+
+  100% {
+
+    transform: scale(1) translateY(0);
+
+    box-shadow: var(--shadow-elevation-low);
+
+  }
+
+}
+
+
+
+.animate-spring-drop {
+
+  animation: springDrop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+
+  will-change: transform, box-shadow;
+
+}
+
+
+
+/**
+
+ * 2. Pulse Critical: Nhịp đập nhẹ nhàng và tinh tế cho badge mức độ 'Critical'.
+
+ * Chỉ animate opacity và scale vi mô để không tạo layout thrashing.
+
+ */
+
+@keyframes pulseCritical {
+
+  0%, 100% {
+
+    transform: scale(1);
+
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4);
+
+  }
+
+  50% {
+
+    transform: scale(1.03);
+
+    box-shadow: 0 0 0 5px rgba(244, 63, 94, 0);
+
+  }
+
+}
+
+
+
+.animate-pulse-critical,
+
+.badge-critical.is-pulsing {
+
+  animation: pulseCritical 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+}
+
+
+
+/**
+
+ * 3. Toast Slide Up: Thông báo trượt mượt mà từ góc dưới màn hình.
+
+ */
+
+@keyframes toastSlideUp {
+
+  0% {
+
+    opacity: 0;
+
+    transform: translateY(100%) scale(0.92);
+
+  }
+
+  70% {
+
+    transform: translateY(-4px) scale(1.01);
+
+  }
+
+  100% {
+
+    opacity: 1;
+
+    transform: translateY(0) scale(1);
+
+  }
+
+}
+
+
+
+@keyframes toastSlideDown {
+
+  0% {
+
+    opacity: 1;
+
+    transform: translateY(0) scale(1);
+
+  }
+
+  100% {
+
+    opacity: 0;
+
+    transform: translateY(100%) scale(0.92);
+
+  }
+
+}
+
+
+
+.toast-container {
+
+  position: fixed;
+
+  bottom: 1.5rem;
+
+  right: 1.5rem;
+
+  z-index: 100;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.75rem;
+
+  pointer-events: none;
+
+}
+
+
+
+.toast-item {
+
+  pointer-events: auto;
+
+  min-width: 300px;
+
+  max-width: 420px;
+
+  padding: 0.875rem 1.25rem;
+
+  border-radius: 0.75rem;
+
+  background: var(--bg-surface-solid);
+
+  backdrop-filter: blur(16px);
+
+  -webkit-backdrop-filter: blur(16px);
+
+  border: 1px solid var(--border-card);
+
+  box-shadow: var(--shadow-elevation-high);
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.75rem;
+
+  animation: toastSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+}
+
+
+
+.toast-item.is-dismissing {
+
+  animation: toastSlideDown 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+
+}
+
+
+
+/**
+
+ * Modal enter animation
+
+ */
+
+@keyframes modalEnter {
+
+  0% {
+
+    opacity: 0;
+
+    transform: scale(0.94) translateY(12px);
+
+  }
+
+  100% {
+
+    opacity: 1;
+
+    transform: scale(1) translateY(0);
+
+  }
+
+}
+
+
+
+/* Drag & Drop Feedback states */
+
+.task-card.is-dragging {
+
+  opacity: 0.45;
+
+  transform: scale(0.97) rotate(-1deg);
+
+  cursor: grabbing;
+
+}
+
+
+
+.kanban-list.is-drag-over {
+
+  background: rgba(99, 102, 241, 0.06);
+
+  border: 2px dashed var(--primary-accent);
+
+  border-radius: 0.75rem;
+
+}
+
+
+
+/* ==========================================================================
+
+   6. KANBAN BOARD LAYOUT (CSS GRID RESPONSIVE - 3 CỘT)
+
+   ========================================================================== */
+
+
+
+/**
+
+ * Kanban Board:
+
+ * Desktop: Bố cục Grid 3 cột theo Rubric (To-do, In-Progress, Done)
+
+ * Mobile & Tablet: Tự động chuyển thành snap-scroll ngang mượt mà.
+
+ */
+
+.kanban-board {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+
+  gap: 1.5rem;
+
+  align-items: start;
+
+  width: 100%;
+
+}
+
+
+
+.kanban-column {
+
+  background: var(--bg-surface);
+
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  border-radius: 1rem;
+
+  display: flex;
+
+  flex-direction: column;
+
+  max-height: calc(100vh - 12rem);
+
+  padding: 1.25rem;
+
+  box-shadow: var(--shadow-elevation-low);
+
+  transition: border-color 0.2s ease;
+
+}
+
+
+
+/* Column Variants with Specific Borders (colorweb.md Section 2) */
+
+.kanban-column[data-status="todo"],
+
+.kanban-column.column-todo {
+
+  border: 1px solid var(--kanban-todo-col-border);
+
+}
+
+
+
+.kanban-column[data-status="doing"],
+
+.kanban-column.column-doing {
+
+  border: 1px solid var(--kanban-doing-col-border);
+
+}
+
+
+
+.kanban-column[data-status="done"],
+
+.kanban-column.column-done {
+
+  border: 1px solid var(--kanban-done-col-border);
+
+}
+
+
+
+/* Column Header */
+
+.kanban-header {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 1rem;
+
+  padding-bottom: 0.75rem;
+
+  border-bottom: 1px solid var(--border-subtle);
+
+}
+
+
+
+.kanban-title-wrap {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.625rem;
+
+}
+
+
+
+.kanban-title {
+
+  font-size: 0.9375rem;
+
+  font-weight: 600;
+
+  letter-spacing: -0.01em;
+
+  color: var(--text-primary);
+
+}
+
+
+
+/* Task List Container */
+
+.kanban-list {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.875rem;
+
+  overflow-y: auto;
+
+  padding-right: 0.25rem;
+
+  flex: 1 1 auto;
+
+  min-height: 120px;
+
+}
+
+
+
+/* Task Card inside Column */
+
+.task-card {
+
+  position: relative;
+
+  padding: 1rem;
+
+  background: var(--bg-elevated);
+
+  border: 1px solid var(--border-card);
+
+  border-radius: 0.75rem;
+
+  box-shadow: var(--shadow-elevation-low);
+
+  cursor: grab;
+
+  user-select: none;
+
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+
+              box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+
+              border-color 0.18s ease;
+
+}
+
+
+
+.task-card:hover {
+
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-elevation-mid);
+
+  border-color: var(--border-card-hover);
+
+}
+
+
+
+.task-card:active {
+
+  cursor: grabbing;
+
+}
+
+
+
+/* Responsive Kanban: Mobile & Tablet Snap-Scroll (skill.md Section 3) */
+
+@media (max-width: 1024px) {
+
+  .kanban-board {
+
+    display: flex;
+
+    overflow-x: auto;
+
+    scroll-snap-type: x mandatory;
+
+    scroll-padding: 1rem;
+
+    gap: 1.25rem;
+
+    padding-bottom: 1.25rem;
+
+    -webkit-overflow-scrolling: touch;
+
+  }
+
+
+
+  .kanban-column {
+
+    flex: 0 0 85vw;
+
+    max-width: 380px;
+
+    scroll-snap-align: start;
+
+    max-height: calc(100vh - 10rem);
+
+  }
+
+}
+
+
+
+@media (max-width: 640px) {
+
+  .kanban-column {
+
+    flex: 0 0 90vw;
+
+  }
+
+}
+
+
+
+/* ==========================================================================
+
+   7. GANTT & TIMELINE LAYOUT (CSS GRID)
+
+   ========================================================================== */
+
+
+
+/**
+
+ * Gantt Timeline:
+
+ * Bố cục dòng thời gian dự án trực quan trên CSS Grid nhiều cột theo ngày/tuần.
+
+ */
+
+.gantt-wrapper {
+
+  width: 100%;
+
+  overflow-x: auto;
+
+  background: var(--bg-surface);
+
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  border: 1px solid var(--border-card);
+
+  border-radius: 1rem;
+
+  box-shadow: var(--shadow-glass);
+
+  padding: 1.25rem;
+
+}
+
+
+
+.gantt-header-sticky {
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 10;
+
+  background: var(--gantt-header-bg);
+
+  backdrop-filter: blur(8px);
+
+  -webkit-backdrop-filter: blur(8px);
+
+  border-bottom: 1px solid var(--border-card);
+
+}
+
+
+
+/* Gantt Grid System */
+
+.gantt-grid {
+
+  display: grid;
+
+  grid-template-columns: 360px repeat(var(--gantt-columns, 30), minmax(44px, 1fr));
+
+  position: relative;
+
+  min-width: 900px;
+
+}
+
+
+
+/* Header Cells */
+
+.gantt-cell-header {
+
+  padding: 0.625rem 0.25rem;
+
+  text-align: center;
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  color: var(--text-secondary);
+
+  border-right: 1px solid var(--gantt-grid-line);
+
+}
+
+
+
+.gantt-cell-header.is-weekend {
+
+  background: var(--gantt-weekend-bg);
+
+  color: var(--text-muted);
+
+}
+
+
+
+.gantt-cell-header.is-today {
+
+  color: var(--primary-accent);
+
+  font-weight: 700;
+
+  position: relative;
+
+}
+
+
+
+.gantt-cell-header.is-today::after {
+
+  content: '';
+
+  position: absolute;
+
+  bottom: 0;
+
+  left: 20%;
+
+  right: 20%;
+
+  height: 2px;
+
+  background-color: var(--gantt-today-line);
+
+  border-radius: 2px;
+
+}
+
+
+
+/* Gantt Task Rows */
+
+.gantt-row {
+
+  display: contents;
+
+}
+
+
+
+.gantt-task-meta {
+
+  padding: 0.5rem 0.75rem;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.625rem;
+
+  border-bottom: 1px solid var(--gantt-grid-line);
+
+  border-right: 1.5px solid rgba(226, 232, 240, 0.95);
+
+  font-size: 0.8125rem;
+
+  font-weight: 500;
+
+  background-color: #FFFFFF !important;
+
+  position: sticky;
+
+  left: 0;
+
+  z-index: 20;
+
+  box-shadow: 4px 0 12px -2px rgba(0, 0, 0, 0.06);
+
+  transition: background-color 0.15s ease;
+
+}
+
+
+
+html.dark .gantt-task-meta {
+
+  background-color: #0F172A !important;
+
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+
+  box-shadow: 4px 0 16px -2px rgba(0, 0, 0, 0.45);
+
+}
+
+
+
+.gantt-task-meta.gantt-header-sticky {
+
+  z-index: 30 !important;
+
+  background-color: #F8FAFC !important;
+
+}
+
+
+
+html.dark .gantt-task-meta.gantt-header-sticky {
+
+  background-color: #0F172A !important;
+
+}
+
+
+
+.gantt-track-area {
+
+  grid-column: 2 / -1;
+
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns: repeat(var(--gantt-columns, 30), minmax(44px, 1fr));
+
+  align-items: center;
+
+  border-bottom: 1px solid var(--gantt-grid-line);
+
+  min-height: 48px;
+
+}
+
+
+
+/* Gantt Task Bar */
+
+.gantt-bar {
+
+  grid-column: var(--start-col, 1) / span var(--duration-col, 4);
+
+  height: 28px;
+
+  background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+
+  border-radius: 6px;
+
+  display: flex;
+
+  align-items: center;
+
+  padding: 0 0.625rem;
+
+  color: #FFFFFF;
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  position: relative;
+
+  z-index: 2;
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+}
+
+
+
+.gantt-bar:hover {
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
+
+}
+
+
+
+.gantt-bar.is-critical {
+
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
+
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.35);
+
+}
+
+
+
+.gantt-bar.is-done {
+
+  background: linear-gradient(135deg, #10B981, #34D399);
+
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+
+}
+
+
+
+/* Progress Fill inside Gantt Bar */
+
+.gantt-bar-progress {
+
+  position: absolute;
+
+  left: 0;
+
+  top: 0;
+
+  bottom: 0;
+
+  width: var(--progress, 0%);
+
+  background: rgba(255, 255, 255, 0.22);
+
+  border-radius: inherit;
+
+  pointer-events: none;
+
+}
+
+
+
+/* ==========================================================================
+
+   8. STATUS & PRIORITY BADGES (colorweb.md Section 2 & 3)
+
+   ========================================================================== */
+
+
+
+.badge {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 0.375rem;
+
+  padding: 0.25rem 0.625rem;
+
+  border-radius: 9999px;
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  line-height: 1;
+
+  letter-spacing: 0.02em;
+
+  white-space: nowrap;
+
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+}
+
+
+
+/* Status Badges */
+
+.badge-todo {
+
+  background-color: var(--kanban-todo-bg);
+
+  color: var(--kanban-todo-text);
+
+  border: 1px solid var(--kanban-todo-border);
+
+}
+
+
+
+.badge-doing {
+
+  background-color: var(--kanban-doing-bg);
+
+  color: var(--kanban-doing-text);
+
+  border: 1px solid var(--kanban-doing-border);
+
+}
+
+
+
+.badge-done {
+
+  background-color: var(--kanban-done-bg);
+
+  color: var(--kanban-done-text);
+
+  border: 1px solid var(--kanban-done-border);
+
+}
+
+
+
+/* Priority Badges */
+
+.badge-critical {
+
+  background-color: var(--priority-critical-bg);
+
+  color: var(--priority-critical-text);
+
+  border: 1px solid var(--priority-critical-border);
+
+}
+
+
+
+.badge-high {
+
+  background-color: var(--priority-high-bg);
+
+  color: var(--priority-high-text);
+
+  border: 1px solid var(--priority-high-border);
+
+}
+
+
+
+.badge-medium {
+
+  background-color: var(--priority-medium-bg);
+
+  color: var(--priority-medium-text);
+
+  border: 1px solid var(--priority-medium-border);
+
+}
+
+
+
+.badge-low {
+
+  background-color: var(--priority-low-bg);
+
+  color: var(--priority-low-text);
+
+  border: 1px solid var(--priority-low-border);
+
+}
+
+
+
+/* Priority Dot indicator */
+
+.priority-dot {
+
+  width: 6px;
+
+  height: 6px;
+
+  border-radius: 50%;
+
+  display: inline-block;
+
+  background-color: currentColor;
+
+}
+
+
+
+/* ==========================================================================
+
+   9. AMBIENT BACKGROUND GLOW ORBS (colorweb.md Section 4)
+
+   ========================================================================== */
+
+
+
+.ambient-container {
+
+  position: fixed;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  overflow: hidden;
+
+  z-index: -10;
+
+}
+
+
+
+.ambient-orb-primary {
+
+  position: absolute;
+
+  top: -10rem;
+
+  left: -10rem;
+
+  width: 24rem;
+
+  height: 24rem;
+
+  background: rgba(99, 102, 241, 0.2);
+
+  border-radius: 9999px;
+
+  filter: blur(128px);
+
+}
+
+
+
+.ambient-orb-secondary {
+
+  position: absolute;
+
+  top: 50%;
+
+  right: -10rem;
+
+  width: 24rem;
+
+  height: 24rem;
+
+  background: rgba(139, 92, 246, 0.15);
+
+  border-radius: 9999px;
+
+  filter: blur(128px);
+
+}
+
+
+
+.ambient-orb-accent {
+
+  position: absolute;
+
+  bottom: -10rem;
+
+  left: 33.333%;
+
+  width: 24rem;
+
+  height: 24rem;
+
+  background: rgba(14, 165, 233, 0.15);
+
+  border-radius: 9999px;
+
+  filter: blur(128px);
+
+}
+
+
+
+/* Light mode orb opacity adjustment */
+
+html:not(.dark) .ambient-container,
+
+[data-theme="light"] .ambient-container,
+
+body.light-theme .ambient-container {
+
+  opacity: 0.18;
+
+}
+
+
+
+html:not(.dark) .ambient-orb-primary,
+
+[data-theme="light"] .ambient-orb-primary,
+
+body.light-theme .ambient-orb-primary {
+
+  background: rgba(99, 102, 241, 0.08);
+
+}
+
+
+
+html:not(.dark) .ambient-orb-secondary,
+
+[data-theme="light"] .ambient-orb-secondary,
+
+body.light-theme .ambient-orb-secondary {
+
+  background: rgba(139, 92, 246, 0.06);
+
+}
+
+
+
+html:not(.dark) .ambient-orb-accent,
+
+[data-theme="light"] .ambient-orb-accent,
+
+body.light-theme .ambient-orb-accent {
+
+  background: rgba(14, 165, 233, 0.06);
+
+}
+
+
+
+/* ==========================================================================
+
+   10. HIGH CONTRAST DATA TABLES & EMPTY STATES (ai_detected.md)
+
+   ========================================================================== */
+
+
+
+/* Report Tables: High legibility & solid backgrounds */
+
+.table-container {
+
+  width: 100%;
+
+  overflow-x: auto;
+
+  border-radius: 0.75rem;
+
+  border: 1px solid var(--border-card);
+
+  background: var(--bg-surface-solid);
+
+}
+
+
+
+.data-table {
+
+  width: 100%;
+
+  border-collapse: collapse;
+
+  text-align: left;
+
+  font-size: 0.875rem;
+
+}
+
+
+
+.data-table th {
+
+  padding: 0.875rem 1rem;
+
+  font-weight: 600;
+
+  color: var(--text-secondary);
+
+  border-bottom: 1px solid var(--border-card);
+
+  background: var(--bg-surface-solid);
+
+}
+
+
+
+.data-table td {
+
+  padding: 0.875rem 1rem;
+
+  border-bottom: 1px solid var(--border-subtle);
+
+  color: var(--text-primary);
+
+}
+
+
+
+.data-table tr:hover td {
+
+  background-color: var(--bg-surface-hover);
+
+}
+
+
+
+/* Empty States */
+
+.empty-state {
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 2.5rem 1.5rem;
+
+  text-align: center;
+
+  color: var(--text-secondary);
+
+}
+
+
+
+.empty-state-icon {
+
+  width: 48px;
+
+  height: 48px;
+
+  margin-bottom: 0.75rem;
+
+  opacity: 0.5;
+
+  color: var(--primary-accent);
+
+}
+
+
+
+.empty-state-title {
+
+  font-size: 0.9375rem;
+
+  font-weight: 600;
+
+  color: var(--text-primary);
+
+  margin-bottom: 0.25rem;
+
+}
+
+
+
+.empty-state-desc {
+
+  font-size: 0.8125rem;
+
+  color: var(--text-muted);
+
+  max-width: 260px;
+
+}
+
+
+
+/* ==========================================================================
+
+   11. ACCESSIBILITY & MOTION PREFERENCES
+
+   ========================================================================== */
+
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+
+  *::before,
+
+  *::after {
+
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+
+    scroll-behavior: auto !important;
+
+  }
+
+}
+
+
+
+
+
+/* ==========================================================================
+
+   12. KANBAN WORKSPACE ADVANCED UI ENHANCEMENTS (TRANG 3)
+
+   ========================================================================== */
+
+
+
+/* Search Input Glow, Gradient & Hover States */
+
+.search-glow-container {
+
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  transition: all 0.2s ease;
+
+}
+
+
+
+.search-glow-input {
+
+  width: 100%;
+
+  border-radius: 12px;
+
+  padding: 10px 38px 10px 42px;
+
+  font-size: 0.875rem;
+
+  border: 1px solid var(--border-card);
+
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+
+  color: var(--text-primary);
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+
+
+html:not(.dark) .search-glow-input,
+
+body.light-theme .search-glow-input {
+
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.9) 100%);
+
+  border-color: rgba(203, 213, 225, 0.9);
+
+}
+
+
+
+.search-glow-input:hover {
+
+  border-color: rgba(99, 102, 241, 0.45);
+
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
+
+}
+
+
+
+.search-glow-input:focus {
+
+  outline: none;
+
+  border-color: var(--primary-accent);
+
+  background: var(--bg-surface-solid);
+
+  box-shadow: 0 0 0 3px var(--primary-accent-glow), 0 8px 24px rgba(99, 102, 241, 0.2);
+
+}
+
+
+
+/* Keyword Highlight for Search Matches */
+
+.search-highlight {
+
+  background: rgba(99, 102, 241, 0.28);
+
+  color: #818CF8;
+
+  padding: 1px 4px;
+
+  border-radius: 4px;
+
+  font-weight: 700;
+
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
+
+}
+
+
+
+html:not(.dark) .search-highlight,
+
+body.light-theme .search-highlight {
+
+  background: rgba(99, 102, 241, 0.2);
+
+  color: #4338CA;
+
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+
+}
+
+
+
+/* Dropdown Filters: Project & Priority Specifications */
+
+.select-project-filter,
+
+.select-priority-filter {
+
+  border-radius: 10px !important;
+
+  padding: 10px 14px !important;
+
+  border: 1px solid var(--border-card) !important;
+
+  background-color: var(--bg-surface-solid) !important;
+
+  color: var(--text-primary) !important;
+
+  font-size: 0.875rem !important;
+
+  cursor: pointer !important;
+
+  transition: all 0.2s ease !important;
+
+  appearance: none;
+
+  -webkit-appearance: none;
+
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+
+  background-repeat: no-repeat;
+
+  background-position: right 12px center;
+
+  background-size: 16px;
+
+  padding-right: 36px !important;
+
+}
+
+
+
+.select-project-filter:hover,
+
+.select-priority-filter:hover {
+
+  border-color: rgba(99, 102, 241, 0.45) !important;
+
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.1) !important;
+
+}
+
+
+
+.select-project-filter:focus,
+
+.select-priority-filter:focus {
+
+  outline: none !important;
+
+  border-color: var(--primary-accent) !important;
+
+  box-shadow: 0 0 0 3px var(--primary-accent-glow), 0 4px 16px rgba(99, 102, 241, 0.18) !important;
+
+}
+
+
+
+/* Primary CTA Button (Hover, Active, Transition, Focus-visible, Loading) */
+
+.btn-add-task-primary {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 10px 20px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+
+  color: #FFFFFF;
+
+  font-size: 0.875rem;
+
+  font-weight: 700;
+
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  cursor: pointer;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+}
+
+
+
+.btn-add-task-primary:hover {
+
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45);
+
+  transform: translateY(-1px);
+
+}
+
+
+
+.btn-add-task-primary:active {
+
+  transform: translateY(0) scale(0.96);
+
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+
+}
+
+
+
+.btn-add-task-primary:focus-visible {
+
+  outline: none;
+
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.45), 0 0 0 6px rgba(99, 102, 241, 0.2);
+
+}
+
+
+
+/* Card Filter Appearance (Fade-in + Slide-down) */
+
+@keyframes cardSlideDownFade {
+
+  0% {
+
+    opacity: 0;
+
+    transform: translateY(-8px) scale(0.98);
+
+  }
+
+  100% {
+
+    opacity: 1;
+
+    transform: translateY(0) scale(1);
+
+  }
+
+}
+
+
+
+.animate-card-enter {
+
+  animation: cardSlideDownFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+}
+
+
+
+/* KPI Count-up & Real-time Highlight Flash */
+
+@keyframes kpiHighlightFlash {
+
+  0% {
+
+    background-color: rgba(99, 102, 241, 0.45);
+
+    color: #FFFFFF;
+
+    transform: scale(1.15);
+
+    border-radius: 6px;
+
+  }
+
+  100% {
+
+    background-color: transparent;
+
+    transform: scale(1);
+
+  }
+
+}
+
+
+
+.kpi-change-highlight {
+
+  display: inline-block;
+
+  animation: kpiHighlightFlash 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+
+
+.kpi-bar-smooth {
+
+  transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1) !important;
+
+}
+
+
+
+/* Loading Spinner */
+
+.spinner-border-sm {
+
+  width: 1rem;
+
+  height: 1rem;
+
+  border: 2px solid currentColor;
+
+  border-right-color: transparent;
+
+  border-radius: 50%;
+
+  animation: spin 0.75s linear infinite;
+
+  display: inline-block;
+
+}
+
+
+
+/* Timeline page: isolated additions; shared component rules are preserved. */
+
+.tl-page { margin: 0; background: var(--bg-main); color: var(--text-primary); font-family: Inter, system-ui, sans-serif; }
+
+.tl-page [hidden] { display: none !important; }
+
+.tl-shell { display: flex; height: 100dvh; overflow: hidden; }
+
+.tl-workspace { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+
+.tl-main { overflow: auto; padding: clamp(16px, 3vw, 36px); }
+
+.tl-main #timelineContent { max-width: 1600px; margin: auto; animation: tl-enter .3s ease both; }
+
+.tl-intro { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 28px; }
+
+.tl-eyebrow { color: var(--primary-accent); font-size: 11px; font-weight: 800; letter-spacing: .15em; margin-bottom: 10px; }
+
+.tl-intro h1 { font-size: clamp(24px, 2.6vw, 34px); font-weight: 750; letter-spacing: -.045em; line-height: 1.25; margin: 0 0 10px; }
+
+.tl-muted { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+
+.tl-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 10px 14px; border: 1px solid var(--border-card); border-radius: 10px; background: var(--bg-elevated); color: var(--text-primary); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .2s ease, box-shadow .2s ease, transform .2s ease; white-space: nowrap; }
+
+.tl-button:hover { background: var(--bg-surface-hover); box-shadow: 0 4px 16px var(--primary-accent-glow); transform: translateY(-1px); }
+
+.tl-button:active { transform: scale(.97); }
+
+.tl-button:focus-visible, .tl-meta:focus-visible, .tl-bar:focus-visible, .tl-scroll:focus-visible { outline: 2px solid var(--primary-accent); outline-offset: 3px; }
+
+.tl-view .tl-button[aria-pressed="true"] { color: #fff; background: linear-gradient(120deg, #6366f1, #8b5cf6); border-color: #6366f1; }
+
+.tl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 26px; }
+
+.tl-stat { position: relative; overflow: hidden; padding: 20px 22px; border: 1px solid var(--border-card); border-radius: 16px; background: var(--bg-surface); backdrop-filter: blur(12px); box-shadow: var(--shadow-elevation-low); }
+
+.tl-stat::after { content: ''; position: absolute; width: 50px; height: 50px; right: -12px; bottom: -12px; border-radius: 50%; background: var(--primary-accent-glow); }
+
+.tl-stat span { display: block; color: var(--text-secondary); font-size: 12px; }
+
+.tl-stat strong { display: block; font-size: 32px; font-weight: 700; letter-spacing: -.04em; margin-top: 10px; font-variant-numeric: tabular-nums; }
+
+.tl-stat-1 strong { color: var(--kanban-doing-text); }
+
+.tl-stat-2 strong { color: var(--kanban-done-text); }
+
+.tl-stat-3 strong { color: var(--priority-critical-text); }
+
+.tl-panel { background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 18px; box-shadow: var(--shadow-elevation-mid); backdrop-filter: blur(12px); overflow: hidden; }
+
+.tl-toolbar { display: flex; align-items: end; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border-card); flex-wrap: wrap; }
+
+.tl-project-control { flex: 1; min-width: 200px; max-width: 380px; }
+
+.tl-project-control label { display: block; font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; }
+
+.tl-project-control select { width: 100%; min-height: 44px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--border-card); background-color: var(--bg-surface-solid); color: var(--text-primary); cursor: pointer; font: inherit; font-size: 13px; transition: box-shadow .2s ease, border-color .2s ease; }
+
+.tl-project-control select:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-accent-glow); }
+
+.tl-navigation, .tl-view { display: flex; gap: 5px; }
+
+.tl-navigation { margin-left: auto; }
+
+.tl-chart-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 24px; }
+
+.tl-chart-heading h2 { font-size: 20px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.03em; }
+
+.tl-legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--text-secondary); font-size: 11px; }
+
+.tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.tl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 3px; }
+
+.tl-todo { background: #64748b; }
+
+.tl-doing { background: #0891b2; }
+
+.tl-done { background: #059669; }
+
+.tl-late-dot { border: 2px solid #f43f5e; }
+
+.tl-scroll { overflow: auto; max-height: 65vh; scrollbar-gutter: stable; scroll-behavior: smooth; border-top: 1px solid var(--border-card); }
+
+.tl-grid { --tl-meta-width: 260px; display: grid; grid-template-columns: var(--tl-meta-width) repeat(var(--tl-days, 31), minmax(46px, 1fr)); min-width: calc(var(--tl-meta-width) + var(--tl-days, 31) * 46px); align-items: stretch; }
+
+.tl-corner, .tl-day { position: sticky; top: 0; z-index: 4; background: var(--bg-surface-solid); border-right: 1px solid var(--gantt-grid-line); border-bottom: 1px solid var(--border-card); }
+
+.tl-corner { left: 0; z-index: 7; padding: 22px 16px; color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+
+.tl-day { text-align: center; padding: 9px 0; }
+
+.tl-day span { display: block; color: var(--text-secondary); font-size: 9px; margin-bottom: 3px; }
+
+.tl-day strong { font-size: 13px; }
+
+.tl-day.tl-weekend { background: var(--bg-elevated); }
+
+.tl-day.tl-today { color: var(--primary-accent); border-bottom: 3px solid var(--primary-accent); }
+
+.tl-group { grid-column: 1 / -1; padding: 12px 16px; background: var(--bg-elevated); font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border-card); }
+
+.tl-group span { color: var(--text-secondary); font-size: 10px; font-weight: 400; margin-left: 10px; }
+
+.tl-meta { position: sticky; left: 0; z-index: 3; display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 70px; padding: 12px 16px; border: 0; border-right: 1px solid var(--border-card); border-bottom: 1px solid var(--border-card); background: var(--bg-surface-solid); color: var(--text-primary); text-align: left; cursor: pointer; }
+
+.tl-meta:hover { background: var(--bg-elevated); }
+
+.tl-meta strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
+
+.tl-meta span { color: var(--text-secondary); margin-top: 6px; font-size: 10px; }
+
+.tl-track { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(var(--tl-days, 31), minmax(46px, 1fr)); align-items: center; border-bottom: 1px solid var(--border-card); min-height: 70px; }
+
+.tl-cell { grid-row: 1; align-self: stretch; border-right: 1px solid var(--gantt-grid-line); }
+
+.tl-cell.tl-weekend { background: var(--gantt-weekend-bg); }
+
+.tl-cell.tl-today { background: var(--primary-accent-glow); border-left: 1px solid var(--primary-accent); }
+
+.tl-bar { grid-row: 1; z-index: 1; min-width: 0; height: 32px; margin: 0 3px; padding: 0 10px; color: #fff; font-size: 11px; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; cursor: pointer; box-shadow: 0 3px 9px #0002; transition: transform .2s ease; }
+
+.tl-bar:hover { transform: translateY(-2px); }
+
+.tl-bar.tl-doing { background: linear-gradient(110deg, #0e7490, #0891b2); }
+
+.tl-bar.tl-done { background: linear-gradient(110deg, #047857, #059669); }
+
+.tl-overdue { outline: 2px solid #f43f5e; outline-offset: 1px; animation: tl-warning 2s ease-in-out infinite; }
+
+.tl-alert, .tl-notice { background: var(--priority-high-bg); color: var(--priority-high-text); border: 1px solid var(--priority-high-border); padding: 14px 18px; border-radius: 10px; line-height: 1.6; font-size: 13px; }
+
+.tl-notice { margin: 0 24px 20px; }
+
+.tl-footnote { padding: 16px 24px; color: var(--text-secondary); font-size: 11px; }
+
+.tl-panel .empty-state { gap: 14px; }
+
+.tl-dialog { width: min(560px, calc(100% - 32px)); max-height: 85dvh; padding: 24px; border: 1px solid var(--border-card); border-radius: 20px; background: var(--bg-surface-solid); color: var(--text-primary); box-shadow: var(--shadow-elevation-high); margin: auto; }
+
+.tl-dialog::backdrop { background: #02061799; backdrop-filter: blur(5px); }
+
+.tl-detail-top { display: flex; justify-content: space-between; align-items: center; }
+
+.tl-dialog h2 { font-size: 23px; font-weight: 700; line-height: 1.4; margin: 14px 0; overflow-wrap: anywhere; }
+
+.tl-description { color: var(--text-secondary); font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.tl-details { margin-top: 20px; }
+
+.tl-details div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-card); font-size: 13px; }
+
+.tl-details dt { color: var(--text-secondary); }
+
+.tl-details dd { margin: 0; overflow-wrap: anywhere; }
+
+@keyframes tl-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+@keyframes tl-warning { 50% { outline-color: #fb718580; } }
+
+@media (max-width: 768px) {
+
+  .tl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+  .tl-stat { padding: 16px; }
+
+  .tl-intro { align-items: start; flex-direction: column; gap: 16px; }
+
+  .tl-toolbar, .tl-chart-heading { padding: 16px; }
+
+  .tl-project-control { max-width: none; flex-basis: 100%; }
+
+  .tl-navigation { margin-left: 0; }
+
+  .tl-view { margin-left: auto; }
+
+  .tl-grid { --tl-meta-width: 170px; }
+
+  .tl-notice { margin: 0 16px 16px; }
+
+  .tl-details div { grid-template-columns: 100px 1fr; }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .tl-overdue, .tl-main #timelineContent { animation: none; }
+
+  .tl-scroll { scroll-behavior: auto; }
+
+}
+
+
+
+@keyframes spin {
+
+  to { transform: rotate(360deg); }
+
+}
+
+
+
+
+
+/* ==========================================================================
+
+   13. TRANG 4: TIMELINE & INTERACTIVE GANTT CHART EXTENSIONS (MODERN SAAS PALETTE)
+
+   Bổ sung hệ quy chuẩn màu sắc Modern SaaS (Neutral Slate + Indigo/Blue) & Font Roboto
+
+   Tuân thủ 100% nguyên tắc chỉ mở rộng, bảo vệ an toàn Section 1 - 12
+
+   ========================================================================== */
+
+
+
+/* 13.1. Font Roboto toàn diện cho Trang 4 Timeline */
+
+body.page-timeline,
+
+body.page-timeline *,
+
+.timeline-roboto,
+
+.timeline-roboto * {
+
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+
+}
+
+
+
+/* 13.2. Canvas & Surface quy chuẩn Modern SaaS */
+
+body.page-timeline {
+
+  background-color: #F8FAFC; /* Slate 50 dịu mắt */
+
+}
+
+
+
+html.dark body.page-timeline,
+
+body.page-timeline.dark-theme {
+
+  background-color: #090D16;
+
+}
+
+
+
+.gantt-surface-white {
+
+  background-color: #FFFFFF !important;
+
+  border-color: #E2E8F0 !important;
+
+}
+
+
+
+html.dark .gantt-surface-white,
+
+body.dark-theme .gantt-surface-white {
+
+  background-color: rgba(15, 23, 42, 0.85) !important;
+
+  border-color: rgba(255, 255, 255, 0.1) !important;
+
+}
+
+
+
+/* 13.3. Đường lưới siêu nhẹ (Ultra-light Grid Lines #E2E8F0) */
+
+.gantt-grid-border {
+
+  border-color: #E2E8F0 !important;
+
+}
+
+
+
+html.dark .gantt-grid-border,
+
+body.dark-theme .gantt-grid-border {
+
+  border-color: rgba(255, 255, 255, 0.08) !important;
+
+}
+
+
+
+/* 13.4. Dải cột Ngày Cuối Tuần (#F1F5F9 - Slate 100) */
+
+.gantt-col-weekend {
+
+  background-color: #F1F5F9 !important; /* Slate 100 */
+
+}
+
+
+
+html.dark .gantt-col-weekend,
+
+body.dark-theme .gantt-col-weekend {
+
+  background-color: rgba(148, 163, 184, 0.04) !important;
+
+}
+
+
+
+/* 13.5. Dải cột Ngày Hôm Nay */
+
+.gantt-col-today {
+
+  background-color: rgba(79, 70, 229, 0.05) !important; /* Indigo tint */
+
+}
+
+
+
+html.dark .gantt-col-today,
+
+body.dark-theme .gantt-col-today {
+
+  background-color: rgba(79, 70, 229, 0.08) !important;
+
+}
+
+
+
+/* 13.6. Đường mốc Hôm Nay (Today Line: Vibrant Red / Coral #EF4444) */
+
+.gantt-today-line {
+
+  position: absolute;
+
+  top: 0;
+
+  bottom: 0;
+
+  width: 2px;
+
+  background-color: #EF4444 !important; /* Red 500 */
+
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.65) !important;
+
+  pointer-events: none;
+
+  z-index: 12;
+
+}
+
+
+
+.gantt-today-badge {
+
+  position: absolute;
+
+  top: -22px;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  background-color: #EF4444 !important;
+
+  color: #FFFFFF !important;
+
+  font-size: 0.625rem;
+
+  font-weight: 800;
+
+  padding: 1.5px 7px;
+
+  border-radius: 9999px;
+
+  white-space: nowrap;
+
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+
+}
+
+
+
+/* 13.7. Hệ màu thanh tiến độ Gantt Bars theo chuẩn SaaS & Tone-on-tone */
+
+
+
+/* Vỏ ngoài thanh Gantt (Chứa thanh nền tổng thời gian task) */
+
+.gantt-bar {
+
+  position: relative;
+
+  height: 32px;
+
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  display: flex;
+
+  align-items: center;
+
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+
+              box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+
+              border-color 0.15s ease;
+
+  z-index: 2;
+
+}
+
+
+
+.gantt-bar:hover {
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+
+  z-index: 5;
+
+}
+
+
+
+/* Lớp màu lấp đầy tiến độ bên trong (Tone-on-tone Progress Fill) */
+
+.gantt-bar-fill {
+
+  position: absolute;
+
+  left: 0;
+
+  top: 0;
+
+  bottom: 0;
+
+  border-radius: inherit;
+
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+
+  pointer-events: none;
+
+}
+
+
+
+/* Lớp nội dung chữ & icon trên thanh Gantt */
+
+.gantt-bar-content {
+
+  position: relative;
+
+  z-index: 3;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  width: 100%;
+
+  padding: 0 10px;
+
+  pointer-events: none;
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+}
+
+
+
+/* A. Đang thực hiện (In Progress / Active: #E0E7FF nền -> #4F46E5 / #2563EB đậm) */
+
+.gantt-bar-doing {
+
+  background-color: #E0E7FF !important; /* Indigo 100 */
+
+  border: 1px solid #C7D2FE !important;
+
+}
+
+
+
+.gantt-bar-doing .gantt-bar-fill {
+
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important; /* Indigo 600 & Blue 600 */
+
+}
+
+
+
+.gantt-bar-doing .gantt-bar-content {
+
+  color: #FFFFFF !important;
+
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+}
+
+
+
+html.dark .gantt-bar-doing {
+
+  background-color: rgba(79, 70, 229, 0.22) !important;
+
+  border-color: rgba(99, 102, 241, 0.45) !important;
+
+}
+
+
+
+/* B. Hoàn thành (Done / Completed: #10B981 Emerald 500, opacity dịu) */
+
+.gantt-bar-done {
+
+  background-color: #D1FAE5 !important; /* Emerald 100 */
+
+  border: 1px solid #A7F3D0 !important;
+
+  opacity: 0.85; /* Giảm độ chú ý so với task đang dở */
+
+}
+
+
+
+.gantt-bar-done:hover {
+
+  opacity: 1;
+
+}
+
+
+
+.gantt-bar-done .gantt-bar-fill {
+
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; /* Emerald 500 */
+
+  width: 100% !important;
+
+}
+
+
+
+.gantt-bar-done .gantt-bar-content {
+
+  color: #FFFFFF !important;
+
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+
+}
+
+
+
+html.dark .gantt-bar-done {
+
+  background-color: rgba(16, 185, 129, 0.2) !important;
+
+  border-color: rgba(16, 185, 129, 0.35) !important;
+
+}
+
+
+
+/* C. Chậm tiến độ / Nguy cơ (Delayed / Overdue: Đỏ cam #F43F5E Rose 500 / #F97316) */
+
+.gantt-bar-overdue {
+
+  background-color: #FFE4E6 !important; /* Rose 100 */
+
+  border: 1.5px solid #F43F5E !important;
+
+  animation: timelineOverduePulse 1.8s infinite ease-in-out !important;
+
+}
+
+
+
+.gantt-bar-overdue .gantt-bar-fill {
+
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%) !important;
+
+}
+
+
+
+.gantt-bar-overdue .gantt-bar-content {
+
+  color: #FFFFFF !important;
+
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+}
+
+
+
+html.dark .gantt-bar-overdue {
+
+  background-color: rgba(244, 63, 94, 0.2) !important;
+
+  border-color: #F43F5E !important;
+
+}
+
+
+
+@keyframes timelineOverduePulse {
+
+  0%, 100% {
+
+    box-shadow: 0 0 0 1.5px rgba(244, 63, 94, 0.8), 0 0 8px rgba(244, 63, 94, 0.35);
+
+  }
+
+  50% {
+
+    box-shadow: 0 0 0 2.5px rgba(244, 63, 94, 1), 0 0 18px rgba(244, 63, 94, 0.65);
+
+  }
+
+}
+
+
+
+/* D. Chưa bắt đầu / Tạm hoãn (To-do / Backlog: Ghost outline #94A3B8) */
+
+.gantt-bar-todo {
+
+  background-color: #F1F5F9 !important; /* Slate 100 */
+
+  border: 1.5px dashed #94A3B8 !important; /* Ghost outline */
+
+  box-shadow: none !important;
+
+}
+
+
+
+.gantt-bar-todo .gantt-bar-fill {
+
+  background-color: transparent !important;
+
+  width: 0% !important;
+
+}
+
+
+
+.gantt-bar-todo .gantt-bar-content {
+
+  color: #475569 !important; /* Chữ xám đậm dễ đọc trên nền nhạt */
+
+}
+
+
+
+html.dark .gantt-bar-todo {
+
+  background-color: rgba(148, 163, 184, 0.08) !important;
+
+  border-color: #64748B !important;
+
+}
+
+
+
+html.dark .gantt-bar-todo .gantt-bar-content {
+
+  color: #CBD5E1 !important;
+
+}
+
+
+
+/* E. Mốc quan trọng (Milestone: Hình thoi Diamond Tím #8B5CF6 hoặc Hổ phách #F59E0B) */
+
+.gantt-milestone-diamond {
+
+  width: 18px;
+
+  height: 18px;
+
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+
+  transform: rotate(45deg);
+
+  border-radius: 3px;
+
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.45);
+
+  display: inline-block;
+
+  margin-right: 6px;
+
+  flex-shrink: 0;
+
+  border: 1.5px solid #FFFFFF;
+
+}
+
+
+
+.gantt-milestone-diamond.amber {
+
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45);
+
+}
+
+
+
+/* 13.8. Đường nối quan hệ phụ thuộc (Dependencies Arrows #64748B -> Hover #4F46E5) */
+
+.gantt-dependency-line {
+
+  stroke: #64748B;
+
+  stroke-width: 1.5px;
+
+  stroke-dasharray: 4 2;
+
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+
+}
+
+
+
+.gantt-dependency-line:hover,
+
+.gantt-dependency-line.is-active {
+
+  stroke: #4F46E5 !important;
+
+  stroke-width: 2px !important;
+
+  stroke-dasharray: none;
+
+}
+
+
+
+/* 13.9. Range Filter Buttons (SaaS Style) */
+
+.timeline-range-btn {
+
+  padding: 6px 14px;
+
+  border-radius: 8px;
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  background: transparent;
+
+  border: 1px solid transparent;
+
+  color: #64748B;
+
+  transition: all 0.18s ease;
+
+  cursor: pointer;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 0.375rem;
+
+}
+
+
+
+.timeline-range-btn:hover {
+
+  color: #0F172A;
+
+  background-color: rgba(255, 255, 255, 0.7);
+
+}
+
+
+
+html.dark .timeline-range-btn:hover {
+
+  color: #F8FAFC;
+
+  background-color: rgba(255, 255, 255, 0.08);
+
+}
+
+
+
+.timeline-range-btn.is-active {
+
+  background-color: #FFFFFF !important;
+
+  color: #4F46E5 !important;
+
+  border-color: #E2E8F0 !important;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+
+  font-weight: 700;
+
+}
+
+
+
+html.dark .timeline-range-btn.is-active {
+
+  background-color: #4F46E5 !important;
+
+  color: #FFFFFF !important;
+
+  border-color: transparent !important;
+
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4) !important;
+
+}
+
+
+
+/* 13.10. Interactive Popover Tooltip chuẩn Glassmorphism */
+
+.gantt-popover {
+
+  position: fixed;
+
+  z-index: 100;
+
+  pointer-events: auto;
+
+  background: rgba(15, 23, 42, 0.94);
+
+  backdrop-filter: blur(14px);
+
+  -webkit-backdrop-filter: blur(14px);
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  border-radius: 14px;
+
+  padding: 14px 16px;
+
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  min-width: 270px;
+
+  max-width: 340px;
+
+  color: #F8FAFC;
+
+  opacity: 0;
+
+  transform: translateY(6px) scale(0.97);
+
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+
+              transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+
+
+html:not(.dark) .gantt-popover,
+
+body.light-theme .gantt-popover {
+
+  background: rgba(255, 255, 255, 0.96);
+
+  border-color: rgba(203, 213, 225, 0.9);
+
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  color: #0F172A;
+
+}
+
+
+
+.gantt-popover.is-visible {
+
+  opacity: 1;
+
+  transform: translateY(0) scale(1);
+
+}
+
+   MINI-TASKS CHECKLIST & WORK EVIDENCE SYSTEM (Trello-Style Additions)
+
+   ========================================================================== */
+
+.avatar-stack {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  flex-direction: row-reverse;
+
+  justify-content: flex-end;
+
+}
+
+.avatar-stack img {
+
+  border: 2px solid rgba(255, 255, 255, 0.85);
+
+  margin-right: -8px;
+
+  transition: transform 0.2s ease, z-index 0.2s ease;
+
+}
+
+.dark .avatar-stack img {
+
+  border-color: rgba(15, 23, 42, 0.9);
+
+}
+
+.avatar-stack img:hover {
+
+  transform: translateY(-2px) scale(1.15);
+
+  z-index: 20;
+
+}
+
+
+
+.subtask-item {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 8px;
+
+  padding: 7px 10px;
+
+  border-radius: 10px;
+
+  background: rgba(148, 163, 184, 0.06);
+
+  border: 1px solid rgba(148, 163, 184, 0.15);
+
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+}
+
+.dark .subtask-item {
+
+  background: rgba(255, 255, 255, 0.03);
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+}
+
+.subtask-item:hover {
+
+  background: rgba(99, 102, 241, 0.08);
+
+  border-color: rgba(99, 102, 241, 0.3);
+
+}
+
+.subtask-item.is-done {
+
+  background: rgba(16, 185, 129, 0.06);
+
+  border-color: rgba(16, 185, 129, 0.25);
+
+}
+
+.subtask-item.is-done .subtask-text {
+
+  text-decoration: line-through;
+
+  opacity: 0.65;
+
+}
+
+
+
+.badge-checklist {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 2px 7px;
+
+  border-radius: 6px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  background: rgba(100, 116, 139, 0.12);
+
+  color: #64748B;
+
+  border: 1px solid rgba(100, 116, 139, 0.2);
+
+  transition: all 0.2s ease;
+
+}
+
+.dark .badge-checklist {
+
+  background: rgba(255, 255, 255, 0.06);
+
+  color: #94A3B8;
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+}
+
+.badge-checklist.is-completed {
+
+  background: rgba(16, 185, 129, 0.15);
+
+  color: #10B981;
+
+  border-color: rgba(16, 185, 129, 0.3);
+
+}
+
+
+
+.btn-evidence-badge {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 3.5px;
+
+  padding: 2.5px 7px;
+
+  border-radius: 6px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition: all 0.2s ease;
+
+}
+
+.btn-evidence-badge:hover {
+
+  transform: translateY(-1px);
+
+  filter: brightness(1.1);
+
+}
+
+
+
+/* ==========================================================================
+
+   TRELLO-GRADE 2-COLUMN MODAL, COMMENTS & MEMBER CHIPS STYLES
+
+   ========================================================================== */
+
+.member-filter-chip {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 4px 10px;
+
+  border-radius: 9999px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  background: rgba(148, 163, 184, 0.08);
+
+  color: #64748B;
+
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  user-select: none;
+
+}
+
+.dark .member-filter-chip {
+
+  color: #94A3B8;
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+  background: rgba(255, 255, 255, 0.04);
+
+}
+
+.member-filter-chip:hover {
+
+  background: rgba(99, 102, 241, 0.12);
+
+  color: #6366F1;
+
+  border-color: rgba(99, 102, 241, 0.3);
+
+}
+
+.member-filter-chip.is-active {
+
+  background: #6366F1;
+
+  color: #ffffff;
+
+  border-color: #6366F1;
+
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+
+}
+
+
+
+.subtask-assignee-select-chip {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 3px 9px;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  border: 1px solid rgba(148, 163, 184, 0.25);
+
+  background: rgba(148, 163, 184, 0.06);
+
+  color: #64748B;
+
+  transition: all 0.2s ease;
+
+  user-select: none;
+
+}
+
+.dark .subtask-assignee-select-chip {
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+  background: rgba(255, 255, 255, 0.04);
+
+  color: #94A3B8;
+
+}
+
+.subtask-assignee-select-chip.is-selected {
+
+  background: rgba(99, 102, 241, 0.15);
+
+  border-color: #6366F1;
+
+  color: #6366F1;
+
+}
+
+.dark .subtask-assignee-select-chip.is-selected {
+
+  background: rgba(99, 102, 241, 0.25);
+
+  color: #A5B4FC;
+
+}
+
+
+
+.comment-bubble {
+
+  position: relative;
+
+  padding: 10px 14px;
+
+  border-radius: 14px;
+
+  background: rgba(148, 163, 184, 0.08);
+
+  border: 1px solid rgba(148, 163, 184, 0.15);
+
+  font-size: 12px;
+
+  line-height: 1.6;
+
+}
+
+.dark .comment-bubble {
+
+  background: rgba(255, 255, 255, 0.03);
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+}
+
+
+
+/* ==========================================================================
+
+   14. TRANG 5: BÁO CÁO & TIME-TRACKER TỰ ĐỘNG (REPORTS & TIMESHEET STYLES)
+
+   Tuân thủ: Rubric học phần, colorweb.md, skill.md và ai_detected.md
+
+   ========================================================================== */
+
+
+
+/* 14.1 Quy chuẩn Typography Font Roboto toàn trang & ép triệt để form controls */
+
+.page-reports,
+
+.page-reports body {
+
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+
+}
+
+
+
+.page-reports input,
+
+.page-reports select,
+
+.page-reports textarea,
+
+.page-reports button,
+
+.page-reports table,
+
+.page-reports th,
+
+.page-reports td,
+
+.page-reports label {
+
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+
+}
+
+
+
+/* 14.2 Stopwatch Console Digital Display & Số đo Mono */
+
+.stopwatch-digital-clock,
+
+.font-mono-numbers {
+
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+
+  font-feature-settings: "tnum" 1, "zero" 1;
+
+  letter-spacing: 0.05em;
+
+}
+
+
+
+@keyframes timerPulseRing {
+
+  0% {
+
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+
+  }
+
+  70% {
+
+    box-shadow: 0 0 0 14px rgba(99, 102, 241, 0);
+
+  }
+
+  100% {
+
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+
+  }
+
+}
+
+
+
+.stopwatch-running-glow {
+
+  animation: timerPulseRing 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+
+  border-color: rgba(99, 102, 241, 0.6) !important;
+
+}
+
+
+
+.dark .stopwatch-running-glow {
+
+  border-color: rgba(129, 140, 248, 0.5) !important;
+
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.25);
+
+}
+
+
+
+/* 14.3 Nút bấm điều khiển bấm giờ & xúc giác Fitts's Law */
+
+.btn-stopwatch-action {
+
+  min-height: 44px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  font-weight: 600;
+
+  border-radius: 12px;
+
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  user-select: none;
+
+  cursor: pointer;
+
+}
+
+
+
+.btn-stopwatch-action:active {
+
+  transform: scale(0.96);
+
+}
+
+
+
+/* 14.4 Trạng thái đồng bộ Google Sheets Cloud Badge */
+
+.badge-sheets-synced {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 3px 9px;
+
+  border-radius: 9999px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  background-color: rgba(16, 185, 129, 0.12);
+
+  color: #059669;
+
+  border: 1px solid rgba(16, 185, 129, 0.25);
+
+}
+
+
+
+.dark .badge-sheets-synced {
+
+  background-color: rgba(16, 185, 129, 0.18);
+
+  color: #34D399;
+
+  border-color: rgba(16, 185, 129, 0.35);
+
+}
+
+
+
+/* 14.5 Badge Blockers cảnh báo rủi ro */
+
+.badge-blocker-alert {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 2px 8px;
+
+  border-radius: 6px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  background: rgba(244, 63, 94, 0.1);
+
+  color: #E11D48;
+
+  border: 1px solid rgba(244, 63, 94, 0.25);
+
+}
+
+
+
+.dark .badge-blocker-alert {
+
+  background: rgba(244, 63, 94, 0.18);
+
+  color: #FB7185;
+
+  border-color: rgba(244, 63, 94, 0.35);
+
+}
+
+
+
+.badge-blocker-none {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 2px 8px;
+
+  border-radius: 6px;
+
+  font-size: 11px;
+
+  font-weight: 500;
+
+  background: rgba(148, 163, 184, 0.1);
+
+  color: #64748B;
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+}
+
+
+
+.dark .badge-blocker-none {
+
+  background: rgba(148, 163, 184, 0.08);
+
+  color: #94A3B8;
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+}
+
+
+
+/* 14.6 Huy hiệu số giờ cống hiến */
+
+.badge-hours-spent {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 3px 9px;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  font-feature-settings: "tnum" 1;
+
+  background: rgba(99, 102, 241, 0.1);
+
+  color: #4F46E5;
+
+  border: 1px solid rgba(99, 102, 241, 0.25);
+
+}
+
+
+
+.dark .badge-hours-spent {
+
+  background: rgba(99, 102, 241, 0.18);
+
+  color: #818CF8;
+
+  border-color: rgba(99, 102, 241, 0.35);
+
+}
+
+
+
+/* 14.7 Tối ưu bảng dữ liệu Timesheet phẳng & chuẩn WCAG */
+
+.timesheet-table-container {
+
+  overflow-x: auto;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+
+}
+
+
+
+.timesheet-table-container::-webkit-scrollbar {
+
+  height: 6px;
+
+}
+
+
+
+.timesheet-table-container::-webkit-scrollbar-track {
+
+  background: transparent;
+
+}
+
+
+
+.timesheet-table-container::-webkit-scrollbar-thumb {
+
+  background: rgba(148, 163, 184, 0.3);
+
+  border-radius: 9999px;
+
+}
+
+
+
+.timesheet-table th {
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 5;
+
+  background: #F1F5F9;
+
+}
+
+
+
+.dark .timesheet-table th {
+
+  background: #0F172A;
+
+}
+
+
+
+/* 14.8 Hiệu ứng nháy sáng cập nhật KPI */
+
+.kpi-stat-flash {
+
+  animation: kpiFlashAnim 0.75s ease-out;
+
+}
+
+
+
+@keyframes kpiFlashAnim {
+
+  0% {
+
+    transform: scale(1.04);
+
+    filter: brightness(1.25);
+
+  }
+
+  100% {
+
+    transform: scale(1);
+
+    filter: brightness(1);
+
+  }
+
+}
+
+
+
+/* 14.9 Quick Date Filter Chips & Trello Style Pills */
+
+.filter-date-chip {
+
+  padding: 6px 14px;
+
+  border-radius: 9999px;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  border: 1px solid rgba(148, 163, 184, 0.25);
+
+  background: rgba(255, 255, 255, 0.6);
+
+  color: #64748B;
+
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  cursor: pointer;
+
+  user-select: none;
+
+}
+
+
+
+.dark .filter-date-chip {
+
+  background: rgba(255, 255, 255, 0.05);
+
+  color: #94A3B8;
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+}
+
+
+
+.filter-date-chip:hover {
+
+  background: rgba(99, 102, 241, 0.08);
+
+  color: #4F46E5;
+
+  border-color: rgba(99, 102, 241, 0.3);
+
+}
+
+
+
+.dark .filter-date-chip:hover {
+
+  background: rgba(99, 102, 241, 0.15);
+
+  color: #A5B4FC;
+
+  border-color: rgba(99, 102, 241, 0.4);
+
+}
+
+
+
+.filter-date-chip.is-active {
+
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
+
+  color: #FFFFFF !important;
+
+  border-color: transparent;
+
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+
+}
+
+
+
+/* 14.10 Visual Analytics CSS Bars */
+
+.analytics-progress-track {
+
+  height: 8px;
+
+  border-radius: 9999px;
+
+  background: rgba(148, 163, 184, 0.15);
+
+  overflow: hidden;
+
+  position: relative;
+
+}
+
+
+
+.dark .analytics-progress-track {
+
+  background: rgba(255, 255, 255, 0.08);
+
+}
+
+
+
+.analytics-progress-fill {
+
+  height: 100%;
+
+  border-radius: 9999px;
+
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+/**
  * ==============================================================================
  * TASKFLOW ARCHITECTURE DESIGN SYSTEM (styles.css)
  * Theme: Deep Slate & Electric Neo-Violet (Xu hướng 2026/2027)
@@ -414,9 +4852,19 @@ html.dark .glass-nav,
   transform-style: preserve-3d;
 }
 
-.flip-card:hover .flip-card-inner,
 .flip-card.is-flipped .flip-card-inner {
   transform: rotateY(180deg);
+}
+
+.flip-card-front {
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.flip-card:not(.is-flipped):hover .flip-card-front {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(99, 102, 241, 0.2), 0 8px 16px -6px rgba(0, 0, 0, 0.08);
+  border-color: rgba(99, 102, 241, 0.45);
 }
 
 .flip-card-front,
@@ -727,6 +5175,30 @@ html.dark .glass-nav,
   transform: translateY(-2px);
   box-shadow: var(--shadow-elevation-mid);
   border-color: var(--border-card-hover);
+}
+
+/* Khóa thẻ việc đối với thành viên không có quyền (RBAC Drag & Drop Lock) */
+.task-card.is-locked-task {
+  cursor: not-allowed !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+.task-card.is-locked-task * {
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+.task-card.is-locked-task:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-elevation-low) !important;
+  border-color: var(--border-card) !important;
+}
+
+.task-card.is-locked-task:active {
+  cursor: not-allowed !important;
 }
 
 .task-card:active {
@@ -1314,6 +5786,649 @@ body.light-theme .search-highlight {
   display: inline-block;
 }
 
+/* Timeline page: isolated additions; shared component rules are preserved. */
+.tl-page { margin: 0; background: var(--bg-main); color: var(--text-primary); font-family: Inter, system-ui, sans-serif; }
+.tl-page [hidden] { display: none !important; }
+.tl-shell { display: flex; height: 100dvh; overflow: hidden; }
+.tl-workspace { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.tl-main { overflow: auto; padding: clamp(16px, 3vw, 36px); }
+.tl-main #timelineContent { max-width: 1600px; margin: auto; animation: tl-enter .3s ease both; }
+.tl-intro { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 28px; }
+.tl-eyebrow { color: var(--primary-accent); font-size: 11px; font-weight: 800; letter-spacing: .15em; margin-bottom: 10px; }
+.tl-intro h1 { font-size: clamp(24px, 2.6vw, 34px); font-weight: 750; letter-spacing: -.045em; line-height: 1.25; margin: 0 0 10px; }
+.tl-muted { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.tl-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 10px 14px; border: 1px solid var(--border-card); border-radius: 10px; background: var(--bg-elevated); color: var(--text-primary); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .2s ease, box-shadow .2s ease, transform .2s ease; white-space: nowrap; }
+.tl-button:hover { background: var(--bg-surface-hover); box-shadow: 0 4px 16px var(--primary-accent-glow); transform: translateY(-1px); }
+.tl-button:active { transform: scale(.97); }
+.tl-button:focus-visible, .tl-meta:focus-visible, .tl-bar:focus-visible, .tl-scroll:focus-visible { outline: 2px solid var(--primary-accent); outline-offset: 3px; }
+.tl-view .tl-button[aria-pressed="true"] { color: #fff; background: linear-gradient(120deg, #6366f1, #8b5cf6); border-color: #6366f1; }
+.tl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 26px; }
+.tl-stat { position: relative; overflow: hidden; padding: 20px 22px; border: 1px solid var(--border-card); border-radius: 16px; background: var(--bg-surface); backdrop-filter: blur(12px); box-shadow: var(--shadow-elevation-low); }
+.tl-stat::after { content: ''; position: absolute; width: 50px; height: 50px; right: -12px; bottom: -12px; border-radius: 50%; background: var(--primary-accent-glow); }
+.tl-stat span { display: block; color: var(--text-secondary); font-size: 12px; }
+.tl-stat strong { display: block; font-size: 32px; font-weight: 700; letter-spacing: -.04em; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.tl-stat-1 strong { color: var(--kanban-doing-text); }
+.tl-stat-2 strong { color: var(--kanban-done-text); }
+.tl-stat-3 strong { color: var(--priority-critical-text); }
+.tl-panel { background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 18px; box-shadow: var(--shadow-elevation-mid); backdrop-filter: blur(12px); overflow: hidden; }
+.tl-toolbar { display: flex; align-items: end; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border-card); flex-wrap: wrap; }
+.tl-project-control { flex: 1; min-width: 200px; max-width: 380px; }
+.tl-project-control label { display: block; font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; }
+.tl-project-control select { width: 100%; min-height: 44px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--border-card); background-color: var(--bg-surface-solid); color: var(--text-primary); cursor: pointer; font: inherit; font-size: 13px; transition: box-shadow .2s ease, border-color .2s ease; }
+.tl-project-control select:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-accent-glow); }
+.tl-navigation, .tl-view { display: flex; gap: 5px; }
+.tl-navigation { margin-left: auto; }
+.tl-chart-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 24px; }
+.tl-chart-heading h2 { font-size: 20px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.03em; }
+.tl-legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--text-secondary); font-size: 11px; }
+.tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 3px; }
+.tl-todo { background: #64748b; }
+.tl-doing { background: #0891b2; }
+.tl-done { background: #059669; }
+.tl-late-dot { border: 2px solid #f43f5e; }
+.tl-scroll { overflow: auto; max-height: 65vh; scrollbar-gutter: stable; scroll-behavior: smooth; border-top: 1px solid var(--border-card); }
+.tl-grid { --tl-meta-width: 260px; display: grid; grid-template-columns: var(--tl-meta-width) repeat(var(--tl-days, 31), minmax(46px, 1fr)); min-width: calc(var(--tl-meta-width) + var(--tl-days, 31) * 46px); align-items: stretch; }
+.tl-corner, .tl-day { position: sticky; top: 0; z-index: 4; background: var(--bg-surface-solid); border-right: 1px solid var(--gantt-grid-line); border-bottom: 1px solid var(--border-card); }
+.tl-corner { left: 0; z-index: 7; padding: 22px 16px; color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.tl-day { text-align: center; padding: 9px 0; }
+.tl-day span { display: block; color: var(--text-secondary); font-size: 9px; margin-bottom: 3px; }
+.tl-day strong { font-size: 13px; }
+.tl-day.tl-weekend { background: var(--bg-elevated); }
+.tl-day.tl-today { color: var(--primary-accent); border-bottom: 3px solid var(--primary-accent); }
+.tl-group { grid-column: 1 / -1; padding: 12px 16px; background: var(--bg-elevated); font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border-card); }
+.tl-group span { color: var(--text-secondary); font-size: 10px; font-weight: 400; margin-left: 10px; }
+.tl-meta { position: sticky; left: 0; z-index: 3; display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 70px; padding: 12px 16px; border: 0; border-right: 1px solid var(--border-card); border-bottom: 1px solid var(--border-card); background: var(--bg-surface-solid); color: var(--text-primary); text-align: left; cursor: pointer; }
+.tl-meta:hover { background: var(--bg-elevated); }
+.tl-meta strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
+.tl-meta span { color: var(--text-secondary); margin-top: 6px; font-size: 10px; }
+.tl-track { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(var(--tl-days, 31), minmax(46px, 1fr)); align-items: center; border-bottom: 1px solid var(--border-card); min-height: 70px; }
+.tl-cell { grid-row: 1; align-self: stretch; border-right: 1px solid var(--gantt-grid-line); }
+.tl-cell.tl-weekend { background: var(--gantt-weekend-bg); }
+.tl-cell.tl-today { background: var(--primary-accent-glow); border-left: 1px solid var(--primary-accent); }
+.tl-bar { grid-row: 1; z-index: 1; min-width: 0; height: 32px; margin: 0 3px; padding: 0 10px; color: #fff; font-size: 11px; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; cursor: pointer; box-shadow: 0 3px 9px #0002; transition: transform .2s ease; }
+.tl-bar:hover { transform: translateY(-2px); }
+.tl-bar.tl-doing { background: linear-gradient(110deg, #0e7490, #0891b2); }
+.tl-bar.tl-done { background: linear-gradient(110deg, #047857, #059669); }
+.tl-overdue { outline: 2px solid #f43f5e; outline-offset: 1px; animation: tl-warning 2s ease-in-out infinite; }
+.tl-alert, .tl-notice { background: var(--priority-high-bg); color: var(--priority-high-text); border: 1px solid var(--priority-high-border); padding: 14px 18px; border-radius: 10px; line-height: 1.6; font-size: 13px; }
+.tl-notice { margin: 0 24px 20px; }
+.tl-footnote { padding: 16px 24px; color: var(--text-secondary); font-size: 11px; }
+.tl-panel .empty-state { gap: 14px; }
+.tl-dialog { width: min(560px, calc(100% - 32px)); max-height: 85dvh; padding: 24px; border: 1px solid var(--border-card); border-radius: 20px; background: var(--bg-surface-solid); color: var(--text-primary); box-shadow: var(--shadow-elevation-high); margin: auto; }
+.tl-dialog::backdrop { background: #02061799; backdrop-filter: blur(5px); }
+.tl-detail-top { display: flex; justify-content: space-between; align-items: center; }
+.tl-dialog h2 { font-size: 23px; font-weight: 700; line-height: 1.4; margin: 14px 0; overflow-wrap: anywhere; }
+.tl-description { color: var(--text-secondary); font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tl-details { margin-top: 20px; }
+.tl-details div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-card); font-size: 13px; }
+.tl-details dt { color: var(--text-secondary); }
+.tl-details dd { margin: 0; overflow-wrap: anywhere; }
+@keyframes tl-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes tl-warning { 50% { outline-color: #fb718580; } }
+@media (max-width: 768px) {
+  .tl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tl-stat { padding: 16px; }
+  .tl-intro { align-items: start; flex-direction: column; gap: 16px; }
+  .tl-toolbar, .tl-chart-heading { padding: 16px; }
+  .tl-project-control { max-width: none; flex-basis: 100%; }
+  .tl-navigation { margin-left: 0; }
+  .tl-view { margin-left: auto; }
+  .tl-grid { --tl-meta-width: 170px; }
+  .tl-notice { margin: 0 16px 16px; }
+  .tl-details div { grid-template-columns: 100px 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-overdue, .tl-main #timelineContent { animation: none; }
+  .tl-scroll { scroll-behavior: auto; }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+
+/* ==========================================================================
+   13. TRANG 4: TIMELINE & INTERACTIVE GANTT CHART EXTENSIONS (MODERN SAAS PALETTE)
+   Bổ sung hệ quy chuẩn màu sắc Modern SaaS (Neutral Slate + Indigo/Blue) & Font Roboto
+   Tuân thủ 100% nguyên tắc chỉ mở rộng, bảo vệ an toàn Section 1 - 12
+   ========================================================================== */
+
+/* 13.1. Font Roboto toàn diện cho Trang 4 Timeline */
+body.page-timeline,
+body.page-timeline *,
+.timeline-roboto,
+.timeline-roboto * {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* 13.2. Canvas & Surface quy chuẩn Modern SaaS */
+body.page-timeline {
+  background-color: #F8FAFC; /* Slate 50 dịu mắt */
+}
+
+html.dark body.page-timeline,
+body.page-timeline.dark-theme {
+  background-color: #090D16;
+}
+
+.gantt-surface-white {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.dark .gantt-surface-white,
+body.dark-theme .gantt-surface-white {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 13.3. Đường lưới siêu nhẹ (Ultra-light Grid Lines #E2E8F0) */
+.gantt-grid-border {
+  border-color: #E2E8F0 !important;
+}
+
+html.dark .gantt-grid-border,
+body.dark-theme .gantt-grid-border {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 13.4. Dải cột Ngày Cuối Tuần (#F1F5F9 - Slate 100) */
+.gantt-col-weekend {
+  background-color: #F1F5F9 !important; /* Slate 100 */
+}
+
+html.dark .gantt-col-weekend,
+body.dark-theme .gantt-col-weekend {
+  background-color: rgba(148, 163, 184, 0.04) !important;
+}
+
+/* 13.5. Dải cột Ngày Hôm Nay */
+.gantt-col-today {
+  background-color: rgba(79, 70, 229, 0.05) !important; /* Indigo tint */
+}
+
+html.dark .gantt-col-today,
+body.dark-theme .gantt-col-today {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* 13.6. Đường mốc Hôm Nay (Today Line: Vibrant Red / Coral #EF4444) */
+.gantt-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #EF4444 !important; /* Red 500 */
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.65) !important;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.gantt-today-badge {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #EF4444 !important;
+  color: #FFFFFF !important;
+  font-size: 0.625rem;
+  font-weight: 800;
+  padding: 1.5px 7px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* 13.7. Hệ màu thanh tiến độ Gantt Bars theo chuẩn SaaS & Tone-on-tone */
+
+/* Vỏ ngoài thanh Gantt (Chứa thanh nền tổng thời gian task) */
+.gantt-bar {
+  position: relative;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s ease;
+  z-index: 2;
+}
+
+.gantt-bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  z-index: 5;
+}
+
+/* Lớp màu lấp đầy tiến độ bên trong (Tone-on-tone Progress Fill) */
+.gantt-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+/* Lớp nội dung chữ & icon trên thanh Gantt */
+.gantt-bar-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 10px;
+  pointer-events: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A. Đang thực hiện (In Progress / Active: #E0E7FF nền -> #4F46E5 / #2563EB đậm) */
+.gantt-bar-doing {
+  background-color: #E0E7FF !important; /* Indigo 100 */
+  border: 1px solid #C7D2FE !important;
+}
+
+.gantt-bar-doing .gantt-bar-fill {
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important; /* Indigo 600 & Blue 600 */
+}
+
+.gantt-bar-doing .gantt-bar-content {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .gantt-bar-doing {
+  background-color: rgba(79, 70, 229, 0.22) !important;
+  border-color: rgba(99, 102, 241, 0.45) !important;
+}
+
+/* B. Hoàn thành (Done / Completed: #10B981 Emerald 500, opacity dịu) */
+.gantt-bar-done {
+  background-color: #D1FAE5 !important; /* Emerald 100 */
+  border: 1px solid #A7F3D0 !important;
+  opacity: 0.85; /* Giảm độ chú ý so với task đang dở */
+}
+
+.gantt-bar-done:hover {
+  opacity: 1;
+}
+
+.gantt-bar-done .gantt-bar-fill {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; /* Emerald 500 */
+  width: 100% !important;
+}
+
+.gantt-bar-done .gantt-bar-content {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+html.dark .gantt-bar-done {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+/* C. Chậm tiến độ / Nguy cơ (Delayed / Overdue: Đỏ cam #F43F5E Rose 500 / #F97316) */
+.gantt-bar-overdue {
+  background-color: #FFE4E6 !important; /* Rose 100 */
+  border: 1.5px solid #F43F5E !important;
+  animation: timelineOverduePulse 1.8s infinite ease-in-out !important;
+}
+
+.gantt-bar-overdue .gantt-bar-fill {
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%) !important;
+}
+
+.gantt-bar-overdue .gantt-bar-content {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .gantt-bar-overdue {
+  background-color: rgba(244, 63, 94, 0.2) !important;
+  border-color: #F43F5E !important;
+}
+
+@keyframes timelineOverduePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px rgba(244, 63, 94, 0.8), 0 0 8px rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 2.5px rgba(244, 63, 94, 1), 0 0 18px rgba(244, 63, 94, 0.65);
+  }
+}
+
+/* D. Chưa bắt đầu / Tạm hoãn (To-do / Backlog: Ghost outline #94A3B8) */
+.gantt-bar-todo {
+  background-color: #F1F5F9 !important; /* Slate 100 */
+  border: 1.5px dashed #94A3B8 !important; /* Ghost outline */
+  box-shadow: none !important;
+}
+
+.gantt-bar-todo .gantt-bar-fill {
+  background-color: transparent !important;
+  width: 0% !important;
+}
+
+.gantt-bar-todo .gantt-bar-content {
+  color: #475569 !important; /* Chữ xám đậm dễ đọc trên nền nhạt */
+}
+
+html.dark .gantt-bar-todo {
+  background-color: rgba(148, 163, 184, 0.08) !important;
+  border-color: #64748B !important;
+}
+
+html.dark .gantt-bar-todo .gantt-bar-content {
+  color: #CBD5E1 !important;
+}
+
+/* E. Mốc quan trọng (Milestone: Hình thoi Diamond Tím #8B5CF6 hoặc Hổ phách #F59E0B) */
+.gantt-milestone-diamond {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  transform: rotate(45deg);
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.45);
+  display: inline-block;
+  margin-right: 6px;
+  flex-shrink: 0;
+  border: 1.5px solid #FFFFFF;
+}
+
+.gantt-milestone-diamond.amber {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45);
+}
+
+/* 13.8. Đường nối quan hệ phụ thuộc (Dependencies Arrows #64748B -> Hover #4F46E5) */
+.gantt-dependency-line {
+  stroke: #64748B;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 2;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.gantt-dependency-line:hover,
+.gantt-dependency-line.is-active {
+  stroke: #4F46E5 !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: none;
+}
+
+/* 13.9. Range Filter Buttons (SaaS Style) */
+.timeline-range-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748B;
+  transition: all 0.18s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.timeline-range-btn:hover {
+  color: #0F172A;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+html.dark .timeline-range-btn:hover {
+  color: #F8FAFC;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.timeline-range-btn.is-active {
+  background-color: #FFFFFF !important;
+  color: #4F46E5 !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  font-weight: 700;
+}
+
+html.dark .timeline-range-btn.is-active {
+  background-color: #4F46E5 !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* 13.10. Interactive Popover Tooltip chuẩn Glassmorphism */
+.gantt-popover {
+  position: fixed;
+  z-index: 100;
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  min-width: 270px;
+  max-width: 340px;
+  color: #F8FAFC;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html:not(.dark) .gantt-popover,
+body.light-theme .gantt-popover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(203, 213, 225, 0.9);
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  color: #0F172A;
+}
+
+.gantt-popover.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+   MINI-TASKS CHECKLIST & WORK EVIDENCE SYSTEM (Trello-Style Additions)
+   ========================================================================== */
+.avatar-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+.avatar-stack img {
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  margin-right: -8px;
+  transition: transform 0.2s ease, z-index 0.2s ease;
+}
+.dark .avatar-stack img {
+  border-color: rgba(15, 23, 42, 0.9);
+}
+.avatar-stack img:hover {
+  transform: translateY(-2px) scale(1.15);
+  z-index: 20;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark .subtask-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.subtask-item:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.subtask-item.is-done {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+.subtask-item.is-done .subtask-text {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.badge-checklist {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748B;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  transition: all 0.2s ease;
+}
+.dark .badge-checklist {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94A3B8;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.badge-checklist.is-completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.btn-evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.btn-evidence-badge:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* ==========================================================================
+   TRELLO-GRADE 2-COLUMN MODAL, COMMENTS & MEMBER CHIPS STYLES
+   ========================================================================== */
+.member-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.08);
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.dark .member-filter-chip {
+  color: #94A3B8;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+.member-filter-chip:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366F1;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.member-filter-chip.is-active {
+  background: #6366F1;
+  color: #ffffff;
+  border-color: #6366F1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.subtask-assignee-select-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.06);
+  color: #64748B;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.dark .subtask-assignee-select-chip {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94A3B8;
+}
+.subtask-assignee-select-chip.is-selected {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366F1;
+  color: #6366F1;
+}
+.dark .subtask-assignee-select-chip.is-selected {
+  background: rgba(99, 102, 241, 0.25);
+  color: #A5B4FC;
+}
+
+.comment-bubble {
+  position: relative;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  font-size: 12px;
+  line-height: 1.6;
+}
+/* ==============================================================================
+   6. SMOOTH PAGE TRANSITIONS & ANIMATE.CSS ENHANCEMENTS (UX/UI Polish)
+   ============================================================================== */
+:root {
+  --animate-duration: 0.22s;
+}
+
+main.animate__animated {
+  -webkit-animation-duration: 0.22s;
+  animation-duration: 0.22s;
+}
+
+.animate__faster {
+  -webkit-animation-duration: 0.16s !important;
+  animation-duration: 0.16s !important;
+}
+
+/* Khóa kéo thả khi không có quyền */
+.is-locked-task {
+  cursor: not-allowed !important;
+}
+
+.dark .comment-bubble {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
 }
